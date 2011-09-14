@@ -41,7 +41,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
 
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -122,7 +121,7 @@ public class PathSegmentGraph {
 		distancesCalculated = false;
 
 		if (lineString.isEmpty()) { return; }
-		if(lineString.getCoordinates().length == 1) {
+		if(lineString.getCoordinates().length < 2) {
 			System.exit(1);
 		}
 
@@ -202,6 +201,23 @@ public class PathSegmentGraph {
 		return nodes;
 	}
 
+
+	public Edge getEdgeByNodes(Node n1, Node n2) {
+		@SuppressWarnings("unchecked")
+		Iterator<Edge> ei = Node.getEdgesBetween(n1, n2).iterator();
+		return (ei.hasNext() ? ei.next() : null);
+	}
+	
+	public Edge getSingleEdgeAtNode(Node n1) {
+		try {
+			Object obj = n1.getOutEdges().getEdges().get(0);
+			return ((DirectedEdge)obj).getEdge();
+		} catch(Exception e) {
+			System.out.println(e);
+			return null;
+		}
+	}
+	
 	public Envelope getEnvelope() {
 		Envelope env = new Envelope(xMin, xMax, yMin, yMax);
 		return env;
@@ -226,19 +242,5 @@ public class PathSegmentGraph {
 		
 	}
 	
-	public Edge getSingleEdgeAtNode(Node n1) {
-		try {
-			Object obj = n1.getOutEdges().getEdges().get(0);
-			return ((DirectedEdge)obj).getEdge();
-		} catch(Exception e) {
-			System.out.println(e);
-			return null;
-		}
-	}
 
-	public Edge getEdgeByNodes(Node n1, Node n2) {
-		@SuppressWarnings("unchecked")
-		Iterator<Edge> ei = Node.getEdgesBetween(n1, n2).iterator();
-		return (ei.hasNext() ? ei.next() : null);
-	}
 }

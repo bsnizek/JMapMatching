@@ -38,6 +38,8 @@ import com.vividsolutions.jts.planargraph.Node;
  */
 public class Label implements Comparable<Label> {
 
+	private static double kTurnLimit = 1.;	///> bottom limit determining when a change in angle is counted as a left/right turn, in radians
+	
 	/**
 	 * Comparator comparing only the last edge of two labels
 	 * @author bb
@@ -59,12 +61,12 @@ public class Label implements Comparable<Label> {
 	private double lastScore = 0.;	///> the same but considering only the last edge	
 	private int lastScoreCount = 0;
 	
-	/**
-	 * As Labels can represent routes, this is the length of that route. It is defined
-	 * as the sum of all backedges, summing up over parent Labels until a Label has no parent.
-	 */
-	private double length = 0.;
-	private double lastEdgeLength = 0.;
+	private double length = 0.;		///> if the label represents a route, this is the length of the route (sum of all backEdges)
+	private double lastEdgeLength = 0.;	///> length of last backEdge
+	private double angle = 0.;		///> angle relative to the global x-y coordinate system
+	private double angle_rel = 0.;	///> angle change relative to previous edge
+	private double angle_tot = 0.;	///> sum of all angle changes
+	private int nLeftTurns = 0, nRightTurns = 0;
 
 	/**
 	 * Create a new Label as descendant of a parent label
@@ -81,6 +83,16 @@ public class Label implements Comparable<Label> {
 		this.lastEdgeLength = lastEdgeLength;
 		this.length = length;
 		this.treeLevel = parent.getTreeLevel() + 1;
+		
+		if (parent != null) {
+			angle = backEdge.getAngle();	// absolute angle of backEdge
+			angle_rel = angle - parent.getAngle();
+			angle_tot = parent.getTotalAngle() + Math.abs(angle_rel);
+			// is it a turn?
+			boolean bTurn = (Math.abs(angle_rel) > kTurnLimit); 
+			nLeftTurns = parent.getLeftTurns() + (bTurn && angle_rel > 0 ? 1 : 0);
+			nRightTurns = parent.getLeftTurns() + (bTurn && angle_rel < 0 ? 1 : 0);
+		}
 	}
 
 	/**
@@ -165,8 +177,92 @@ public class Label implements Comparable<Label> {
 		return this.length;
 	}
 	
-	public int getTreeLevel() {
-		return treeLevel;
+	/**
+	 * @return the Label's level (depth) in the search tree
+	 */
+	public int getTreeLevel() { return treeLevel; }
+	
+	/**
+	 * @return the angle change relative to the previous edge
+	 */
+	public double getAngle() { return angle; }
+	/**
+	 * @return the total angle changes at all nodes along the route
+	 */
+	public double getTotalAngle() { return angle_tot; }
+	/**
+	 * @return total angle divided by length, should be a measurement of straightness
+	 */
+	public double straightness() {
+		return angle_tot / length;
+	}
+
+	/**
+	 * @return number of left turns performed along the route so far
+	 */
+	public int getLeftTurns() { return nLeftTurns; }
+	/**
+	 * @return number of right turns performed along the route so far
+	 */
+	public int getRightTurns() { return nRightTurns; }
+		
+	/**
+	 * calculate the weighted and unweighted score of this label from the edge statistics;
+	 * 	this is a measure of the quality of the route: number of fitting data points, normalized to route length
+	 *  (the recursive variant is about 3 times faster than doing it explicitely for all edges)
+	 * @param eStat edge statistics
+	 */
+	public void calcScore(EdgeStatistics eStat) {
+		if (false) {
+			double s = 0;
+			List<DirectedEdge> edges = this.getRouteAsEdges();	
+			for (DirectedEdge e : edges) {
+				s += eStat.getCount(e.getEdge());
+			}
+			score = s/this.getLength();
+		} else {
+			score = 0.;
+			scoreCount = 0;
+			if (parent != null) {
+				//System.out.println((int)(parent.getScore(eStat) * parent.getLength()) + " - " + eStat.getCount(backEdge.getEdge()));
+				lastScoreCount = eStat.getCount(backEdge.getEdge());
+				lastScore = lastScoreCount / lastEdgeLength;
+				scoreCount = parent.getScoreCount(eStat) + lastScoreCount;
+				//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
+				if (length > 0.) score = scoreCount / length;
+			}
+		}
+	}
+	/**
+	 * @return the score of this label, freshly calculated from the edge statistics, if necessary
+	 * @param eStat edge statistics
+	 */
+	public double getScore(EdgeStatistics eStat) {
+		if (score < 0.) calcScore(eStat);
+		return score;
+	}
+	/**
+	 * @return the score of this label (getter method)
+	 */
+	public double getScore() {
+		return score;
+	}
+	/**
+	 * @return the unweighted score of this label (nearest points-count), freshly calculated from the edge statistics, if necessary
+	 * @param eStat edge statistics
+	 */
+	public int getScoreCount(EdgeStatistics eStat) {
+		if (scoreCount < 0) calcScore(eStat);
+		return scoreCount;
+	}
+	public int getScoreCount() {
+		return scoreCount;
+	}
+	public double getLastScore() {
+		return lastScore;
+	}
+	public int getLastScoreCount() {
+		return lastScoreCount;
 	}
 
 	/**
@@ -295,64 +391,5 @@ public class Label implements Comparable<Label> {
 			resultString += e.getData() + " - ";
 		}
 		System.out.println(resultString);
-	}
-
-	/**
-	 * calculate the weighted and unweighted score of this label from the edge statistics;
-	 * 	this is a measure of the quality of the route: number of fitting data points, normalized to route length
-	 *  (the recursive variant is about 3 times faster than doing it explicitely for all edges)
-	 * @param eStat edge statistics
-	 */
-	public void calcScore(EdgeStatistics eStat) {
-		if (false) {
-			double s = 0;
-			List<DirectedEdge> edges = this.getRouteAsEdges();	
-			for (DirectedEdge e : edges) {
-				s += eStat.getCount(e.getEdge());
-			}
-			score = s/this.getLength();
-		} else {
-			score = 0.;
-			scoreCount = 0;
-			if (parent != null) {
-				//System.out.println((int)(parent.getScore(eStat) * parent.getLength()) + " - " + eStat.getCount(backEdge.getEdge()));
-				lastScoreCount = eStat.getCount(backEdge.getEdge());
-				lastScore = lastScoreCount / lastEdgeLength;
-				scoreCount = parent.getScoreCount(eStat) + lastScoreCount;
-				//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
-				if (length > 0.) score = scoreCount / length;
-			}
-		}
-	}
-	/**
-	 * @return the score of this label, freshly calculated from the edge statistics, if necessary
-	 * @param eStat edge statistics
-	 */
-	public double getScore(EdgeStatistics eStat) {
-		if (score < 0.) calcScore(eStat);
-		return score;
-	}
-	/**
-	 * @return the score of this label (getter method)
-	 */
-	public double getScore() {
-		return score;
-	}
-	/**
-	 * @return the unweighted score of this label (nearest points-count), freshly calculated from the edge statistics, if necessary
-	 * @param eStat edge statistics
-	 */
-	public int getScoreCount(EdgeStatistics eStat) {
-		if (scoreCount < 0) calcScore(eStat);
-		return scoreCount;
-	}
-	public int getScoreCount() {
-		return scoreCount;
-	}
-	public double getLastScore() {
-		return lastScore;
-	}
-	public int getLastScoreCount() {
-		return lastScoreCount;
 	}
 }

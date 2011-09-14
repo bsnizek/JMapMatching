@@ -2,7 +2,7 @@ package org.life.sl.routefinder;
 
 import java.util.HashMap;
 
-public class Constraints {
+public class RFParams {
 	public enum Type {
 		NodeOverlap,	///> maximum number of overlaps in a node for a valid route
 		ArticulationPointOverlap,	///> Maximum number of overlaps in an articulation point for a valid route
@@ -22,7 +22,7 @@ public class Constraints {
 	/** 
 	 * default constructor
 	 */
-	public Constraints() {
+	public RFParams() {
 		// allocate HashMaps:
 		c_int = new HashMap<Type, Integer>();
 		c_double = new HashMap<Type, Double>();
@@ -33,7 +33,7 @@ public class Constraints {
 	 * @param ic HashMap containing integer constraints (or null)
 	 * @param dc HashMap containing double constraints (or null)
 	 */
-	public Constraints(HashMap<Type, Integer> ic, HashMap<Type, Double> dc) {
+	public RFParams(HashMap<Type, Integer> ic, HashMap<Type, Double> dc) {
 		c_int = ic;
 		c_double = dc;
 	}

@@ -42,16 +42,19 @@ public class RouteFinder {
 	private static enum LabelTraversal {
 		None,			///> no special sorting
 		Shuffle,		///> shuffle labels before advancing in the iteration
-		BestFirst,		///> traverse label in reverse natural order (highest score first)
+		BestFirst,		///> traverse label in reverse natural order (highest score first) - this should find the globally best route first
 		WorstFirst,		///> traverse label in natural order (highest score last)
 		BestLastEdge,	///> traverse label in reverse natural order, considering only the last edge
 	}
+
 	private static boolean bLogAll = false;			///> output all warnings etc.?
 	private static boolean bShowProgress = true;	///> show a progress indicator while finding routes?
+
 	private LabelTraversal itLabelOrder = LabelTraversal.BestFirst;
+	private float kNearestEdgeDistance = 100.f;	// the larger the slower
 	
 	// Initialization:
-	private Constraints constraints;// = new Constraints();
+	private RFParams rfParams;// = new Constraints();
 	
 	private Node startNode = null;	///> route start node (Origin)	
 	private Node endNode = null;	///> route end node (Destination)
@@ -69,27 +72,40 @@ public class RouteFinder {
 	
 	private double gpsPathLength = 0.;
 	private double maxPathLength = 0.;
-	private float kNearestEdgeDistance = 250.f;	// the larger the slower
 	private EdgeStatistics edgeStatistics = null;
-	
+
 	/**
-	 * create a Routefinder from a PathSegmentGraph
+	 * create a Routefinder from a PathSegmentGraph, using default parameters
 	 * @param network the input PathSegmentGraph
 	 */
 	public RouteFinder(PathSegmentGraph network) {
-		// initialize constraint fields:
-		constraints = new Constraints();
-
-		constraints.setInt(Constraints.Type.MaximumNumberOfRoutes, 100);	///> maximum number of routes to find
-		constraints.setInt(Constraints.Type.BridgeOverlap, 1);
-		constraints.setInt(Constraints.Type.EdgeOverlap, 1);		///> how often each edge may be used
-//		constraints.setInt(Constraints.Type.ArticulationPointOverlap, 2);
-		constraints.setInt(Constraints.Type.NodeOverlap, 1);		///> how often each single node may be crossed
-		constraints.setDouble(Constraints.Type.DistanceFactor, 1.2);	///> how much the route may deviate from the shortest possible
-		constraints.setDouble(Constraints.Type.MinimumLength, 0.0);		///> minimum route length
-		constraints.setDouble(Constraints.Type.MaximumLength, 1.e20);	///> maximum route length (quasi no limit here)
-		
+		initDefaults();			// initialize algorithm parameters
 		this.network = network;	// set network for further use
+	}
+	
+	/**
+	 * create a Routefinder from a PathSegmentGraph, using a defined parameter set
+	 * @param network the input PathSegmentGraph
+	 */
+	public RouteFinder(PathSegmentGraph network, RFParams rfParams0) {
+		this(network);
+		rfParams = rfParams0;
+	}
+	
+	/**
+	 * create default parameter set for the algorithm 
+	 */
+	private void initDefaults() {
+		rfParams = new RFParams();
+
+		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 100);	///> maximum number of routes to find
+		rfParams.setInt(RFParams.Type.BridgeOverlap, 1);
+		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);		///> how often each edge may be used
+//		constraints.setInt(Constraints.Type.ArticulationPointOverlap, 2);
+		rfParams.setInt(RFParams.Type.NodeOverlap, 1);		///> how often each single node may be crossed
+		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.2);	///> how much the route may deviate from the shortest possible
+		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///> minimum route length
+		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);	///> maximum route length (quasi no limit here)
 	}
 	
 	/**
@@ -97,8 +113,8 @@ public class RouteFinder {
 	 * @param ic HashMap of integer constraints
 	 * @param dc HashMap of double constraints
 	 */
-	public void setConstraints(HashMap<Constraints.Type, Integer> ic, HashMap<Constraints.Type, Double> dc) {
-		constraints.setConstraints(ic, dc);
+	public void setConstraints(HashMap<RFParams.Type, Integer> ic, HashMap<RFParams.Type, Double> dc) {
+		rfParams.setConstraints(ic, dc);
 	}
 	
 	public void setEdgeStatistics(EdgeStatistics eStat) {
@@ -142,7 +158,7 @@ public class RouteFinder {
 		Stack<Label> stack = new Stack<Label>();
 
 		// precalculate the minimum path length, for use as a constraint in label expansion:
-		maxPathLength = gpsPathLength * constraints.getDouble(Constraints.Type.DistanceFactor);
+		maxPathLength = gpsPathLength * rfParams.getDouble(RFParams.Type.DistanceFactor);
 		// if there was a problem, use the given maximum length constraint:
 		double minDist = startNode.getCoordinate().distance(endNode.getCoordinate());	// compare to Euclidian distance
 		if (maxPathLength < minDist) {
@@ -187,9 +203,9 @@ public class RouteFinder {
 					if (isValidRoute(currentLabel))	{	// valid route means: it ends in the destination node and fulfills the length constraints
 						result.add(currentLabel);		// add the valid route to list of routes
 						System.out.println("## " + result.size());
-						int nMaxRoutes = constraints.getInt(Constraints.Type.MaximumNumberOfRoutes);
+						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
 						if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
-							System.out.println("Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + constraints.getInt(Constraints.Type.MaximumNumberOfRoutes) + ")");
+							System.out.println("Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
 							break stackLoop;
 						}
 					}
@@ -199,7 +215,7 @@ public class RouteFinder {
 				
 				if (bShowProgress) {	// some log output?
 					if (numLabels%10000 == 0) System.out.print(".");
-					if (numLabels%500000 == 0) System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength));
+					if (numLabels%500000 == 0) System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength) + " - " + expandingLabel.getTreeLevel());
 	//				System.out.println(stack.size() + " - " + (expandingLabel.getLength() / gpsPathLength));
 				}
 			} else {	// "Sackgasse" - this label is invalid
@@ -207,8 +223,10 @@ public class RouteFinder {
 			}
 		}
 		if (result.isEmpty()) result.add(new Label(startNode));	// if nothing was found, return only the start node
-		System.out.println("\n" + numLabels + " labels analyzed; " + numDeadEnds + " dead ends; " + numLabels_rejected
-				+ " labels rejected; " + network.getNodes().size() + " nodes in network");
+		// some statistics on the computation:
+		System.out.printf("\nlabels analyzed:\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",
+				numLabels, numDeadEnds, (100.*numDeadEnds/numLabels), numLabels_rejected, (100.*numLabels_rejected/numLabels), 
+				network.getNodes().size());
 		return result;
 	}
 
@@ -220,8 +238,8 @@ public class RouteFinder {
 	private boolean isValidRoute(Label label) {	
 		return (	
 			label.getNode() == endNode &&
-			label.getLength() >= constraints.getDouble(Constraints.Type.MinimumLength) &&
-			label.getLength() <= constraints.getDouble(Constraints.Type.MaximumLength)
+			label.getLength() >= rfParams.getDouble(RFParams.Type.MinimumLength) &&
+			label.getLength() <= rfParams.getDouble(RFParams.Type.MaximumLength)
 		);
 	}
 
@@ -272,7 +290,7 @@ public class RouteFinder {
 			// PATH-LENGTH CONSTRAINTS
 			/////////////////////////////////////			
 
-			double maxLen = constraints.getDouble(Constraints.Type.MaximumLength);	// use exact estimate for maximum path length
+			double maxLen = rfParams.getDouble(RFParams.Type.MaximumLength);	// use exact estimate for maximum path length
 			// 1. path length exceeded maxLength constraint with this edge?
 			if (checkPathLength(length, maxLen, "length")) continue;	// don't store the label at all, because the route is too long anyway
 
@@ -311,7 +329,7 @@ public class RouteFinder {
 //			if(this.articulationPoints.contains(newLabel.getNode())) {	// node is an articulation point, so we check for a special max. overlap:
 //				if (nodeOccurances > getIntegerConstraint(Constraint.ArticulationPointOverlap)) continue;
 //			} else {	// node is not an articulation point, so we have to check for max. overlap:
-				if (nodeOccurrences > constraints.getInt(Constraints.Type.NodeOverlap)) {
+				if (nodeOccurrences > rfParams.getInt(RFParams.Type.NodeOverlap)) {
 					if (bLogAll) System.out.println("Constraint reached: NodeOccurrences = " + nodeOccurrences);
 					continue;	// don't consider this label
 				}
