@@ -91,7 +91,7 @@ public class OSMFileReader {
 					hm.put("geometry", lineString);
 					lineString.setUserData(hm);
 					
-					psg.addLineString(lineString);
+					psg.addLineString(lineString, (int) way.getId());
 				}
 			}
 		}
