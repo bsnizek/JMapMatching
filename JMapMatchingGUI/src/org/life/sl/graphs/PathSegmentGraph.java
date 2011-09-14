@@ -39,7 +39,9 @@ import java.io.IOException;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.hibernate.Query;
 import org.hibernate.Session;
@@ -50,6 +52,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.LineString;
 
+import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.Node;
 
@@ -71,6 +74,10 @@ public class PathSegmentGraph {
 	private LineMergeGraphH4cked lineMergeGraphH4cked;
 
 
+	public HashMap<Node, HashMap<Node, Double>> getAPSDistances() {
+		return allPairsShortestPath.getDistances();
+	}
+	
 	public PathSegmentGraph() {
 		super();
 		distancesCalculated = false;
@@ -91,12 +98,11 @@ public class PathSegmentGraph {
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		
-		Query result = session.createQuery("from osmedge");
+		Query result = session.createQuery("from OSMEdge");
 		Iterator<OSMEdge> iter = result.iterate();
 		while (iter.hasNext() ) {
 			OSMEdge  o = iter.next();
-			addLineString(o.getGeometry());
-
+			addLineString(o.getGeometry(), o.getId());
 		}
 		session.disconnect();
 
@@ -109,8 +115,9 @@ public class PathSegmentGraph {
 	 */
 	/**
 	 * @param lineString
+	 * @param id : the id coming out of OSM
 	 */
-	public void addLineString(LineString lineString) {
+	public void addLineString(LineString lineString, int id) {
 
 		distancesCalculated = false;
 
@@ -131,7 +138,11 @@ public class PathSegmentGraph {
 		}
 
 		Edge edge = getLineMergeGraphH4cked().addEdge(lineString);
-		edge.setData(lineString.getUserData());
+		//Object userdata = lineString.getUserData();
+		System.out.println(id);
+		HashMap<String, Integer> hm = new HashMap<String, Integer>();
+		hm.put("id", id);
+		edge.setData(hm);
 	}
 
 	private void modifyEnvelope(Coordinate[] coordinates) {
@@ -213,5 +224,21 @@ public class PathSegmentGraph {
 	
 		PathSegmentGraph psg = new PathSegmentGraph();
 		
+	}
+	
+	public Edge getSingleEdgeAtNode(Node n1) {
+		try {
+			Object obj = n1.getOutEdges().getEdges().get(0);
+			return ((DirectedEdge)obj).getEdge();
+		} catch(Exception e) {
+			System.out.println(e);
+			return null;
+		}
+	}
+
+	public Edge getEdgeByNodes(Node n1, Node n2) {
+		@SuppressWarnings("unchecked")
+		Iterator<Edge> ei = Node.getEdgesBetween(n1, n2).iterator();
+		return (ei.hasNext() ? ei.next() : null);
 	}
 }

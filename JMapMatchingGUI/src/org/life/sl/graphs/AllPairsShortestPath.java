@@ -21,6 +21,10 @@ public class AllPairsShortestPath {
 
 	HashMap<Node, HashMap<Node, Double>> distances;		///> container for the distances; a simple array would probably perform much better...
 	
+	public HashMap<Node, HashMap<Node, Double>> getDistances() {
+		return distances;
+	}
+
 	public AllPairsShortestPath(PathSegmentGraph graph) {
 		distances = new HashMap<Node, HashMap<Node, Double>>();
 		Collection<Node> nodes = graph.getNodes();

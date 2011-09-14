@@ -20,7 +20,7 @@ public class ShapeFileReader {
 	}
 
 	public void read(String string) throws IOException {
-		psg = new PathSegmentGraph(string);
+		psg = new PathSegmentGraph();
 		
 	}
 

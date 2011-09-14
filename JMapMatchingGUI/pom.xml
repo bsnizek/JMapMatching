@@ -2,7 +2,9 @@
 <!--
   ~ Hibernate, Relational Persistence for Idiomatic Java
   -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" 
+		 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+		 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
 	<properties>
 		<geotools.version>2.7-M3</geotools.version>
@@ -17,7 +19,7 @@
 	<modelVersion>4.0.0</modelVersion>
 	<artifactId>mapmatching</artifactId>
 	<groupId>org.life.sl</groupId>
-	<version>0.02.1-SNAPSHOT</version>
+	<version>3.6.3.Final</version>
 	<name>LIFE Bikeability MapMatching</name>
 	<description>The wonderful mapmatching core</description>
 	<url>http://www.bikeability.dk</url>
@@ -322,7 +324,7 @@
         <dependency>
         	<groupId>org.hibernate</groupId>
         	<artifactId>hibernate-core</artifactId>
-        	<version>4.0.0.CR2</version>
+        	<version>${project.version}</version>
         	<type>jar</type>
         	<scope>compile</scope>
         </dependency>

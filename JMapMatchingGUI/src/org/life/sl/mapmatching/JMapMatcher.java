@@ -183,7 +183,7 @@ public class JMapMatcher {
 	 * @throws IOException 
 	 */
 	public static void main(String... args) throws IOException {
-		PathSegmentGraph g = new PathSegmentGraph(kGraphDataFileName);	// Let us load the graph ...
+		PathSegmentGraph g = new PathSegmentGraph();	// Let us load the graph ...
 		new JMapMatcher(g).match(kGPSPointFileName);	// ... and invoke the matching algorithm
 	}
 

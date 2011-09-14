@@ -92,12 +92,7 @@ public class JMapMatcherGUI extends JPanel implements Runnable,
 				}
 				psg = osm_reader.asLineMergeGraph();
 			} else if (DATASOURCE_FROM_SHAPEFILE) {
-				try {
-					psg = new PathSegmentGraph("testdata/Sparse_bigger0.shp");
-				} catch (IOException e) {
-					// TODO Auto-generated catch block
-					e.printStackTrace();
-				}
+				psg = new PathSegmentGraph();
 			}
 			jmmg.setProgressBar(50);
 			

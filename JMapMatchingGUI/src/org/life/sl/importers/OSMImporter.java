@@ -4,9 +4,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
 import java.util.Collection;
+import java.util.Iterator;
 
 import java.util.List;
 
+import org.hibernate.Query;
+import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
@@ -122,14 +125,21 @@ public class OSMImporter {
 					//hm.put("roadname", roadName);
 					//hm.put("geometry", lineString);
 					//lineString.setUserData(hm);
-					
-					System.out.println("!");
-
-					// psg.addLineString(lineString);
 				}
 			}
 		}
 		session.getTransaction().commit();
+		
+		Session session3 = HibernateUtil.getSessionFactory().getCurrentSession();
+		session3.beginTransaction();
+		
+		// let us bulk-delete the nodes that have nothing to do with our edges:
+		String delete_query = "DELETE FROM osmnode AS osmn WHERE NOT EXISTS (SELECT * FROM osmedge AS osme WHERE (osme.fromNode = osmn.id OR osme.toNode = osmn.id) )";
+		SQLQuery xx = session3.createSQLQuery(delete_query); //.iterate().next();
+		// System.out.println(number);
+		xx.executeUpdate();
+		System.out.println("Unnecessary Nodes flushed");
+		session3.getTransaction().commit();
 		
 	}
 	
