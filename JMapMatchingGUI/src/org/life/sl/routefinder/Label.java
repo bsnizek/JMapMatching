@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,16 +38,33 @@ import com.vividsolutions.jts.planargraph.Node;
  */
 public class Label implements Comparable<Label> {
 
-	private Label parent;	///> The parent of the Label
-	private Node node;		///> The node associated with this Label
+	/**
+	 * Comparator comparing only the last edge of two labels
+	 * @author bb
+	 *
+	 */
+	public static class LastEdgeComparator implements Comparator<Label> {
+		public int compare(Label arg0, Label arg1) {
+			// we could add a test if the labels are in the same tree level?
+			return arg0.compareTo_LE(arg1);
+		}	
+	}
+	
+	private Label parent;			///> The parent of the Label
+	private Node node;				///> The node associated with this Label
 	private DirectedEdge backEdge;	///> The GeoEdge leading back to the node associated with the parent Label
-	private double score;	///> the score of the label (evaluated according to edge statistics)
+	private int treeLevel = 0;		///> counter for the Label's level (depth) in the search tree
+	private double score = -1.;		///> the score of the label (evaluated according to edge statistics)
+	private int scoreCount = -1;	///> the unweighted score of the label (nearest points-count)
+	private double lastScore = 0.;	///> the same but considering only the last edge	
+	private int lastScoreCount = 0;
 	
 	/**
 	 * As Labels can represent routes, this is the length of that route. It is defined
 	 * as the sum of all backedges, summing up over parent Labels until a Label has no parent.
 	 */
-	private double length;
+	private double length = 0.;
+	private double lastEdgeLength = 0.;
 
 	/**
 	 * Create a new Label as descendant of a parent label
@@ -55,12 +73,14 @@ public class Label implements Comparable<Label> {
 	 * @param backEdge The edge leading back to the parent of the Label.
 	 * @param length The new accumulative length of the route represented by this Label.
 	 */
-	public Label(Label parent, Node node, DirectedEdge backEdge, double length) {
+	public Label(Label parent, Node node, DirectedEdge backEdge, double length, double lastEdgeLength) {
 		//		System.out.println("Label(+) " + node.getCoordinate());
 		this.parent = parent;
 		this.node = node;
 		this.backEdge = backEdge;
+		this.lastEdgeLength = lastEdgeLength;
 		this.length = length;
+		this.treeLevel = parent.getTreeLevel() + 1;
 	}
 
 	/**
@@ -73,7 +93,8 @@ public class Label implements Comparable<Label> {
 		this.parent = null;
 		this.node = node;
 		this.backEdge = null;
-		this.length = 0.0;
+		this.length = 0.;
+		this.lastEdgeLength = 0.;
 	}
 
 	/**
@@ -91,9 +112,25 @@ public class Label implements Comparable<Label> {
 	 */
 	public int compareTo(Label arg0) {
 		int r = 0;
-		double ol = arg0.getScore();
-		if (this.score > ol) r = 1;
-		else if (this.score < ol) r = -1;
+		double ov = arg0.getScore();
+		if (this.score > ov) r = 1;
+		else if (this.score < ov) r = -1;
+//		int ov = arg0.getScoreCount();
+//		if (this.scoreCount > ov) r = 1;
+//		else if (this.scoreCount < ov) r = -1;
+		return r;
+	}
+	/**
+	 * comparison method using only the last edge
+	 * @param arg0 the other object to compare this to
+	 * @return 1 if this object is larger than the other, -1 if smaller, 0 if equal
+	 */
+	public int compareTo_LE(Label arg0) {
+		int r = 0;
+		double ov = arg0.getLastScore();
+		if (this.lastScore > ov) r = 1;
+		else if (this.lastScore < ov) r = -1;
+		else r = compareTo(arg0);	// if both are equal, sort them according to their total score
 		return r;
 	}
 
@@ -126,6 +163,10 @@ public class Label implements Comparable<Label> {
 	 */
 	public double getLength() {
 		return this.length;
+	}
+	
+	public int getTreeLevel() {
+		return treeLevel;
 	}
 
 	/**
@@ -257,24 +298,38 @@ public class Label implements Comparable<Label> {
 	}
 
 	/**
-	 * calculate the score of this labelfrom the edge statistics;
+	 * calculate the weighted and unweighted score of this label from the edge statistics;
 	 * 	this is a measure of the quality of the route: number of fitting data points, normalized to route length
+	 *  (the recursive variant is about 3 times faster than doing it explicitely for all edges)
 	 * @param eStat edge statistics
 	 */
 	public void calcScore(EdgeStatistics eStat) {
-		double s = 0;
-		List<DirectedEdge> edges = this.getRouteAsEdges();	
-		for (DirectedEdge e : edges) {
-			s += eStat.getCount(e.getEdge());
+		if (false) {
+			double s = 0;
+			List<DirectedEdge> edges = this.getRouteAsEdges();	
+			for (DirectedEdge e : edges) {
+				s += eStat.getCount(e.getEdge());
+			}
+			score = s/this.getLength();
+		} else {
+			score = 0.;
+			scoreCount = 0;
+			if (parent != null) {
+				//System.out.println((int)(parent.getScore(eStat) * parent.getLength()) + " - " + eStat.getCount(backEdge.getEdge()));
+				lastScoreCount = eStat.getCount(backEdge.getEdge());
+				lastScore = lastScoreCount / lastEdgeLength;
+				scoreCount = parent.getScoreCount(eStat) + lastScoreCount;
+				//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
+				if (length > 0.) score = scoreCount / length;
+			}
 		}
-		score = s/this.getLength();
 	}
 	/**
-	 * @return the score of this label, freshly calculated from the edge statistics
+	 * @return the score of this label, freshly calculated from the edge statistics, if necessary
 	 * @param eStat edge statistics
 	 */
 	public double getScore(EdgeStatistics eStat) {
-		calcScore(eStat);
+		if (score < 0.) calcScore(eStat);
 		return score;
 	}
 	/**
@@ -282,5 +337,22 @@ public class Label implements Comparable<Label> {
 	 */
 	public double getScore() {
 		return score;
+	}
+	/**
+	 * @return the unweighted score of this label (nearest points-count), freshly calculated from the edge statistics, if necessary
+	 * @param eStat edge statistics
+	 */
+	public int getScoreCount(EdgeStatistics eStat) {
+		if (scoreCount < 0) calcScore(eStat);
+		return scoreCount;
+	}
+	public int getScoreCount() {
+		return scoreCount;
+	}
+	public double getLastScore() {
+		return lastScore;
+	}
+	public int getLastScoreCount() {
+		return lastScoreCount;
 	}
 }

@@ -12,7 +12,6 @@ public class Constraints {
 		MaximumLength,	///> maximum length of a valid route; length is defined as the sum of weights over edges in the route 
 		MaximumNumberOfRoutes,	///> if this number of routes have been found, the algorithm should terminate
 		DistanceFactor,	///> this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
-		AlwaysUseShortestPath,	///> calculate the shortest path for each label for comparison? (0 = no, 1 = yes)
 	}
 
 	// collection of integer constraints, i.e. overlap constraints

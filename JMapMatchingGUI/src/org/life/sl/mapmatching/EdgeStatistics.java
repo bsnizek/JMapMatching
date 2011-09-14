@@ -39,6 +39,7 @@ public class EdgeStatistics {
 	 * @param gpsPoints array of GPS points for which the statistics is created (measure how well the points fit to edges)
 	 */
 	public void init(RouteFinder rf, ArrayList<Point> gpsPoints) {
+		rf.setEdgeStatistics(this);
 		// first, clear the statistics:
 		edgePoints.clear();
 		// then, loop over all GPS points:

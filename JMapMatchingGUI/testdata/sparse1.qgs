@@ -90,7 +90,7 @@
     <projectlayers layercount="12">
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>Best20110911160550718</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/Best.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/Best.shp</datasource>
             <layername>Best</layername>
             <srs>
                 <spatialrefsys>
@@ -155,7 +155,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Point" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>GPS_Points20110819182326676</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/testdata/GPS_Points.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/testdata/GPS_Points.shp</datasource>
             <layername>GPS_Points</layername>
             <srs>
                 <spatialrefsys>
@@ -218,7 +218,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>NonChoice00020110911161122478</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/NonChoice000.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/NonChoice000.shp</datasource>
             <layername>NonChoice000</layername>
             <srs>
                 <spatialrefsys>
@@ -283,7 +283,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>NonChoice00120110911161122494</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/NonChoice001.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/NonChoice001.shp</datasource>
             <layername>NonChoice001</layername>
             <srs>
                 <spatialrefsys>
@@ -348,7 +348,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>NonChoice00220110911161122505</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/NonChoice002.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/NonChoice002.shp</datasource>
             <layername>NonChoice002</layername>
             <srs>
                 <spatialrefsys>
@@ -413,7 +413,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>NonChoice00320110911161122515</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/NonChoice003.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/NonChoice003.shp</datasource>
             <layername>NonChoice003</layername>
             <srs>
                 <spatialrefsys>
@@ -478,7 +478,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>NonChoice00420110911161122525</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/NonChoice004.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/NonChoice004.shp</datasource>
             <layername>NonChoice004</layername>
             <srs>
                 <spatialrefsys>
@@ -543,7 +543,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>NonChoice00520110911161122535</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/NonChoice005.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/NonChoice005.shp</datasource>
             <layername>NonChoice005</layername>
             <srs>
                 <spatialrefsys>
@@ -608,7 +608,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>NonChoice00620110911161122546</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/NonChoice006.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/NonChoice006.shp</datasource>
             <layername>NonChoice006</layername>
             <srs>
                 <spatialrefsys>
@@ -673,7 +673,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>NonChoice00720110911161122556</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/NonChoice007.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/NonChoice007.shp</datasource>
             <layername>NonChoice007</layername>
             <srs>
                 <spatialrefsys>
@@ -738,7 +738,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>NonChoice00820110911161122567</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/results/NonChoice008.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/results/NonChoice008.shp</datasource>
             <layername>NonChoice008</layername>
             <srs>
                 <spatialrefsys>
@@ -803,7 +803,7 @@
         </maplayer>
         <maplayer minimumScale="0" maximumScale="1e+08" geometry="Line" type="vector" hasScaleBasedVisibilityFlag="0">
             <id>SparseNetwork20110819182713722</id>
-            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI/testdata/Sparse_bigger0.shp</datasource>
+            <datasource>/Volumes/Beta/Users/bb/dev/JMapMatching/JMapMatchingGUI/testdata/Sparse_bigger0.shp</datasource>
             <layername>SparseNetwork</layername>
             <srs>
                 <spatialrefsys>

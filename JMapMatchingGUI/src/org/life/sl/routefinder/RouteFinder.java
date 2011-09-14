@@ -1,19 +1,16 @@
 package org.life.sl.routefinder;
 
-import gnu.trove.TIntObjectHashMap;
 import gnu.trove.TIntProcedure;
 
 import java.util.ArrayList;
-//import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
-import java.util.Vector;
 import java.util.Properties;
 
 import java.util.Stack;
 
 import org.life.sl.graphs.PathSegmentGraph;
+import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.routefinder.Label;
 
 //import org.life.sl.shapefilereader.ShapeFileReader;
@@ -34,11 +31,6 @@ import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.Node;
 
-import org.geotools.graph.path.Path;
-import org.geotools.graph.path.AStarShortestPathFinder;
-import org.geotools.graph.traverse.standard.AStarIterator;
-import org.geotools.graph.traverse.standard.AStarIterator.AStarNode;
-
 /**
  * A Routefinder. Finds all routes in a graph from origin to destination.
  * 
@@ -47,24 +39,38 @@ import org.geotools.graph.traverse.standard.AStarIterator.AStarNode;
  * @author Bernhard Barkow
  */
 public class RouteFinder {
+	private static enum LabelTraversal {
+		None,			///> no special sorting
+		Shuffle,		///> shuffle labels before advancing in the iteration
+		BestFirst,		///> traverse label in reverse natural order (highest score first)
+		WorstFirst,		///> traverse label in natural order (highest score last)
+		BestLastEdge,	///> traverse label in reverse natural order, considering only the last edge
+	}
+	private static boolean bLogAll = false;			///> output all warnings etc.?
+	private static boolean bShowProgress = true;	///> show a progress indicator while finding routes?
+	private LabelTraversal itLabelOrder = LabelTraversal.BestFirst;
+	
 	// Initialization:
-	Constraints constraints;// = new Constraints();
+	private Constraints constraints;// = new Constraints();
 	
 	private Node startNode = null;	///> route start node (Origin)	
 	private Node endNode = null;	///> route end node (Destination)
 	private PathSegmentGraph network = null;	///> graph to search (all routes are in this network)
+	
 	// articulation points identified in graph
 //	private Collection<Node> articulationPoints = new ArrayList<Node>();
 	// bridges identified in graph
 //	private Collection<Edge> bridges = new ArrayList<Edge>();
 
-	private int numLabels = 0;	///> number of labels (states) generated when running algorithm
+	private long numLabels = 0;			///> number of labels (states) generated when running algorithm
+	private long numLabels_rejected = 0;	///> number of labels (states) that have been rejected due to constraints
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
-	TIntObjectHashMap m_map = new TIntObjectHashMap();
 	
-	private double shortestPathLength = 0;
-	private boolean alwaysUseShortestPath = false;
+	private double gpsPathLength = 0.;
+	private double maxPathLength = 0.;
+	private float kNearestEdgeDistance = 250.f;	// the larger the slower
+	private EdgeStatistics edgeStatistics = null;
 	
 	/**
 	 * create a Routefinder from a PathSegmentGraph
@@ -79,7 +85,6 @@ public class RouteFinder {
 		constraints.setInt(Constraints.Type.EdgeOverlap, 1);		///> how often each edge may be used
 //		constraints.setInt(Constraints.Type.ArticulationPointOverlap, 2);
 		constraints.setInt(Constraints.Type.NodeOverlap, 1);		///> how often each single node may be crossed
-		constraints.setInt(Constraints.Type.AlwaysUseShortestPath, 0);	///> if the shortest path is calculated for each label (0=no)
 		constraints.setDouble(Constraints.Type.DistanceFactor, 1.2);	///> how much the route may deviate from the shortest possible
 		constraints.setDouble(Constraints.Type.MinimumLength, 0.0);		///> minimum route length
 		constraints.setDouble(Constraints.Type.MaximumLength, 1.e20);	///> maximum route length (quasi no limit here)
@@ -95,7 +100,19 @@ public class RouteFinder {
 	public void setConstraints(HashMap<Constraints.Type, Integer> ic, HashMap<Constraints.Type, Double> dc) {
 		constraints.setConstraints(ic, dc);
 	}
+	
+	public void setEdgeStatistics(EdgeStatistics eStat) {
+		edgeStatistics = eStat;
+	}
 
+	public double getMaxPathLength() {
+		return maxPathLength;
+	}
+	
+	public double getGPSPathLength() {
+		return gpsPathLength;
+	}
+	
 	/**
 	 * Find all routes between startNode and endNode in the network this.network as list of labels; 
 	 * Label.getRouteAsEdges() can then be used to get a list of DirectedEdges that represent the route.
@@ -103,13 +120,13 @@ public class RouteFinder {
 	 * @param endNode Routes should end in this node
 	 * @return A list of the routes found (represented by a list of Labels) 
 	 */
-	public Vector<Label> findRoutes(Node startNode, Node endNode) {
+	public ArrayList<Label> findRoutes(Node startNode, Node endNode, double gpsPathLength0) {
 
 		// check that startNode and endNode belong to same graph
 		if (network.findClosestNode(startNode.getCoordinate()) == null ||
 				network.findClosestNode(endNode.getCoordinate()) == null) {
-			System.out.println("---- origin and destination are not in network!");	// indicate failure
-			return new Vector<Label>();
+			System.out.println("---- origin and/or destination are not in network!");	// indicate failure
+			return new ArrayList<Label>();
 		}
 
 		///////////////////////////////////////////////
@@ -118,18 +135,23 @@ public class RouteFinder {
 
 		this.startNode = startNode;
 		this.endNode = endNode;
+		this.gpsPathLength = gpsPathLength0;
 		numLabels = 0;
-		Vector<Label> result = new Vector<Label>();
+		int numDeadEnds = 0;
+		ArrayList<Label> result = new ArrayList<Label>();
 		Stack<Label> stack = new Stack<Label>();
 
 		// precalculate the minimum path length, for use as a constraint in label expansion:
-		shortestPathLength = shortestDistanceBetweenNodes(startNode, endNode);
+		maxPathLength = gpsPathLength * constraints.getDouble(Constraints.Type.DistanceFactor);
 		// if there was a problem, use the given maximum length constraint:
 		double minDist = startNode.getCoordinate().distance(endNode.getCoordinate());	// compare to Euclidian distance
-		if (shortestPathLength < minDist) shortestPathLength = constraints.getDouble(Constraints.Type.MaximumLength) / constraints.getDouble(Constraints.Type.DistanceFactor);
-		System.out.println("Shortest path length = " + shortestPathLength);
+		if (maxPathLength < minDist) {
+			System.err.println("Warning: invalid GPS data? referencePathLength < minDist (" + maxPathLength + " < " + minDist + ")");
+			maxPathLength = 0.;
+		}
+		System.out.println("Euclidian GPS Path length = " + gpsPathLength + ", path length limit = " + maxPathLength);
 
-		alwaysUseShortestPath = (constraints.getInt(Constraints.Type.AlwaysUseShortestPath) != 0);
+		System.out.println("Network size (nodes): " + network.getNodes().size());
 
 		///////////////////////////////////////////////
 		// START ALGORITHM
@@ -141,34 +163,52 @@ public class RouteFinder {
 		// ALGORITHM MAIN LOOP
 		//////////////////////////////////////////////
 
+		stackLoop:
 		while (!stack.empty()) {
-
-			/////////////////////////////////////////
-			// CREATE NEW LABELS
-			/////////////////////////////////////////
-
+			// create label expansion (next generation):
 			Label expandingLabel = stack.pop();	// get last label from stack and expand it:
-			List<Label> expansion = expandLabel(expandingLabel);	// calculate the expansion of the label (continuation from last node along all available edges)
-			Collections.shuffle(expansion);		// randomize the order in which the labels are treated
-	
-			/////////////////////////////////////////
-			// CHECK NEW LABELS
-			/////////////////////////////////////////
-
-			int nMaxRoutes = constraints.getInt(Constraints.Type.MaximumNumberOfRoutes);
-			for (Label currentLabel : expansion) {	// loop over all next-generation labels
-				// is label a new valid route?
-				if (isValidRoute(currentLabel))	{	// valid route means: it ends in the destination node and fulfills the length constraints
-					result.add(currentLabel);		// add the valid route to list of routes
-					if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
-						System.out.println("Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + constraints.getInt(Constraints.Type.MaximumNumberOfRoutes) + ")");
-						return result;
+			ArrayList<Label> expansion = expandLabel(expandingLabel);	// calculate the expansion of the label (continuation from last node along all available edges)
+			if (expansion.size() > 0) {
+				if (itLabelOrder == LabelTraversal.Shuffle) Collections.shuffle(expansion);				// randomize the order in which the labels are treated
+				// Attention: sorting the labels affects two parts:
+				// 1. the expansion array, which is processed linearly
+				// 2. the stack, which is effectively processed in reverse order!
+				else if (itLabelOrder == LabelTraversal.BestFirst) Collections.sort(expansion);			// order labels in ascending order (lowest score is treated first), so that the highest score ends up on top of the stack
+				else if (itLabelOrder == LabelTraversal.WorstFirst) Collections.sort(expansion, Collections.reverseOrder());	// order labels in descending order (highest score first), so the best label ends up at the bottom of the stack
+				else if (itLabelOrder == LabelTraversal.BestLastEdge) Collections.sort(expansion, new Label.LastEdgeComparator());
+				//System.out.println(expansion.get(0).getScore(edgeStatistics)*1000. + "\t" + expandingLabel.getScore()*1000. + "\t" + expansion.size() + "\t" + treeLevel);
+				//System.out.println(expandingLabel.getTreeLevel());
+		
+				// test the newly created labels:
+				for (Label currentLabel : expansion) {	// loop over all next-generation labels
+					//System.out.println(currentLabel.getLastScore());
+					numLabels++;
+					// is label a new valid route?
+					if (isValidRoute(currentLabel))	{	// valid route means: it ends in the destination node and fulfills the length constraints
+						result.add(currentLabel);		// add the valid route to list of routes
+						System.out.println("## " + result.size());
+						int nMaxRoutes = constraints.getInt(Constraints.Type.MaximumNumberOfRoutes);
+						if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
+							System.out.println("Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + constraints.getInt(Constraints.Type.MaximumNumberOfRoutes) + ")");
+							break stackLoop;
+						}
 					}
+					else stack.push(currentLabel);		// destination is not reached yet: store the label on stack for the next iteration
 				}
-				stack.push(currentLabel);	// store on stack for the next iteration
+				//System.out.println("--");
+				
+				if (bShowProgress) {	// some log output?
+					if (numLabels%10000 == 0) System.out.print(".");
+					if (numLabels%500000 == 0) System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength));
+	//				System.out.println(stack.size() + " - " + (expandingLabel.getLength() / gpsPathLength));
+				}
+			} else {	// "Sackgasse" - this label is invalid
+				numDeadEnds++;
 			}
 		}
 		if (result.isEmpty()) result.add(new Label(startNode));	// if nothing was found, return only the start node
+		System.out.println("\n" + numLabels + " labels analyzed; " + numDeadEnds + " dead ends; " + numLabels_rejected
+				+ " labels rejected; " + network.getNodes().size() + " nodes in network");
 		return result;
 	}
 
@@ -191,9 +231,8 @@ public class RouteFinder {
 	 * @param parentLabel the label where from to expand
 	 * @return
 	 */
-	private List<Label> expandLabel(Label parentLabel) {
+	private ArrayList<Label> expandLabel(Label parentLabel) {
 		ArrayList<Label> expansion = new ArrayList<Label>();
-
 		Label newLabel;
 
 		/////////////////////////////////////
@@ -208,9 +247,11 @@ public class RouteFinder {
 			DirectedEdge pe = parentLabel.getBackEdge();
 			if (pe != null && currentEdge.getEdge() == pe.getEdge()) continue;	// going back the same edge where we come from is forbidden!
 
-			double length = parentLabel.getLength() + ((LineMergeEdge)currentEdge.getEdge()).getLine().getLength();	// new length
-			newLabel = new Label(parentLabel, currentEdge.getToNode(), currentEdge, length);
-
+			double lastEdgeLength = ((LineMergeEdge)currentEdge.getEdge()).getLine().getLength();	// length of new last edge
+			double length = parentLabel.getLength() + lastEdgeLength;	// new total length
+			newLabel = new Label(parentLabel, currentEdge.getToNode(), currentEdge, length, lastEdgeLength);
+			numLabels_rejected++;	// increment by default, decrement again if label is not rejected
+			
 			/////////////////////////////////////
 			// EDGE CONSTRAINTS
 			/////////////////////////////////////
@@ -231,20 +272,23 @@ public class RouteFinder {
 			// PATH-LENGTH CONSTRAINTS
 			/////////////////////////////////////			
 
-			double maxLen = shortestPathLength * constraints.getDouble(Constraints.Type.DistanceFactor);	// use exact estimate for maximum path length
+			double maxLen = constraints.getDouble(Constraints.Type.MaximumLength);	// use exact estimate for maximum path length
 			// 1. path length exceeded maxLength constraint with this edge?
 			if (checkPathLength(length, maxLen, "length")) continue;	// don't store the label at all, because the route is too long anyway
 
-			// 2. Euclidian distance to endNode greater than maxLength? (can't reach endNode)
-			// (Using the Euclidian distance is a quick worst-case check; using the shortest path is exact, but slower.)
-			double distanceToEndNode = newLabel.getNode().getCoordinate().distance(endNode.getCoordinate());
-			if (checkPathLength(length + distanceToEndNode, maxLen, "eucl.")) continue;
-
-			// 3. try with the shortest realistic path: AStar
-			// TODO: check how this performs - it might be faster to calculate more labels instead of calculating the path distance every time!!
-			if (alwaysUseShortestPath) {
-				distanceToEndNode = shortestDistanceBetweenNodes(newLabel.getNode(), endNode);
-				if (checkPathLength(length + distanceToEndNode, maxLen, "AStar")) continue;
+			if (maxPathLength > 0.) {	// only if we have a valid path length
+				// 2. Length + Euclidian distance to endNode greater than referencePathLength? (can't reach endNode)
+				// (Using the Euclidian distance is a quick worst-case check; using the shortest path is exact, but slower.)
+				double distanceToEndNode = newLabel.getNode().getCoordinate().distance(endNode.getCoordinate());
+				if (checkPathLength(length + distanceToEndNode, maxPathLength, "eucl.")) continue;
+	
+				/*// 3. try with the shortest realistic path: AStar
+				// TODO: get this value from database, after it has been precalculated and stored in a table
+				// TODO: check how this performs - it might be faster to calculate more labels instead of calculating the path distance every time!!
+				if (alwaysUseShortestPath) {
+					distanceToEndNode = shortestDistanceBetweenNodes(newLabel.getNode(), endNode);
+					if (checkPathLength(length + distanceToEndNode, referencePathLength, "AStar")) continue;
+				}*/
 			}
 
 			/////////////////////////////////////
@@ -268,14 +312,16 @@ public class RouteFinder {
 //				if (nodeOccurances > getIntegerConstraint(Constraint.ArticulationPointOverlap)) continue;
 //			} else {	// node is not an articulation point, so we have to check for max. overlap:
 				if (nodeOccurrences > constraints.getInt(Constraints.Type.NodeOverlap)) {
-					System.out.println("Constraint reached: NodeOccurrences = " + nodeOccurrences);
+					if (bLogAll) System.out.println("Constraint reached: NodeOccurrences = " + nodeOccurrences);
 					continue;	// don't consider this label
 				}
 //			}
 
 			// no constraints broken:
-			this.numLabels++; 			// debug info
+			newLabel.calcScore(edgeStatistics);	// shall we do this here and sort the list in findRoutes(), or shall we rather shuffle?
 			expansion.add(newLabel);	// store newLabel (i.e., it is a valid expansion)
+			numLabels++;
+			numLabels_rejected--;		// inelegantly reset to previous state
 		}
 		return expansion;		
 	}
@@ -289,38 +335,16 @@ public class RouteFinder {
 	 */
 	private boolean checkPathLength(double len, double maxLen, String msg) {
 		boolean b = (len > maxLen);
-		if (b) {
-			System.out.println("Constraint reached: distance too large (" + msg + "). length > " + len);
+		if (b && bLogAll) {
+			System.out.println("Constraint reached: distance too large (" + msg + "). " + len + " > " + maxLen);
 		}
 		return b;
-	}
-
-	/**
-	 * calculate the shortest distance between two nodes in the network using the A Star algorithm
-	 * @param srcNode source node
-	 * @param destNode destinateion node
-	 * @return the minimum distance between the two nodes
-	 */
-	public double shortestDistanceBetweenNodes(Node srcNode, Node destNode) {
-		double d = 0;
-		AStarIterator.AStarFunctions afuncs = new AStarIterator.AStarFunctions(target) {
-			public double cost(AStarNode n1, AStarNode n2){
-				return 1;
-			}
-			public double h(Node n){
-				double s = n.getCoordinate().distance((Node)(this.getDest()).g ;
-				return s;
-				//return Double.POSITIVE_INFINITY;
-			}
-       	};
-		AStarShortestPathFinder asp = new AStarShortestPathFinder(network, srcNode, destNode, afuncs);
-		return d;		
 	}
 	
 	/**
 	 * @return Get the number of Labels generated when finding routes during the last call to findRoutes()
 	 */
-	public int getNumLabels() {
+	public long getNumLabels() {
 		return numLabels;
 	}
 	
@@ -365,7 +389,7 @@ public class RouteFinder {
 		com.infomatiq.jsi.Point pp = new com.infomatiq.jsi.Point((float) p.getX(), (float) p.getY());
 	
 		Return r = new Return();
-		this.si.nearest(pp, r, 10.f);	// TODO: decide how to choose value for furthestDistance? 10 meters is just a guess.
+		this.si.nearest(pp, r, kNearestEdgeDistance);	// TODO: decide how to choose value for furthestDistance? 10 meters is just a guess.
 		return (Edge) this.counter__edge.get(r.getResult());
 	}
 

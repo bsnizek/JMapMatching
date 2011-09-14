@@ -7,7 +7,7 @@
 		<spatial.test.shp.version>20100819</spatial.test.shp.version>
 		<bundle.namespace>org.life.sl</bundle.namespace>
 		<build.plugins.plugin.version>1.0</build.plugins.plugin.version>
-		<development-dir>/Users/bb/dev/JMapMatchingGUI/JMapMatchingGUI</development-dir>
+		<development-dir>/Users/bb/dev/JMapMatching/JMapMatchingGUI</development-dir>
 	</properties>
 
 	<modelVersion>4.0.0</modelVersion>
@@ -27,7 +27,7 @@
 		<connection>https</connection>
 		<developerConnection>Bernhard Snizek</developerConnection>
 		<tag>cool mapmatching research</tag>
-		<url>https://github.com/bsnizek/mapmatching</url>
+		<url>https://github.com/bsnizek/JMapMatching</url>
 	</scm>
 	<organization>
 		<name>Forest &amp; Landscape Denmark</name>
@@ -51,8 +51,8 @@
 				</configuration>
 			</plugin>
 
-			<plugin>
-				<artifactId>maven-antrun-plugin</artifactId>
+<!--			<plugin>
+ 				<artifactId>maven-antrun-plugin</artifactId>
 				<executions>
 					<execution>
 						<id>generate-results-dir</id>
@@ -67,7 +67,7 @@
 						</goals>
 					</execution>
 				</executions>
-			</plugin>
+			</plugin>-->
 
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
