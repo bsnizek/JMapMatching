@@ -34,19 +34,22 @@ package org.life.sl.graphs;
  *     www.vividsolutions.com
  */
 
+
 import java.io.IOException;
-//import java.lang.reflect.Array;
+
 import java.util.ArrayList;
 import java.util.Collection;
-//import java.util.List;
+import java.util.Iterator;
 
-//import org.life.sl.routefinder.Label;
-//import org.life.sl.routefinder.RouteFinder;
+import org.hibernate.Query;
+import org.hibernate.Session;
+import org.life.sl.orm.HibernateUtil;
+import org.life.sl.orm.OSMEdge;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.LineString;
-//import com.vividsolutions.jts.operation.linemerge.LineMergeGraph;
+
 import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.Node;
 
@@ -61,51 +64,45 @@ import com.vividsolutions.jts.planargraph.Node;
 public class PathSegmentGraph {
 
 	private double xMin,xMax,yMin,yMax;
-	
+
 	// algorithms
 	private AllPairsShortestPath allPairsShortestPath;
 	private boolean distancesCalculated;
 	private LineMergeGraphH4cked lineMergeGraphH4cked;
-	
-//	private GlobalRegister gr = GlobalRegister.getInstance();
-	
-	
+
+
 	public PathSegmentGraph() {
 		super();
 		distancesCalculated = false;
 		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
+		addLineStringsFromDatabase();
 	}
-	
-	public PathSegmentGraph(String shapeFile) throws IOException {
-		super();
-		distancesCalculated = false;
-		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
-		addLineStringsFromShape(shapeFile);
-	}
+
 
 	/**
 	 * Create a new graph, with linestring read from a shapefile 
 	 * @param shapeFile
 	 * @throws IOException
 	 */
-	public void addLineStringsFromShape(String shapeFile) throws IOException {
+	public void addLineStringsFromDatabase() {
 		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
 		distancesCalculated = false;
-		LineStringReader reader = new LineStringReader(shapeFile);
-		
-		reader.read();
-		boolean first = true;
-		for(LineString ls : reader.getLineStrings()) {
-			if(first == true) {
-				xMax = xMin = ls.getCoordinate().x;
-				yMax = yMin = ls.getCoordinate().y;
-				first = false;
-			}
 
-			addLineString(ls);
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+		
+		Query result = session.createQuery("from osmedge");
+		Iterator<OSMEdge> iter = result.iterate();
+		while (iter.hasNext() ) {
+			OSMEdge  o = iter.next();
+			addLineString(o.getGeometry());
+
 		}
+		session.disconnect();
+
 	}
-	
+
+
 	/**
 	 * Adds an Edge, DirectedEdges, and Nodes for the given LineString representation
 	 * of an edge. Snaps all vertices according to GlobalRegister.GLOBAL_SNAP
@@ -116,17 +113,17 @@ public class PathSegmentGraph {
 	public void addLineString(LineString lineString) {
 
 		distancesCalculated = false;
-		
+
 		if (lineString.isEmpty()) { return; }
 		if(lineString.getCoordinates().length == 1) {
 			System.exit(1);
 		}
-		
+
 		Coordinate[] coordinates = lineString.getCoordinates();
 		modifyEnvelope(coordinates);
-		
+
 		if (GlobalRegister.SNAP) {
-		
+
 			for(Coordinate c : coordinates) {
 				c.x = c.x - (c.x % GlobalRegister.GLOBAL_SNAP);
 				c.y = c.y - (c.y % GlobalRegister.GLOBAL_SNAP);
@@ -159,14 +156,14 @@ public class PathSegmentGraph {
 		}
 		return allPairsShortestPath.getDistance(from, to);
 	}
-	
+
 	public void calculateDistances() {
 		if(!distancesCalculated) {
 			allPairsShortestPath = new AllPairsShortestPath(this);
 			distancesCalculated = true;
 		}
 	}
-	
+
 	/**
 	 * Find the node in the graph that is nearest the query coordinate. Implemented as linear search, can be vastly improved using e.g. a kd-tree
 	 * @param query The Coordinate used for the query.
@@ -193,12 +190,12 @@ public class PathSegmentGraph {
 		}
 		return nodes;
 	}
-	
+
 	public Envelope getEnvelope() {
 		Envelope env = new Envelope(xMin, xMax, yMin, yMax);
 		return env;
 	}
-	
+
 	@SuppressWarnings("unchecked")
 	public Collection<Edge> getEdges() {
 		return (Collection<Edge>) getLineMergeGraphH4cked().getEdges();
@@ -211,5 +208,10 @@ public class PathSegmentGraph {
 	public void setLineMergeGraphH4cked(LineMergeGraphH4cked lineMergeGraphH4cked) {
 		this.lineMergeGraphH4cked = lineMergeGraphH4cked;
 	}
+
+	public static void main(String[] args) {
 	
+		PathSegmentGraph psg = new PathSegmentGraph();
+		
+	}
 }
