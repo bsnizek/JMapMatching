@@ -2,7 +2,6 @@ package org.life.sl.readers.osm;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -17,15 +16,7 @@ import org.openstreetmap.josm.data.osm.Way;
 import org.openstreetmap.josm.data.projection.Epsg4326;
 import org.openstreetmap.josm.io.IllegalDataException;
 import org.openstreetmap.josm.io.OsmReader;
-import org.openstreetmap.josm.tools.Pair;
-
 import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.CoordinateSequenceFactory;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-
-//import com.vividsolutions.jts.operation.linemerge.LineMergeGraph;
 
 /**
  * @author Bernhard Snizek <besn@life.ku.dk>
@@ -34,11 +25,9 @@ import com.vividsolutions.jts.geom.LineString;
 public class OSMFileReader {
 
 	private static PathSegmentGraph psg;
-	private static GeometryFactory gf;
 
 	public OSMFileReader() {
 		// initialize the geometry factory
-		gf = new GeometryFactory();
 		psg = new PathSegmentGraph();
 	}
 
