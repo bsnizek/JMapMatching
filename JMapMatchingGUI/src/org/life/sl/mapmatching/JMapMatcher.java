@@ -10,6 +10,7 @@ import org.geotools.feature.SchemaException;
 //import org.geotools.util.logging.Logging;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.readers.shapefile.PointFileReader;
+import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
 
@@ -28,17 +29,18 @@ public class JMapMatcher {
 	private static int kMaxRoutesOutput = 10;	///> the result is constrained to this max. number of routes
 	private static String kOutputDir = "results/";
 	// even bigger network and route:
-//	private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
-//	private static String kGPSPointFileName = "testdata/exmp1/example_gsp_1.shp";
+	private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
+	private static String kGPSPointFileName = "testdata/exmp1/example_gsp_1.shp";
 	// bigger network and route:
-	private static String kGraphDataFileName = "testdata/SparseNetwork.shp";
-	private static String kGPSPointFileName = "testdata/GPS_Points.shp";
+//	private static String kGraphDataFileName = "testdata/SparseNetwork.shp";
+//	private static String kGPSPointFileName = "testdata/GPS_Points.shp";
 	// smaller network and route:
 //	private static String kGraphDataFileName = "testdata/Sparse_bigger0.shp";
 //	private static String kGPSPointFileName = "testdata/GPS_Points_1.shp";
 	
 	private PathSegmentGraph graph;			///> data basis (graph)
 	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
+	private RFParams rfParams = null;
 	
 	private double t_start;
 
@@ -83,7 +85,7 @@ public class JMapMatcher {
 
 		initTiming();	// initialize timer
 		
-		RouteFinder rf = new RouteFinder(graph);	// perform the actual route finding procedure on the PathSegmentGraph
+		RouteFinder rf = new RouteFinder(graph, initConstraints());	// perform the actual route finding procedure on the PathSegmentGraph
 		rf.calculateNearest();	// calculate nearest edges to all data points (needed for edges statistics)
 		// Prepare the evaluation (assigning score to labels):
 		@SuppressWarnings("unused")
@@ -108,7 +110,9 @@ public class JMapMatcher {
 		String outFileName = "";
 		while (it.hasNext() && nOut++ < kMaxRoutesOutput) {	// use only the kMaximumNumberOfRoutes best routes
 			Label element = it.next();
-			System.out.println("score: " + element.getScore() + ", length: " + element.getLength() + " / " + (rf.getGPSPathLength()/element.getLength()));
+			System.out.println("score: " + element.getScore() 
+					+ ", length: " + element.getLength() + " / " + (rf.getGPSPathLength()/element.getLength())
+					+ ", a_tot: " + element.getTotalAngle() + ", nLeft: " + element.getLeftTurns() + ", nRight: " + element.getRightTurns());
 			try {
 				if (first) {	// the first route is the "choice" (best score) ...
 					first = false;
@@ -130,6 +134,8 @@ public class JMapMatcher {
 		}
 
 		double t_3 = timing(true, "++ Files written");
+		System.out.println("++ findRoutes: " + t_1 + "s");
+		System.out.println("++ writeFiles: " + t_3 + "s");
 		System.out.println("++ Total time: " + (t_1 + t_2 + t_3) + "s");
 	}
 	
@@ -175,6 +181,22 @@ public class JMapMatcher {
 			p0 = p;
 		}
 		return l;
+	}
+
+	private RFParams initConstraints() {
+		// initialize constraint fields:
+		rfParams = new RFParams();
+
+		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 100);	///> maximum number of routes to find
+		rfParams.setInt(RFParams.Type.BridgeOverlap, 1);
+		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);		///> how often each edge may be used
+//		constraints.setInt(Constraints.Type.ArticulationPointOverlap, 2);
+		rfParams.setInt(RFParams.Type.NodeOverlap, 1);		///> how often each single node may be crossed
+		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.2);	///> how much the route may deviate from the shortest possible
+		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///> minimum route length
+		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);	///> maximum route length (quasi no limit here)
+		
+		return rfParams;
 	}
 
 	/**

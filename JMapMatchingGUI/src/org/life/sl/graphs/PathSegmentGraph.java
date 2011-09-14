@@ -38,6 +38,7 @@ import java.io.IOException;
 //import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 //import java.util.List;
 
 //import org.life.sl.routefinder.Label;
@@ -118,7 +119,7 @@ public class PathSegmentGraph {
 		distancesCalculated = false;
 		
 		if (lineString.isEmpty()) { return; }
-		if(lineString.getCoordinates().length == 1) {
+		if(lineString.getCoordinates().length < 2) {
 			System.exit(1);
 		}
 		
@@ -126,7 +127,6 @@ public class PathSegmentGraph {
 		modifyEnvelope(coordinates);
 		
 		if (GlobalRegister.SNAP) {
-		
 			for(Coordinate c : coordinates) {
 				c.x = c.x - (c.x % GlobalRegister.GLOBAL_SNAP);
 				c.y = c.y - (c.y % GlobalRegister.GLOBAL_SNAP);
@@ -192,6 +192,20 @@ public class PathSegmentGraph {
 			nodes.add((Node)obj);
 		}
 		return nodes;
+	}
+	
+	public Edge getEdgeByNodes(Node n1, Node n2) {
+		@SuppressWarnings("unchecked")
+		List<Edge> edges = (List<Edge>) Node.getEdgesBetween(n1, n2);
+		return (edges.size() > 0 ? edges.get(0) : null);
+	}
+	
+	public Edge getSingleEdgeAtNode(Node n1) {
+		try {
+			return (Edge)(n1.getOutEdges().getEdges().get(0));
+		} catch(Exception e) {
+			return null;
+		}
 	}
 	
 	public Envelope getEnvelope() {
