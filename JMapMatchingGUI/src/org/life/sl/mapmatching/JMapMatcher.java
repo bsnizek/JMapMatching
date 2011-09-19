@@ -7,8 +7,12 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.geotools.feature.SchemaException;
+import org.hibernate.Query;
+import org.hibernate.Session;
 //import org.geotools.util.logging.Logging;
 import org.life.sl.graphs.PathSegmentGraph;
+import org.life.sl.orm.HibernateUtil;
+import org.life.sl.orm.SourcePoint;
 import org.life.sl.readers.shapefile.PointFileReader;
 import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
@@ -42,6 +46,8 @@ public class JMapMatcher {
 	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
 	private RFParams rfParams = null;
 	
+	gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
+	
 	private double t_start;
 
 	/**
@@ -58,6 +64,7 @@ public class JMapMatcher {
 	 * @throws IOException
 	 */
 	public void loadGPSPoints(String fileName) throws IOException {
+		
 		File pointFile = new File(fileName);	// load data
 		PointFileReader pfr = new PointFileReader(pointFile);	// initialize data from file
 		gpsPoints = pfr.getPoints();	// the collection of GPS data points
@@ -68,10 +75,30 @@ public class JMapMatcher {
 	 * @throws IOException
 	 */
 	public void match(String fileName) throws IOException {
-		loadGPSPoints(fileName);
+		if (GpsLoader == gpsLoader.PGSQLDATABASE) {
+			loadGPSPointsFromDatabase(12158);
+		} else {
+			loadGPSPoints(fileName);
+		}
+		
 		match();
 	}
 	
+	private void loadGPSPointsFromDatabase(int sourceroute_id) {
+		gpsPoints = new ArrayList<Point>();
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+		Query result = session.createQuery("from SourcePoint WHERE sourcerouteid=" + sourceroute_id);
+		Iterator<SourcePoint> iter = result.iterate();
+		while (iter.hasNext()) {
+			SourcePoint sp = (SourcePoint) iter.next();
+			Point o = sp.getGeometry();
+			gpsPoints.add(o);
+		}
+		session.close();
+		
+	}
+
 	/**
 	 * controls the map matching algorithm (assumes GPS data and graph data have been loaded before)
 	 * @throws IOException
