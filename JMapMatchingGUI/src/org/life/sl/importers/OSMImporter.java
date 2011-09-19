@@ -4,11 +4,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 
 import java.util.Collection;
-import java.util.Iterator;
 
 import java.util.List;
 
-import org.hibernate.Query;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.life.sl.graphs.PathSegmentGraph;

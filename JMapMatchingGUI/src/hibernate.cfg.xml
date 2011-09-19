@@ -57,10 +57,15 @@
 
         <!-- Names the annotated entity class -->
         <mapping package="org.life.sl.orm" /> 
-        <mapping resource="org/life/sl/orm/ShortestPathLength.hbm.xml"/>
+        
         <mapping resource="org/life/sl/orm/OSMNode.hbm.xml"/>
         <mapping resource="org/life/sl/orm/OSMEdge.hbm.xml"/>
-
-    </session-factory>
+        <mapping resource="org/life/sl/orm/Respondent.hbm.xml"/>
+        <mapping resource="org/life/sl/orm/ShortestPathLength.hbm.xml"/>
+        <mapping resource="org/life/sl/orm/SourcePoint.hbm.xml"/>
+        <mapping resource="org/life/sl/orm/SourceRoute.hbm.xml"/>
+        
+	</session-factory>
+		
 
 </hibernate-configuration>
