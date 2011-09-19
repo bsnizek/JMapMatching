@@ -20,38 +20,52 @@ public class AllPairsShortestPath {
 	private static double kShowProgressInterval2 = 5.; 
 
 	HashMap<Node, HashMap<Node, Double>> distances;		///> container for the distances; a simple array would probably perform much better...
+	double dist[][];
 	
 	public HashMap<Node, HashMap<Node, Double>> getDistances() {
 		return distances;
 	}
-
+	
 	public AllPairsShortestPath(PathSegmentGraph graph) {
 		distances = new HashMap<Node, HashMap<Node, Double>>();
 		Collection<Node> nodes = graph.getNodes();
+		dist = new double[nodes.size()][nodes.size()];
 
-		// initialize matrix
+		// initialize matrix: each element is assigned the direct distance
 		if (bShowProgress) System.out.println("Initializing AllPairsShortestPath-Matrix...");
+		int i = 0, j = 0, k = 0;
 		for(Node node1 : nodes) {
+			j = 0;
 			distances.put(node1, new HashMap<Node, Double>());
 			for(Node node2 : nodes) {
+				dist[i][j] = getDirectDistance(node1, node2);
 				(distances.get(node1)).put(node2, getDirectDistance(node1, node2));
+				j++;
 			}
+			i++;
 		}
 		
 		// Floyd-Warshall
 		if (bShowProgress) System.out.println("Starting Floyd-Warshall search...");
-		double i = 0;
+		double distance;
+		double ni = 0;
 		double n = (double)(nodes.size());
 		double nn = n*n, nnn = nn*n;
 		long t_start = System.nanoTime();
 		double t_tot = 0., t_tot_last1 = 0., t_tot_last2 = 0.;
-		for(Node node1 : nodes) {
-			for(Node node2 : nodes) {
-				for(Node node3 : nodes) {
-					double distance = Math.min(getDistance(node2, node3), getDistance(node2, node1) + getDistance(node1, node3));
-					this.setDistance(node2, node3, distance);
-					i++;
+		k = 0;
+		for(Node nodeK : nodes) {
+			i = 0;
+			for(Node nodeI : nodes) {
+				j = 0;
+				for(Node nodeJ : nodes) {
+					distance = Math.min(getDistance(nodeI, nodeJ), getDistance(nodeI, nodeK) + getDistance(nodeK, nodeJ));
+					this.setDistance(nodeI, nodeJ, distance);
+					dist[i][j] = distance;
+					j++;
+					ni++;
 				}
+				i++;
 				t_tot = (double)(System.nanoTime() - t_start) * 1.e-9;
 				if (bShowProgress) {	// inner loop progress indicator
 					if (t_tot - t_tot_last1 > kShowProgressInterval1) {	// show indicator every x seconds
@@ -60,6 +74,7 @@ public class AllPairsShortestPath {
 					}
 				}
 			}
+			k++;
 			if (bShowProgress) {	// outer loop progress indicator
 				if (t_tot - t_tot_last2 > kShowProgressInterval2) {	// show indicator every x seconds
 					System.out.printf("%f%%\n", i/nnn);
@@ -67,7 +82,7 @@ public class AllPairsShortestPath {
 				}
 			}
 		}
-		if (bShowProgress) System.out.println("Floyd-Warshall finished - computed " + (int)i + " distances in " + t_tot + "s (" + i/t_tot + "/s)");
+		if (bShowProgress) System.out.println("Floyd-Warshall finished - computed " + (int)ni + " distances in " + t_tot + "s (" + ni/t_tot + "/s)");
 	}
 	
 	public double getDistance(Node node1, Node node2) {

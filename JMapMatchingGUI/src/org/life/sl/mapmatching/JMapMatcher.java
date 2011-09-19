@@ -33,7 +33,7 @@ public class JMapMatcher {
 	private static int kMaxRoutesOutput = 10;	///> the result is constrained to this max. number of routes
 	private static String kOutputDir = "results/";
 	// even bigger network and route:
-	// private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
+	private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
 	private static String kGPSPointFileName = "testdata/exmp1/example_gsp_1.shp";
 	// bigger network and route:
 //	private static String kGraphDataFileName = "testdata/SparseNetwork.shp";
@@ -47,7 +47,8 @@ public class JMapMatcher {
 	private RFParams rfParams = null;
 	
 	//static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
-	static gpsLoader GpsLoader  = gpsLoader.SHAPEFILE;
+	static gpsLoader kGPSLoader    = gpsLoader.SHAPEFILE;
+	static gpsLoader kGraphLoader  = gpsLoader.SHAPEFILE;
 	
 	private double t_start;
 
@@ -76,7 +77,7 @@ public class JMapMatcher {
 	 * @throws IOException
 	 */
 	public void match(String fileName) throws IOException {
-		if (GpsLoader == gpsLoader.PGSQLDATABASE) {
+		if (kGPSLoader == gpsLoader.PGSQLDATABASE) {
 			loadGPSPointsFromDatabase(12158);
 		} else {
 			loadGPSPoints(fileName);
@@ -245,13 +246,16 @@ public class JMapMatcher {
 	 * @throws IOException 
 	 */
 	public static void main(String... args) throws IOException {
-		PathSegmentGraph g = new PathSegmentGraph();	// Let us load the graph ...
-		
-		if (GpsLoader == gpsLoader.PGSQLDATABASE) {
-			new JMapMatcher(g).match(12158);
+		PathSegmentGraph g = null;
+		if (kGraphLoader == gpsLoader.PGSQLDATABASE) {
+			g = new PathSegmentGraph(1);	// Let us load the graph ...
+		} else if (kGraphLoader == gpsLoader.SHAPEFILE) {
+			g = new PathSegmentGraph(kGraphDataFileName);	// Let us load the graph ...
 		}
 		
-		if (GpsLoader == gpsLoader.SHAPEFILE) {
+		if (kGPSLoader == gpsLoader.PGSQLDATABASE) {
+			new JMapMatcher(g).match(12158);
+		} else if (kGPSLoader == gpsLoader.SHAPEFILE) {
 			new JMapMatcher(g).match(kGPSPointFileName);	// ... and invoke the matching algorithm
 		}
 	}

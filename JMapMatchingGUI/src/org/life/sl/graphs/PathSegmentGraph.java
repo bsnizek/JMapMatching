@@ -71,7 +71,7 @@ public class PathSegmentGraph {
 	private AllPairsShortestPath allPairsShortestPath;
 	private boolean distancesCalculated;
 	private LineMergeGraphH4cked lineMergeGraphH4cked;
-
+	private boolean bUseDatabase = false;
 
 	public HashMap<Node, HashMap<Node, Double>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
@@ -81,9 +81,42 @@ public class PathSegmentGraph {
 		super();
 		distancesCalculated = false;
 		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
+	}
+	
+	public PathSegmentGraph(String shapeFile) throws IOException {
+		this();
+		addLineStringsFromShape(shapeFile);
+	}
+	
+	public PathSegmentGraph(int i) {
+		this();
+		bUseDatabase = true;
 		addLineStringsFromDatabase();
 	}
-
+	
+	/**
+	 * Create a new graph, with linestring read from a shapefile 
+	 * @param shapeFile
+	 * @throws IOException
+	 */
+	public void addLineStringsFromShape(String shapeFile) throws IOException {
+		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
+		distancesCalculated = false;
+		LineStringReader reader = new LineStringReader(shapeFile);
+		
+		reader.read();
+		boolean first = true;
+		int id = 0;
+		for(LineString ls : reader.getLineStrings()) {
+			if(first == true) {
+				xMax = xMin = ls.getCoordinate().x;
+				yMax = yMin = ls.getCoordinate().y;
+				first = false;
+			}
+	
+			addLineString(ls, ++id);
+		}
+	}
 
 	/**
 	 * Create a new graph, with linestring read from a shapefile 
@@ -98,6 +131,7 @@ public class PathSegmentGraph {
 		session.beginTransaction();
 		
 		Query result = session.createQuery("from OSMEdge");
+		@SuppressWarnings("unchecked")
 		Iterator<OSMEdge> iter = result.iterate();
 		while (iter.hasNext() ) {
 			OSMEdge  o = iter.next();
