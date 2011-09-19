@@ -2,11 +2,13 @@ package org.life.sl.importers;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.InputStream;
 
 import java.util.Collection;
 
 import java.util.List;
 
+import org.hibernate.Query;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
 import org.life.sl.graphs.PathSegmentGraph;
@@ -54,7 +56,16 @@ public class OSMImporter {
 	 * @throws IllegalDataException
 	 * 
 	 */
-	public void readOSMFile(String osmFileName)  throws FileNotFoundException, IllegalDataException {
+	public void readOSMFile(String osmFileName) throws FileNotFoundException, IllegalDataException {
+
+		InputStream fos = new FileInputStream(osmFileName);
+		readOSMFilefromStream(fos);
+	}
+
+
+
+
+	public void readOSMFilefromStream(InputStream fos) throws IllegalDataException {
 
 		Main.pref = new Preferences();
 
@@ -62,75 +73,77 @@ public class OSMImporter {
 
 		Main.pref.put("tags.direction", false);
 
-		DataSet dsRestriction = OsmReader.parseDataSet(new FileInputStream(osmFileName), null);
+		DataSet dsRestriction = OsmReader.parseDataSet(fos, null);
 
 		Collection<Way> ways = dsRestriction.getWays();
 		Collection<Node> all_nodes = dsRestriction.getNodes();
 
 		com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
-		
+
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
-		
+
 		for (Node node : all_nodes) {
-			OSMNode onode = new OSMNode();
-			onode.setId((int) node.getId());
-			LatLon coor = node.getCoor();
-			if (coor != null) {
-				Coordinate c = new Coordinate(node.getCoor().lat(), node.getCoor().lon());	
-				com.vividsolutions.jts.geom.Point point = fact.createPoint(c);
-				onode.setGeometry(point);
-				session.save(onode);
+
+			Query result = session.createQuery("from OSMNode WHERE id=" + node.getId());
+			if (result.list().size() == 0) {
+
+				OSMNode onode = new OSMNode();
+				onode.setId((int) node.getId());
+				LatLon coor = node.getCoor();
+				if (coor != null) {
+					Coordinate c = new Coordinate(node.getCoor().lon(), node.getCoor().lat());	
+					com.vividsolutions.jts.geom.Point point = fact.createPoint(c);
+					onode.setGeometry(point);
+					session.save(onode);
+				}
 			}
 		}
-		
-		
+
+
 		for (Way way : ways) {
 			if (way.get("highway") != null) {
-				if (way.get("highway").equals("residential") || way.get("highway").equals("tertiary") || way.get("highway").equals("cycleway") || way.get("highway").equals("footway")) {
+				if (way.get("highway").equals("residential") || way.get("highway").equals("tertiary") || way.get("highway").equals("secondary") || way.get("highway").equals("cycleway") || way.get("highway").equals("footway")) {
 
 					String roadName = way.getName();
 					System.out.println(roadName);
 
-					List<Node> nodes = way.getNodes();
+					Query result = session.createQuery("from OSMEdge WHERE id=" + way.getId());
+					if (result.list().size() == 0) {
 
-					Coordinate[] array1 = new Coordinate[nodes.size()];
+						List<Node> nodes = way.getNodes();
 
-					int counter = 0;
+						Coordinate[] array1 = new Coordinate[nodes.size()];
 
-					for (Node node : nodes) {
-						LatLon ll = node.getCoor();
-						Coordinate c = new Coordinate(ll.lon(), ll.lat()); // z = 0, no elevation	
-						array1[counter] = c;
-						counter = counter +1;
+						int counter = 0;
 
+						for (Node node : nodes) {
+							LatLon ll = node.getCoor();
+							Coordinate c = new Coordinate(ll.lon(), ll.lat()); // z = 0, no elevation	
+							array1[counter] = c;
+							counter = counter +1;
+
+						}
+
+						com.vividsolutions.jts.geom.LineString lineString = fact.createLineString(array1);
+
+						OSMEdge oe = new OSMEdge();
+						oe.setGeometry(lineString);
+						oe.setId((int) way.getId());
+						oe.setFromnode((int) way.getNode(0).getId());
+						oe.setTonode((int) way.getNode(way.getNodesCount()-1).getId());
+						oe.setLength(lineString.getLength());
+						System.out.print(".");
+						session.save(oe);
 					}
-					
-					com.vividsolutions.jts.geom.LineString lineString = fact.createLineString(array1);
-
-					OSMEdge oe = new OSMEdge();
-					oe.setGeometry(lineString);
-					oe.setId((int) way.getId());
-					oe.setFromnode((int) way.getNode(0).getId());
-					oe.setTonode((int) way.getNode(way.getNodesCount()-1).getId());
-					oe.setLength(lineString.getLength());
-					
-					
-					session.save(oe);
-					
-					//HashMap<String, Object> hm = new HashMap<String, Object>();
-
-					//hm.put("roadname", roadName);
-					//hm.put("geometry", lineString);
-					//lineString.setUserData(hm);
 				}
 			}
 		}
 		session.getTransaction().commit();
-		
+
 		Session session3 = HibernateUtil.getSessionFactory().getCurrentSession();
 		session3.beginTransaction();
-		
+
 		// let us bulk-delete the nodes that have nothing to do with our edges:
 		String delete_query = "DELETE FROM osmnode AS osmn WHERE NOT EXISTS (SELECT * FROM osmedge AS osme WHERE (osme.fromNode = osmn.id OR osme.toNode = osmn.id) )";
 		SQLQuery xx = session3.createSQLQuery(delete_query); //.iterate().next();
@@ -138,9 +151,9 @@ public class OSMImporter {
 		xx.executeUpdate();
 		System.out.println("Unnecessary Nodes flushed");
 		session3.getTransaction().commit();
-		
+
 	}
-	
+
 
 	public static void main(String[] args) throws FileNotFoundException, IllegalDataException {
 		String filename = "testdata/testnet.osm";
