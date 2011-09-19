@@ -101,7 +101,8 @@ public class PathSegmentGraph {
 		Iterator<OSMEdge> iter = result.iterate();
 		while (iter.hasNext() ) {
 			OSMEdge  o = iter.next();
-			addLineString(o.getGeometry(), o.getId());
+			LineString g = o.getGeometry();
+			addLineString(g, o.getId());
 		}
 		session.disconnect();
 

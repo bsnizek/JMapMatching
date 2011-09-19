@@ -46,7 +46,7 @@ public class JMapMatcher {
 	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
 	private RFParams rfParams = null;
 	
-	gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
+	static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
 	
 	private double t_start;
 
@@ -83,6 +83,18 @@ public class JMapMatcher {
 		
 		match();
 	}
+	
+	
+	/**
+	 * loads GPS data from the database, given the source_id of the sourcepoints
+	 * @param source_id
+	 */
+	public void match(int source_id)  {
+	
+		loadGPSPointsFromDatabase(source_id);
+		match();
+	}
+	
 	
 	private void loadGPSPointsFromDatabase(int sourceroute_id) {
 		gpsPoints = new ArrayList<Point>();
@@ -233,7 +245,13 @@ public class JMapMatcher {
 	 */
 	public static void main(String... args) throws IOException {
 		PathSegmentGraph g = new PathSegmentGraph();	// Let us load the graph ...
-		new JMapMatcher(g).match(kGPSPointFileName);	// ... and invoke the matching algorithm
+		
+		if (GpsLoader == gpsLoader.PGSQLDATABASE) {
+			new JMapMatcher(g).match(12158);
+		}
+		
+		if (GpsLoader == gpsLoader.SHAPEFILE) {
+			new JMapMatcher(g).match(kGPSPointFileName);	// ... and invoke the matching algorithm
+		}
 	}
-
 }

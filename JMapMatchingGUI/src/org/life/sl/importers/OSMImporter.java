@@ -142,10 +142,6 @@ public class OSMImporter {
 	}
 	
 
-
-
-
-
 	public static void main(String[] args) throws FileNotFoundException, IllegalDataException {
 		String filename = "testdata/testnet.osm";
 		OSMImporter osm_reader = new OSMImporter();
