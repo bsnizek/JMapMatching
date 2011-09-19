@@ -46,7 +46,8 @@ public class JMapMatcher {
 	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
 	private RFParams rfParams = null;
 	
-	static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
+	//static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
+	static gpsLoader GpsLoader  = gpsLoader.SHAPEFILE;
 	
 	private double t_start;
 
