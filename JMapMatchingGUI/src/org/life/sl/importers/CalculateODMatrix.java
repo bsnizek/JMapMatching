@@ -22,7 +22,7 @@ public class CalculateODMatrix {
 	// a hashmap mapping OSM ids to OSM Edges
 	HashMap<Integer, OSMEdge> ids_edges = this.loadEdgesFromOSM();
 	HashMap<Integer, OSMNode> ids_nodes = this.loadNodesFromOSM();
-
+	
 	public CalculateODMatrix() {
 
 		psg = new PathSegmentGraph(1);	// 1 = read from database...

@@ -13,6 +13,7 @@ import org.hibernate.Session;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.SourcePoint;
+import org.life.sl.orm.SourceRoute;
 import org.life.sl.readers.shapefile.PointFileReader;
 import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
@@ -31,14 +32,15 @@ import com.vividsolutions.jts.planargraph.Node;
 public class JMapMatcher {
 	public enum gpsLoader {
 		SHAPEFILE,
-		PGSQLDATABASE
+		PGSQLDATABASE,
+		BULK_PGSQLDATABASE
 	}
 
 	private static int kMaxRoutesOutput = 10;	///> the result is constrained to this max. number of routes
 	private static String kOutputDir = "results/";
 	// input data:
 	//static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
-	private static gpsLoader kGPSLoader    = gpsLoader.SHAPEFILE;
+	private static gpsLoader kGPSLoader    = gpsLoader.BULK_PGSQLDATABASE;
 	private static gpsLoader kGraphLoader  = gpsLoader.SHAPEFILE;
 	private static boolean kUseMinimalNetwork = true;	///> true: restrict network to an area enveloping the track
 	
@@ -279,8 +281,35 @@ public class JMapMatcher {
 		// ... and invoke the matching algorithm:
 		if (kGPSLoader == gpsLoader.PGSQLDATABASE) {
 			new JMapMatcher(g).match(kGPSTrackID);			// get track from database; NOTE: g may be null here
-		} else if (kGPSLoader == gpsLoader.SHAPEFILE) {
+		} 
+		
+		if (kGPSLoader == gpsLoader.SHAPEFILE) {
 			new JMapMatcher(g).match(kGPSPointFileName);	// get track data from a file
+		}
+		
+		// ... a sweet bulk loader
+		if (kGPSLoader == gpsLoader.BULK_PGSQLDATABASE) {
+			// 1. get a list over sourceroute ids
+			org.hibernate.classic.Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+			session.beginTransaction();
+			
+			Query result = session.createQuery("from SourceRoute");
+			Iterator<SourceRoute> iterator = result.iterate();
+			System.out.println(result.list().size() + " tracks to be matched");
+			ArrayList<Integer> sRoutes= new ArrayList<Integer>();
+			while (iterator.hasNext()) {
+				SourceRoute sR = iterator.next();
+				sRoutes.add(sR.getId());
+				//
+			}
+			for (int i=0; i<sRoutes.size(); i++) {
+				new JMapMatcher(g).match(sRoutes.get(i));
+				System.out.println("Track " + sRoutes.get(i) + " matched.");
+			}
+			
+			
+			
+			
 		}
 	}
 }
