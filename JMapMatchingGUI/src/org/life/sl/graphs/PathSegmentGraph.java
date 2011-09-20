@@ -160,6 +160,7 @@ public class PathSegmentGraph {
 			result = session.createQuery("from OSMEdge");
 		} else {
 			result = session.createQuery("from OSMEdge");	// TODO: create a query for a network area enveloping the track!
+			// track ist eine array liste 
 		}
 		@SuppressWarnings("unchecked")
 		Iterator<OSMEdge> iter = result.iterate();
