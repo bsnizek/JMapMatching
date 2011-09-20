@@ -36,6 +36,14 @@ public class JMapMatcher {
 
 	private static int kMaxRoutesOutput = 10;	///> the result is constrained to this max. number of routes
 	private static String kOutputDir = "results/";
+	// input data:
+	//static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
+	private static gpsLoader kGPSLoader    = gpsLoader.SHAPEFILE;
+	private static gpsLoader kGraphLoader  = gpsLoader.SHAPEFILE;
+	private static boolean kUseMinimalNetwork = true;	///> true: restrict network to an area enveloping the track
+	
+	private static int kGPSTrackID = 12158;		///> database ID of GPS track to match
+	
 	// even bigger network and route:
 //	private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
 //	private static String kGPSPointFileName = "testdata/exmp1/example_gsp_1.shp";
@@ -48,32 +56,23 @@ public class JMapMatcher {
 	
 	private PathSegmentGraph graph;			///> data basis (graph)
 	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
-	private RFParams rfParams = null;
+	private RFParams rfParams = null;		///> parameters for the route finding algorithm
 	
-	//static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
-	static gpsLoader kGPSLoader    = gpsLoader.SHAPEFILE;
-	static gpsLoader kGraphLoader  = gpsLoader.SHAPEFILE;
-	
-	private double t_start;
+	private double t_start;					// for timing purposes only
 
 	/**
-	 * Initialization (right now, we only store the PathSegmentGraph locally)
-	 * @param g the PathSegmentGraph containing the path
+	 * default constructor: initialization with an empty graph (graph must then be be created later on)
+	 */
+	public JMapMatcher() {
+		this.graph = null;
+	}
+
+	/**
+	 * Initialization with an existing graph (right now, we only store the PathSegmentGraph locally)
+	 * @param g the PathSegmentGraph containing the path (if ==null, it can be created later on)
 	 */
 	public JMapMatcher(PathSegmentGraph g) {
 		this.graph = g;
-	}
-	
-	/**
-	 * load GPS data (points) from a file
-	 * @param fileName shapefile containing the GPS data points 
-	 * @throws IOException
-	 */
-	public void loadGPSPoints(String fileName) throws IOException {
-		
-		File pointFile = new File(fileName);	// load data
-		PointFileReader pfr = new PointFileReader(pointFile);	// initialize data from file
-		gpsPoints = pfr.getPoints();	// the collection of GPS data points
 	}
 
 	/**
@@ -88,40 +87,57 @@ public class JMapMatcher {
 		}
 		
 		match();
-	}
-	
+	}	
 	
 	/**
-	 * loads GPS data from the database, given the source_id of the sourcepoints
-	 * @param source_id
+	 * load GPS data (points) from a file
+	 * @param fileName shapefile containing the GPS data points 
+	 * @throws IOException
+	 */
+	public void loadGPSPoints(String fileName) throws IOException {
+		
+		File pointFile = new File(fileName);	// load data
+		PointFileReader pfr = new PointFileReader(pointFile);	// initialize data from file
+		gpsPoints = pfr.getPoints();	// the collection of GPS data points
+	}
+	
+	/**
+	 * starts the map matching using GPS data from the database
+	 * @param source_id source_id of the sourcepoints (GPS route)
 	 */
 	public void match(int source_id)  {
-	
 		loadGPSPointsFromDatabase(source_id);
 		match();
 	}
 	
-	
+	/**
+	 * loads GPS data from the database, given the source_id of the sourcepoints
+	 * @param sourceroute_id source_id of the sourcepoints (GPS route)
+	 */
 	private void loadGPSPointsFromDatabase(int sourceroute_id) {
 		gpsPoints = new ArrayList<Point>();
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		Query result = session.createQuery("from SourcePoint WHERE sourcerouteid=" + sourceroute_id);
+		@SuppressWarnings("unchecked")
 		Iterator<SourcePoint> iter = result.iterate();
 		while (iter.hasNext()) {
 			SourcePoint sp = (SourcePoint) iter.next();
 			Point o = sp.getGeometry();
 			gpsPoints.add(o);
 		}
-		session.close();
-		
+		session.close();		
 	}
 
 	/**
-	 * controls the map matching algorithm (assumes GPS data and graph data have been loaded before)
+	 * controls the map matching algorithm (assumes GPS data and graph data have been loaded before);
+	 * if no graph has been loaded yet, a new graph enveloping the GPS track is read from the database
 	 * @throws IOException
 	 */
 	public void match() {
+		if (graph == null) {	// create a new graph enveloping the GPS track
+			graph = loadGraphFromDB(gpsPoints);
+		}
 		Node fromNode = graph.findClosestNode(gpsPoints.get(0).getCoordinate());	// first node (Origin)
 		Node toNode   = graph.findClosestNode(gpsPoints.get(gpsPoints.size()-1).getCoordinate());	// last node in GPS route (Destination) 
 		// log coordinates:
@@ -184,6 +200,9 @@ public class JMapMatcher {
 		System.out.println("++ Total time: " + (t_1 + t_2 + t_3) + "s");
 	}
 	
+	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
+		return new PathSegmentGraph(track);
+	}
 	/**
 	 * small utility to initialize the timing functionality
 	 */
@@ -251,16 +270,17 @@ public class JMapMatcher {
 	 */
 	public static void main(String... args) throws IOException {
 		PathSegmentGraph g = null;
+		// Let us load the graph ...
 		if (kGraphLoader == gpsLoader.PGSQLDATABASE) {
-			g = new PathSegmentGraph(1);	// Let us load the graph ...
+			if (!kUseMinimalNetwork) g = new PathSegmentGraph(1);	//... or delay the loading if kUseMinimalNetwork==true
 		} else if (kGraphLoader == gpsLoader.SHAPEFILE) {
-			g = new PathSegmentGraph(kGraphDataFileName);	// Let us load the graph ...
+			g = new PathSegmentGraph(kGraphDataFileName);	// get network from a file
 		}
-		
+		// ... and invoke the matching algorithm:
 		if (kGPSLoader == gpsLoader.PGSQLDATABASE) {
-			new JMapMatcher(g).match(12158);
+			new JMapMatcher(g).match(kGPSTrackID);			// get track from database; NOTE: g may be null here
 		} else if (kGPSLoader == gpsLoader.SHAPEFILE) {
-			new JMapMatcher(g).match(kGPSPointFileName);	// ... and invoke the matching algorithm
+			new JMapMatcher(g).match(kGPSPointFileName);	// get track data from a file
 		}
 	}
 }

@@ -38,6 +38,8 @@ public class CalculateODMatrix {
 		Double length = 0.;
 		HashMap<Node, Double> hm1;
 		
+		System.out.println("Starting database import...");
+		long t_start = System.nanoTime();
 		for (Node n1 : distances.keySet()) {	// outer loop over all nodes
 			osmNodeID1 = getOSMNodeIDForNode(n1);
 			if (osmNodeID1 != 0) {				// check if node exists in OSM network at all...
@@ -63,6 +65,7 @@ public class CalculateODMatrix {
 			}
 		}
 		session.getTransaction().commit();
+		System.out.println("... finished: t = " + (double)(System.nanoTime() - t_start)*1.e-9 + "s");
 		System.out.println("YEAH !");
 
 	}
