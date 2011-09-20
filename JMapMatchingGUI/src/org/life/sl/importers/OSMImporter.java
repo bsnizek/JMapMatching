@@ -2,6 +2,7 @@ package org.life.sl.importers;
 
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.InputStream;
 
 import java.util.Collection;
@@ -15,6 +16,11 @@ import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMEdge;
 import org.life.sl.orm.OSMNode;
+import org.life.sl.utils.CoordinateTransformer;
+import org.life.sl.utils.ProjectionUtil;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.TransformException;
 import org.openstreetmap.josm.Main;
 import org.openstreetmap.josm.data.Preferences;
 import org.openstreetmap.josm.data.coor.LatLon;
@@ -27,6 +33,7 @@ import org.openstreetmap.josm.io.OsmReader;
 
 
 import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.Geometry;
 
 import com.vividsolutions.jts.geom.GeometryFactory;
 
@@ -52,11 +59,13 @@ public class OSMImporter {
 	 * loads an OSM File and builds up the road Network (Path Segmented Graph)
 	 * 
 	 * @param osmFileName : OSM File Name as a String
-	 * @throws FileNotFoundException
 	 * @throws IllegalDataException
+	 * @throws TransformException 
+	 * @throws FactoryException 
+	 * @throws IOException 
 	 * 
 	 */
-	public void readOSMFile(String osmFileName) throws FileNotFoundException, IllegalDataException {
+	public void readOSMFile(String osmFileName) throws IllegalDataException, IOException, FactoryException, TransformException {
 
 		InputStream fos = new FileInputStream(osmFileName);
 		readOSMFilefromStream(fos);
@@ -65,7 +74,7 @@ public class OSMImporter {
 
 
 
-	public void readOSMFilefromStream(InputStream fos) throws IllegalDataException {
+	public void readOSMFilefromStream(InputStream fos) throws IllegalDataException, IOException, FactoryException, TransformException {
 
 		Main.pref = new Preferences();
 
@@ -79,6 +88,13 @@ public class OSMImporter {
 		Collection<Node> all_nodes = dsRestriction.getNodes();
 
 		com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
+		
+		ProjectionUtil pu = new ProjectionUtil();
+		
+		CoordinateReferenceSystem crs_from = pu.getCRS("prj/osm.prj");
+		CoordinateReferenceSystem crs_to = pu.getCRS("prj/gps.prj");
+		
+		CoordinateTransformer ct = new CoordinateTransformer(crs_from, crs_to);
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
@@ -94,7 +110,8 @@ public class OSMImporter {
 				if (coor != null) {
 					Coordinate c = new Coordinate(node.getCoor().lon(), node.getCoor().lat());	
 					com.vividsolutions.jts.geom.Point point = fact.createPoint(c);
-					onode.setGeometry(point);
+					Geometry point_transformed = ct.transform(point);
+					onode.setGeometry(point_transformed.getCentroid());
 					session.save(onode);
 				}
 			}
@@ -119,8 +136,9 @@ public class OSMImporter {
 
 						for (Node node : nodes) {
 							LatLon ll = node.getCoor();
-							Coordinate c = new Coordinate(ll.lon(), ll.lat()); // z = 0, no elevation	
-							array1[counter] = c;
+							Coordinate c = new Coordinate(ll.lon(), ll.lat()); // z = 0, no elevation
+							Coordinate coord_transformed = ct.transform(c);
+							array1[counter] = coord_transformed;
 							counter = counter +1;
 
 						}
@@ -155,7 +173,7 @@ public class OSMImporter {
 	}
 
 
-	public static void main(String[] args) throws FileNotFoundException, IllegalDataException {
+	public static void main(String[] args) throws IllegalDataException, IOException, FactoryException, TransformException {
 		String filename = "testdata/testnet.osm";
 		OSMImporter osm_reader = new OSMImporter();
 		osm_reader.readOSMFile(filename);

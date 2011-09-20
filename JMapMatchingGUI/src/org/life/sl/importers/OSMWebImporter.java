@@ -17,6 +17,11 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.SourcePoint;
+import org.life.sl.utils.CoordinateTransformer;
+import org.life.sl.utils.ProjectionUtil;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.TransformException;
 import org.openstreetmap.josm.data.osm.DataSet;
 import org.openstreetmap.josm.io.IllegalDataException;
 import org.openstreetmap.josm.io.OsmReader;
@@ -30,8 +35,10 @@ import com.vividsolutions.jts.geom.MultiPoint;
 public class OSMWebImporter {
 	
 
-	public OSMWebImporter(int sourcerouteId) throws IOException, URISyntaxException, IllegalDataException {
+	public OSMWebImporter(int sourcerouteId) throws IOException, URISyntaxException, IllegalDataException, FactoryException, TransformException {
 	
+		
+		
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		
@@ -84,7 +91,7 @@ public class OSMWebImporter {
 		
 	}
 	
-	public static void main(String[] args) throws IllegalDataException, IOException, URISyntaxException {
+	public static void main(String[] args) throws IllegalDataException, IOException, URISyntaxException, FactoryException, TransformException {
 		OSMWebImporter osmw = new OSMWebImporter(12158);
 		
 	}
