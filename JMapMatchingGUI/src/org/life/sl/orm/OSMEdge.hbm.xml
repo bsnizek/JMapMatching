@@ -40,7 +40,7 @@
         <property name="fromnode" ></property>
         <property name="tonode" ></property>
         <property name="length" ></property>
-        <property name="roadname" ></property>
+        <property name="roadname" type="string"></property>
 
     </class>
 

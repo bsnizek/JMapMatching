@@ -120,7 +120,16 @@ public class OSMImporter {
 
 		for (Way way : ways) {
 			if (way.get("highway") != null) {
-				if (way.get("highway").equals("residential") || way.get("highway").equals("tertiary") || way.get("highway").equals("secondary") || way.get("highway").equals("cycleway") || way.get("highway").equals("footway")) {
+				if (
+					way.get("highway").equals("residential") || 
+					way.get("highway").equals("tertiary") || 
+					way.get("highway").equals("secondary") || 
+					way.get("highway").equals("cycleway") || 
+					way.get("highway").equals("footway") ||
+					way.get("highway").equals("path") ||
+					way.get("highway").equals("service")
+					
+					) {
 
 					String roadName = way.getName();
 					System.out.println(roadName);
