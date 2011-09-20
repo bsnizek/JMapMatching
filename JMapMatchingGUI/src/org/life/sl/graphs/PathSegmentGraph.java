@@ -50,6 +50,7 @@ import org.life.sl.orm.OSMEdge;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.geom.Point;
 
 import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Edge;
@@ -73,8 +74,6 @@ public class PathSegmentGraph {
 	private LineMergeGraphH4cked lineMergeGraphH4cked;
 	private boolean bUseDatabase = false;
 
-	private int gPSTrackID;
-
 	public HashMap<Node, HashMap<Node, Double>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
 	}
@@ -82,27 +81,48 @@ public class PathSegmentGraph {
 		return allPairsShortestPath.getDistancesArr();
 	}
 	
+	/**
+	 * default constructor: sets up an empty graph
+	 */
 	public PathSegmentGraph() {
 		super();
 		distancesCalculated = false;
 		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
 	}
 	
+	/**
+	 * initialize the graph using data read from a shapefile
+	 * @param shapeFile the shapefile containing the network
+	 * @throws IOException
+	 */
 	public PathSegmentGraph(String shapeFile) throws IOException {
 		this();
 		addLineStringsFromShape(shapeFile);
 	}
 	
+	/**
+	 * initialize the graph from the database (using the complete network)
+	 * @param i
+	 */
 	public PathSegmentGraph(int i) {
 		this();
 		bUseDatabase = true;
-		this.gPSTrackID = i;
-		addLineStringsFromDatabase();
+		addLineStringsFromDatabase(null);
 	}
 	
 	/**
-	 * Create a new graph, with linestring read from a shapefile 
-	 * @param shapeFile
+	 * initialize the graph from a section of the (database-stored) network enveloping the GPS track 
+	 * @param track array of points on the track under examination
+	 */
+	public PathSegmentGraph(ArrayList<Point> track) {
+		this();
+		bUseDatabase = true;
+		addLineStringsFromDatabase(track);
+	}
+	
+	/**
+	 * Create a new graph, with linestrings read from a shapefile 
+	 * @param shapeFile name of the shapefile containing the network data
 	 * @throws IOException
 	 */
 	public void addLineStringsFromShape(String shapeFile) throws IOException {
@@ -113,8 +133,8 @@ public class PathSegmentGraph {
 		reader.read();
 		boolean first = true;
 		int id = 0;
-		for(LineString ls : reader.getLineStrings()) {
-			if(first == true) {
+		for (LineString ls : reader.getLineStrings()) {
+			if (first == true) {
 				xMax = xMin = ls.getCoordinate().x;
 				yMax = yMin = ls.getCoordinate().y;
 				first = false;
@@ -125,20 +145,22 @@ public class PathSegmentGraph {
 	}
 
 	/**
-	 * Create a new graph, with linestring read from a shapefile 
-	 * @param shapeFile
-	 * @throws IOException
+	 * Create a new graph, with linestrings read from the database (using the complete table OSMEdge!) 
 	 */
-	public void addLineStringsFromDatabase() {
+	public void addLineStringsFromDatabase(ArrayList<Point> track) {
 		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
 		distancesCalculated = false;
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		
-		Query gpsResults = session.createQuery("from" );
-		
-		Query result = session.createQuery("from OSMEdge");
+		//Query gpsResults = session.createQuery("from" );
+		Query result;
+		if (track == null) {
+			result = session.createQuery("from OSMEdge");
+		} else {
+			result = session.createQuery("from OSMEdge");	// TODO: create a query for a network area enveloping the track!
+		}
 		@SuppressWarnings("unchecked")
 		Iterator<OSMEdge> iter = result.iterate();
 		while (iter.hasNext() ) {
@@ -149,7 +171,6 @@ public class PathSegmentGraph {
 		session.disconnect();
 
 	}
-
 
 	/**
 	 * Adds an Edge, DirectedEdges, and Nodes for the given LineString representation

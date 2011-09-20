@@ -44,8 +44,6 @@ public class OSMEdge {
 		this.tonode = tonode;
 	}
 
-
-	
 	public int getId() {
 		return id;
 	}

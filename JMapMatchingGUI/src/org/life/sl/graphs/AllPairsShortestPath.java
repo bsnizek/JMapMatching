@@ -1,7 +1,6 @@
 package org.life.sl.graphs;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 
 import com.vividsolutions.jts.operation.linemerge.LineMergeEdge;
@@ -17,7 +16,7 @@ import com.vividsolutions.jts.planargraph.Node;
 public class AllPairsShortestPath {
 
 	private static boolean bShowProgress = true;		///> show progress during computation?
-	private static double kShowProgressInterval1 = 5.;	///> progress indicator is only updated after this interval, not faster
+	private static double kShowProgressInterval1 = 2.5;	///> progress indicator is only updated after this interval, not faster
 	private static double kShowProgressInterval2 = 5.; 
 
 	HashMap<Node, HashMap<Node, Double>> distances;		///> container for the distances; a simple array would probably perform much better...
@@ -26,6 +25,7 @@ public class AllPairsShortestPath {
 	public HashMap<Node, HashMap<Node, Double>> getDistances() {
 		return distances;
 	}
+	// TODO: decide which array to use
 	public double[][] getDistancesArr() {
 		return dist;
 	}
@@ -37,7 +37,7 @@ public class AllPairsShortestPath {
 
 		// initialize matrix: each element is assigned the direct distance
 		if (bShowProgress) System.out.println("Initializing AllPairsShortestPath-Matrix...");
-		int i = 0, j = 0, k = 0;
+		int i = 0, j = 0;
 		for(Node node1 : nodes) {
 			j = 0;
 			distances.put(node1, new HashMap<Node, Double>());
@@ -57,7 +57,6 @@ public class AllPairsShortestPath {
 		double nn = n*n, nnn = nn*n;
 		long t_start = System.nanoTime();
 		double t_tot = 0., t_tot_last1 = 0., t_tot_last2 = 0.;
-		k = 0;
 		for(Node nodeK : nodes) {
 			i = 0;
 			for(Node nodeI : nodes) {
@@ -78,10 +77,9 @@ public class AllPairsShortestPath {
 					}
 				}
 			}
-			k++;
 			if (bShowProgress) {	// outer loop progress indicator
 				if (t_tot - t_tot_last2 > kShowProgressInterval2) {	// show indicator every x seconds
-					System.out.printf("%f%%\n", i/nnn);
+					System.out.printf(" %f%%\n", 100.*i/n);
 					t_tot_last2 = t_tot;
 				}
 			}
