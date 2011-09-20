@@ -42,9 +42,7 @@ public class OSMFileReader {
 	public void readOSMFile(String osmFileName)  throws FileNotFoundException, IllegalDataException {
 
 		Main.pref = new Preferences();
-
-		Main.proj = new Epsg4326();
-		
+		Main.proj = new Epsg4326();		
 		Main.pref.put("tags.direction", false);
 
 		DataSet dsRestriction = OsmReader.parseDataSet(new FileInputStream(osmFileName), null);

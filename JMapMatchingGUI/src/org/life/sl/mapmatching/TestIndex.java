@@ -42,7 +42,6 @@ public class TestIndex {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		// TODO Auto-generated method stub
 		TestIndex ti = new TestIndex();
 		ti.testAddData();
 		ti.testPoint1();
@@ -52,10 +51,9 @@ public class TestIndex {
 }
 
 class Return implements TIntProcedure {
-	
-	public boolean execute(int value) {
 
-      System.out.println(value);
-      return true;
-    } 
-	}
+	public boolean execute(int value) {
+		System.out.println(value);
+		return true;
+	} 
+}

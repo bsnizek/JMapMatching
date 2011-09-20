@@ -29,15 +29,19 @@ import com.vividsolutions.jts.planargraph.Node;
  * @author bsnizek
  */
 public class JMapMatcher {
+	public enum gpsLoader {
+		SHAPEFILE,
+		PGSQLDATABASE
+	}
 
 	private static int kMaxRoutesOutput = 10;	///> the result is constrained to this max. number of routes
 	private static String kOutputDir = "results/";
 	// even bigger network and route:
-	private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
-	private static String kGPSPointFileName = "testdata/exmp1/example_gsp_1.shp";
+//	private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
+//	private static String kGPSPointFileName = "testdata/exmp1/example_gsp_1.shp";
 	// bigger network and route:
-//	private static String kGraphDataFileName = "testdata/SparseNetwork.shp";
-//	private static String kGPSPointFileName = "testdata/GPS_Points.shp";
+	private static String kGraphDataFileName = "testdata/SparseNetwork.shp";
+	private static String kGPSPointFileName = "testdata/GPS_Points.shp";
 	// smaller network and route:
 //	private static String kGraphDataFileName = "testdata/Sparse_bigger0.shp";
 //	private static String kGPSPointFileName = "testdata/GPS_Points_1.shp";

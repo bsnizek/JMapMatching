@@ -76,6 +76,9 @@ public class PathSegmentGraph {
 	public HashMap<Node, HashMap<Node, Double>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
 	}
+	public double[][] getAPSDistancesArr() {
+		return allPairsShortestPath.getDistancesArr();
+	}
 	
 	public PathSegmentGraph() {
 		super();
@@ -228,8 +231,8 @@ public class PathSegmentGraph {
 		return closestNode;
 	}
 
-	public Collection<Node> getNodes() {
-		Collection<Node> nodes = new ArrayList<Node>();
+	public ArrayList<Node> getNodes() {
+		ArrayList<Node> nodes = new ArrayList<Node>();
 		for(Object obj : getLineMergeGraphH4cked().getNodes()) {
 			nodes.add((Node)obj);
 		}
