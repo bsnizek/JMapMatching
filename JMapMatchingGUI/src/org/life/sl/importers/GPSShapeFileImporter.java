@@ -125,7 +125,7 @@ public class GPSShapeFileImporter {
 				
 				
 				SourcePoint sp = new SourcePoint();
-				sp.setGeometry((Point) geometry);
+				sp.setGeometry((Point) geometry.reverse());
 				sp.setSourcerouteid(route_id);
 				session.save(sp);
 

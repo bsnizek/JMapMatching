@@ -73,6 +73,8 @@ public class PathSegmentGraph {
 	private LineMergeGraphH4cked lineMergeGraphH4cked;
 	private boolean bUseDatabase = false;
 
+	private int gPSTrackID;
+
 	public HashMap<Node, HashMap<Node, Double>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
 	}
@@ -94,6 +96,7 @@ public class PathSegmentGraph {
 	public PathSegmentGraph(int i) {
 		this();
 		bUseDatabase = true;
+		this.gPSTrackID = i;
 		addLineStringsFromDatabase();
 	}
 	
@@ -132,6 +135,8 @@ public class PathSegmentGraph {
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
+		
+		Query gpsResults = session.createQuery("from" );
 		
 		Query result = session.createQuery("from OSMEdge");
 		@SuppressWarnings("unchecked")
