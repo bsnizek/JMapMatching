@@ -294,6 +294,7 @@ public class JMapMatcher {
 			session.beginTransaction();
 			
 			Query result = session.createQuery("from SourceRoute");
+			@SuppressWarnings("unchecked")
 			Iterator<SourceRoute> iterator = result.iterate();
 			System.out.println(result.list().size() + " tracks to be matched");
 			ArrayList<Integer> sRoutes= new ArrayList<Integer>();
