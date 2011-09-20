@@ -151,6 +151,7 @@ public class OSMImporter {
 						oe.setFromnode((int) way.getNode(0).getId());
 						oe.setTonode((int) way.getNode(way.getNodesCount()-1).getId());
 						oe.setLength(lineString.getLength());
+						oe.setRoadname(way.getName());
 						System.out.print(".");
 						session.save(oe);
 					}

@@ -9,8 +9,17 @@ public class OSMEdge {
 	private int fromnode;
 	private int tonode;
 	private double length;
+	private String roadname;
 	
 	
+	public String getRoadname() {
+		return roadname;
+	}
+
+	public void setRoadname(String roadname) {
+		this.roadname = roadname;
+	}
+
 	public double getLength() {
 		return length;
 	}
