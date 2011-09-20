@@ -25,6 +25,7 @@ public class AllPairsShortestPath {
 	public HashMap<Node, HashMap<Node, Double>> getDistances() {
 		return distances;
 	}
+	// TODO: decide which array to use
 	public double[][] getDistancesArr() {
 		return dist;
 	}
