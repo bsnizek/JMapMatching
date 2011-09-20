@@ -64,6 +64,8 @@
         <mapping resource="org/life/sl/orm/ShortestPathLength.hbm.xml"/>
         <mapping resource="org/life/sl/orm/SourcePoint.hbm.xml"/>
         <mapping resource="org/life/sl/orm/SourceRoute.hbm.xml"/>
+        <mapping resource="org/life/sl/orm/Resultroute.hbm.xml"/>
+        
         
 	</session-factory>
 		

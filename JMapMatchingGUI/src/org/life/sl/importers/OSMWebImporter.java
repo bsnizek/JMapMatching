@@ -16,7 +16,6 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.TransformException;
 import org.openstreetmap.josm.io.IllegalDataException;
 
-import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.MultiPoint;
@@ -27,7 +26,11 @@ public class OSMWebImporter {
 
 	public OSMWebImporter(int sourcerouteId) throws IOException, URISyntaxException, IllegalDataException, FactoryException, TransformException {
 
+		
+		// String OSM_API_STRING = "http://api.openstreetmap.org/api/0.6/map?bbox=";
+		String OSM_API_STRING = "http://open.mapquestapi.com/xapi/api/0.6/map?bbox=";
 
+		
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
@@ -56,23 +59,45 @@ public class OSMWebImporter {
 		Double step = 0.0100;
 		Double left = 12.4910;
 		Double top = 55.6550;
-		for (int j=-15; j<=15; j++) {
-			for (int k=-15; k<=15;k++) {
+		for (int j=-14; j<=11; j++) {  //left-right
+			for (int k=-1; k<=6;k++) {  // bottom -> top
 				Double new_left = j*step + left;
 				Double new_right = new_left + step;
 				Double new_top = k*step + top;
 				Double new_bottom = new_top + step;
-				String url = "http://api.openstreetmap.org/api/0.6/map?bbox=" + new_left +"," + new_top + "," + new_right + ","+ new_bottom;
+				String url = OSM_API_STRING + new_left +"," + new_top + "," + new_right + ","+ new_bottom;
 				URL osm = new URL(url);
 				System.out.println(url);
-				URLConnection osmConnection = osm.openConnection(); 
 
-				InputStream in = osmConnection.getInputStream();
+				boolean ok = false;
+				int counter = 0; 
+				InputStream in = null;
 
-				OSMImporter osmImporter = new OSMImporter();
-				osmImporter.readOSMFilefromStream(in);
-				System.out.println(j + "/" + 30 + "-" + k + "/" + 30);
-			}
+				while (!ok && counter<5) {
+					try {
+						URLConnection osmConnection = osm.openConnection(); 
+						in = osmConnection.getInputStream();
+						ok = true;
+					} catch (java.io.IOException e) {
+						System.out.println("OSM timeout - waiting for 5 minutes ...");
+						try {
+							Thread.sleep(300000);
+						} catch (InterruptedException e1) {
+							// TODO Auto-generated catch block
+							e1.printStackTrace();
+						}
+						counter++;
+					}
+				}
+
+				if (in != null) {
+					OSMImporter osmImporter = new OSMImporter();
+					osmImporter.readOSMFilefromStream(in);
+					System.out.println(j + "/" + 30 + "-" + k + "/" + 30);
+				} else {
+					System.out.println("Timeout at import!");
+				}
+			} 
 
 		}
 

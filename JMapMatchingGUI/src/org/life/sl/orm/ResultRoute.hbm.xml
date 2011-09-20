@@ -30,7 +30,7 @@
 
 <hibernate-mapping package="org.life.sl.orm">
 
-    <class name="SourcePoint" table="sourcepoint">
+    <class name="ResultRoute" table="resultroute">
 
         <id name="id" column="id">
         	<generator class="native" />
@@ -39,8 +39,10 @@
         	<column name="geom" />
         </property>
         <property name="sourcerouteid" ></property>
-        <!--<property name="ts" ></property>-->
-
+    	<property type="boolean" name="selected"></property>
+    	<property type="float" name="length"></property>
+    	
+	
     </class>
 
 </hibernate-mapping>

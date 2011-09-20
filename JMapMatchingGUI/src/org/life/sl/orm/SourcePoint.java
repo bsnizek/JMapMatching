@@ -7,7 +7,16 @@ public class SourcePoint {
 	private int id;
 	private Point geometry;
 	private int sourcerouteid;
+	/*private int ts; // timestamp ? 
 	
+	public int getTs() {
+		return ts;
+	}
+
+	public void setTs(int ts) {
+		this.ts = ts;
+	}*/
+
 	public int getSourcerouteid() {
 		return sourcerouteid;
 	}
