@@ -12,6 +12,7 @@ public class RFParams {
 		MaximumLength,	///> maximum length of a valid route; length is defined as the sum of weights over edges in the route 
 		MaximumNumberOfRoutes,	///> if this number of routes have been found, the algorithm should terminate
 		DistanceFactor,	///> this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
+		NetworkBufferSize,	///> size of the buffer around the track, when selecting a network section, in meters(!)
 	}
 
 	// collection of integer constraints, i.e. overlap constraints
