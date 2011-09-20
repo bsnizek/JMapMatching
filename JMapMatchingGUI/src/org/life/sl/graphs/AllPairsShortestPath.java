@@ -1,5 +1,6 @@
 package org.life.sl.graphs;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 
@@ -25,10 +26,13 @@ public class AllPairsShortestPath {
 	public HashMap<Node, HashMap<Node, Double>> getDistances() {
 		return distances;
 	}
+	public double[][] getDistancesArr() {
+		return dist;
+	}
 	
 	public AllPairsShortestPath(PathSegmentGraph graph) {
 		distances = new HashMap<Node, HashMap<Node, Double>>();
-		Collection<Node> nodes = graph.getNodes();
+		ArrayList<Node> nodes = graph.getNodes();
 		dist = new double[nodes.size()][nodes.size()];
 
 		// initialize matrix: each element is assigned the direct distance

@@ -2,7 +2,6 @@ package org.life.sl.graphs;
 
 public class GlobalRegister {
 	
-	
 	private static GlobalRegister instance = null;
 	
 	public final static boolean SNAP = false;
@@ -19,10 +18,4 @@ public class GlobalRegister {
 		}
 		return instance;
 	}
-
-
-
-	
-	
-	
 }
