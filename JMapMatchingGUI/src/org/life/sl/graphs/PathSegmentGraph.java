@@ -35,20 +35,42 @@ package org.life.sl.graphs;
  */
 
 
+import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
+import java.net.MalformedURLException;
 
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
 
+import org.geotools.data.DataUtilities;
+import org.geotools.data.DefaultTransaction;
+import org.geotools.data.Transaction;
+import org.geotools.data.shapefile.ShapefileDataStore;
+import org.geotools.data.shapefile.ShapefileDataStoreFactory;
+import org.geotools.data.simple.SimpleFeatureCollection;
+import org.geotools.data.simple.SimpleFeatureSource;
+import org.geotools.data.simple.SimpleFeatureStore;
+import org.geotools.feature.FeatureCollections;
+import org.geotools.feature.SchemaException;
+import org.geotools.feature.simple.SimpleFeatureBuilder;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.hibernatespatial.criterion.SpatialRestrictions;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMEdge;
+import org.opengis.feature.simple.SimpleFeature;
+import org.opengis.feature.simple.SimpleFeatureType;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
+import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 
@@ -73,6 +95,8 @@ public class PathSegmentGraph {
 	private boolean distancesCalculated;
 	private LineMergeGraphH4cked lineMergeGraphH4cked;
 	private boolean bUseDatabase = false;
+	
+	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 
 	public HashMap<Node, HashMap<Node, Double>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
@@ -155,22 +179,132 @@ public class PathSegmentGraph {
 		session.beginTransaction();
 		
 		//Query gpsResults = session.createQuery("from" );
-		Query result;
+		
 		if (track == null) {
+			
+			Query result;
+			
 			result = session.createQuery("from OSMEdge");
+			
+			@SuppressWarnings("unchecked")
+			Iterator<OSMEdge> iter = result.iterate();
+			while (iter.hasNext() ) {
+				OSMEdge  o = iter.next();
+				LineString g = o.getGeometry();
+				addLineString(g, o.getId());
+			}
+			
 		} else {
-			result = session.createQuery("from OSMEdge");	// TODO: create a query for a network area enveloping the track!
-			// track ist eine array liste 
+			
+			// let us join the nodes of the track to a linestring ....
+			
+			
+			Iterator<Point> trackIter = track.iterator();
+			
+			
+			ArrayList<Coordinate> coords = new ArrayList<Coordinate>();
+			while (trackIter.hasNext()) {
+				Point p = trackIter.next();	
+				coords.add(p.getCoordinate());
+			}
+			LineString l = fact.createLineString((Coordinate[]) coords.toArray());
+			
+			// ... build a buffer ...
+			
+			Geometry buffer = l.buffer(500);	// TODO: get  the buffer from the settings file
+			Criteria testCriteria = session.createCriteria(OSMEdge.class);
+			testCriteria.add(SpatialRestrictions.within("location", buffer));
+			@SuppressWarnings("unchecked")
+			List<OSMEdge> result = testCriteria.list();
+			
+			System.out.println("Spatial query selected " + result.size());
+			
+			Iterator<OSMEdge> iter = result.iterator();
+			while (iter.hasNext() ) {
+				OSMEdge  o = iter.next();
+				LineString g = o.getGeometry();
+				addLineString(g, o.getId());
+			}
+			
+			try {
+				this.dumpBuffer(result, "results/buffer.shp");
+				System.out.println("buffer dumped");
+			} catch (SchemaException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+
 		}
-		@SuppressWarnings("unchecked")
-		Iterator<OSMEdge> iter = result.iterate();
-		while (iter.hasNext() ) {
-			OSMEdge  o = iter.next();
-			LineString g = o.getGeometry();
-			addLineString(g, o.getId());
-		}
+		
 		session.disconnect();
 
+	}
+	
+	public void dumpBuffer(List<OSMEdge> edges, String filename) throws SchemaException, IOException {
+		
+		final SimpleFeatureType TYPE = DataUtilities.createType("route",
+						"location:LineString:srid=4326," + // <- the geometry attribute: Polyline type
+						"name:String," + // <- a String attribute
+						"number:Integer" // a number attribute
+				);
+
+		// 1. build a feature
+		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(TYPE);
+		SimpleFeatureCollection collection = FeatureCollections.newCollection();
+		
+		Iterator<OSMEdge> iter = edges.iterator();
+		while (iter.hasNext()) {
+			OSMEdge o = iter.next();
+			SimpleFeature feature = featureBuilder.buildFeature(null);	
+			feature.setDefaultGeometry(o.getGeometry());
+			
+		}
+		
+		System.out.println("Writing to shapefile " + filename);
+		File newFile = new File(filename);
+		// File newFile = getNewShapeFile(file);
+
+        ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
+
+        Map<String, Serializable> params = new HashMap<String, Serializable>();
+        params.put("url", newFile.toURI().toURL());
+        params.put("create spatial index", Boolean.TRUE);
+
+        ShapefileDataStore newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
+        newDataStore.createSchema(TYPE);
+
+        // You can comment out this line if you are using the createFeatureType method (at end of
+        // class file) rather than DataUtilities.createType
+        newDataStore.forceSchemaCRS(DefaultGeographicCRS.WGS84);
+		
+        Transaction transaction = new DefaultTransaction("create");
+
+        String typeName = newDataStore.getTypeNames()[0];
+        SimpleFeatureSource featureSource = newDataStore.getFeatureSource(typeName);
+        
+        if (featureSource instanceof SimpleFeatureStore) {
+            SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
+
+            featureStore.setTransaction(transaction);
+            try {
+                featureStore.addFeatures(collection);
+                transaction.commit();
+            } catch (Exception problem) {
+                problem.printStackTrace();
+                transaction.rollback();
+            } finally {
+                transaction.close();
+            }
+            // System.exit(0); // success!
+        } else {
+            System.out.println(typeName + " does not support read/write access");
+            System.exit(1);	// exit program with status 1 (error)
+        }
+		
+		
 	}
 
 	/**
@@ -204,8 +338,9 @@ public class PathSegmentGraph {
 		Edge edge = getLineMergeGraphH4cked().addEdge(lineString);
 		//Object userdata = lineString.getUserData();
 		System.out.println(id);
-		HashMap<String, Integer> hm = new HashMap<String, Integer>();
+		HashMap<String, Object> hm = new HashMap<String, Object>();
 		hm.put("id", id);
+		hm.put("geom", lineString);
 		edge.setData(hm);
 	}
 
