@@ -98,10 +98,10 @@ public class PathSegmentGraph {
 	
 	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 
-	public HashMap<Node, HashMap<Node, Double>> getAPSDistances() {
+	public HashMap<Node, HashMap<Node, Float>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
 	}
-	public double[][] getAPSDistancesArr() {
+	public float[][] getAPSDistancesArr() {
 		return allPairsShortestPath.getDistancesArr();
 	}
 	
@@ -181,10 +181,7 @@ public class PathSegmentGraph {
 		//Query gpsResults = session.createQuery("from" );
 		
 		if (track == null) {
-			
-			Query result;
-			
-			result = session.createQuery("from OSMEdge");
+			Query result = session.createQuery("from OSMEdge");
 			
 			@SuppressWarnings("unchecked")
 			Iterator<OSMEdge> iter = result.iterate();
@@ -193,14 +190,10 @@ public class PathSegmentGraph {
 				LineString g = o.getGeometry();
 				addLineString(g, o.getId());
 			}
-			
 		} else {
-			
 			// let us join the nodes of the track to a linestring ....
 			
-			
 			Iterator<Point> trackIter = track.iterator();
-			
 			
 			ArrayList<Coordinate> coords = new ArrayList<Coordinate>();
 			while (trackIter.hasNext()) {
@@ -236,11 +229,9 @@ public class PathSegmentGraph {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
-
 		}
 		
 		session.disconnect();
-
 	}
 	
 	public void dumpBuffer(List<OSMEdge> edges, String filename) throws SchemaException, IOException {
@@ -303,8 +294,6 @@ public class PathSegmentGraph {
             System.out.println(typeName + " does not support read/write access");
             System.exit(1);	// exit program with status 1 (error)
         }
-		
-		
 	}
 
 	/**
@@ -320,15 +309,12 @@ public class PathSegmentGraph {
 		distancesCalculated = false;
 
 		if (lineString.isEmpty()) { return; }
-		if(lineString.getCoordinates().length < 2) {
-			System.exit(1);
-		}
+		if (lineString.getCoordinates().length < 2) { System.exit(1); }
 
 		Coordinate[] coordinates = lineString.getCoordinates();
 		modifyEnvelope(coordinates);
 
 		if (GlobalRegister.SNAP) {
-
 			for(Coordinate c : coordinates) {
 				c.x = c.x - (c.x % GlobalRegister.GLOBAL_SNAP);
 				c.y = c.y - (c.y % GlobalRegister.GLOBAL_SNAP);
@@ -337,7 +323,7 @@ public class PathSegmentGraph {
 
 		Edge edge = getLineMergeGraphH4cked().addEdge(lineString);
 		//Object userdata = lineString.getUserData();
-		System.out.println(id);
+		//System.out.println(id);
 		HashMap<String, Object> hm = new HashMap<String, Object>();
 		hm.put("id", id);
 		hm.put("geom", lineString);

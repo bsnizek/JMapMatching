@@ -23,7 +23,7 @@ import com.vividsolutions.jts.geom.Point;
 //import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.Node;
 
-// ${build_files:-Xmx=2048m}
+// JVM argument for max. heap size (required for large networks): -Xmx2048m
 
 /**
  * The main map matching algorithm
@@ -56,7 +56,7 @@ public class JMapMatcher {
 //	private static String kGraphDataFileName = "testdata/Sparse_bigger0.shp";
 //	private static String kGPSPointFileName = "testdata/GPS_Points_1.shp";
 	
-	private PathSegmentGraph graph;			///> data basis (graph)
+	private PathSegmentGraph graph = null;			///> data basis (graph)
 	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
 	private RFParams rfParams = null;		///> parameters for the route finding algorithm
 	
@@ -303,13 +303,11 @@ public class JMapMatcher {
 				sRoutes.add(sR.getId());
 				//
 			}
+			JMapMatcher jmm = new JMapMatcher(null);
 			for (int i=0; i<sRoutes.size(); i++) {
-				new JMapMatcher(g).match(sRoutes.get(i));
+				jmm.match(sRoutes.get(i));
 				System.out.println("Track " + sRoutes.get(i) + " matched.");
 			}
-			
-			
-			
 			
 		}
 	}

@@ -10,6 +10,7 @@ import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMEdge;
 import org.life.sl.orm.OSMNode;
 import org.life.sl.orm.ShortestPathLength;
+import org.life.sl.utils.Timer;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.planargraph.Edge;
@@ -20,38 +21,45 @@ public class CalculateODMatrix {
 	PathSegmentGraph psg = null;
 
 	// a hashmap mapping OSM ids to OSM Edges
-	HashMap<Integer, OSMEdge> ids_edges = this.loadEdgesFromOSM();
-	HashMap<Integer, OSMNode> ids_nodes = this.loadNodesFromOSM();
+	HashMap<Integer, OSMEdge> ids_edges = null;
+	HashMap<Integer, OSMNode> ids_nodes = null;
 	
 	public CalculateODMatrix() {
+		Timer timer = new Timer();
+		timer.init();
+		ids_edges = this.loadEdgesFromOSM();
+		timer.getRunTime(true, "Edges read from database: " + ids_edges.size());
+		ids_nodes = this.loadNodesFromOSM();
+		timer.getRunTime(true, "Nodes read from database: " + ids_nodes.size());
 
 		psg = new PathSegmentGraph(1);	// 1 = read from database...
+		timer.getRunTime(true, "PathSegmentGraph initialized");
 		psg.calculateDistances();
 
-		HashMap<Node, HashMap<Node, Double>> distances = psg.getAPSDistances();
-		//double dist[][] = psg.getAPSDistancesArr();//new double[nodes.size()][nodes.size()];
+		//HashMap<Node, HashMap<Node, Double>> distances = psg.getAPSDistances();
+		float dist[][] = psg.getAPSDistancesArr();//new double[nodes.size()][nodes.size()];
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
+		session.createQuery("DELETE FROM shortestpathlength");	// empty table
 
 		int osmNodeID1 = 0, osmNodeID2 = 0;
-		Double length = 0.;
-		HashMap<Node, Double> hm1;
+		float length = 0.f;
+		//HashMap<Node, Double> hm1;
 		
 		System.out.println("Starting database import...");
-		long t_start = System.nanoTime();
-		for (Node n1 : distances.keySet()) {	// outer loop over all nodes
-			osmNodeID1 = getOSMNodeIDForNode(n1);
-			if (osmNodeID1 != 0) {				// check if node exists in OSM network at all...
-				hm1 = distances.get(n1);		// a HashMap<Node, Double>
-				for (Node n2 : hm1.keySet()) {	// inner loop over all nodes
-					if (n2 != n1) {				// no connection to self!
-						length = hm1.get(n2);	// the path length
+		timer.init();
+		for (int i = 0; i < dist.length - 1; i++) {	// outer loop over all nodes
+			osmNodeID1 = i;//getOSMNodeIDForNode(n1);
+			if (osmNodeID1 >= 0) {				// check if node exists in OSM network at all...
+				for (int j = i+1; j < dist.length; j++) {	// inner loop over all nodes
+					if (i != j) {				// no connection to self!
+						length = dist[i][j];	// the path length
 						if (length > 1.e-8 && length < 1.e100) {	// ignore 0 (= self) and infinity (= no connection)
-							osmNodeID2 = getOSMNodeIDForNode(n2);
+							osmNodeID2 = j;//getOSMNodeIDForNode(n2);
 
 							// store length(n1, n2)
-							if (osmNodeID2 != 0) {
+							if (osmNodeID2 >= 0) {
 								ShortestPathLength sPl1 = new ShortestPathLength(osmNodeID1, osmNodeID2, length);
 								session.save(sPl1);
 								
@@ -64,14 +72,38 @@ public class CalculateODMatrix {
 				}
 			}
 		}
+//		for (Node n1 : distances.keySet()) {	// outer loop over all nodes
+//			osmNodeID1 = getOSMNodeIDForNode(n1);
+//			if (osmNodeID1 != 0) {				// check if node exists in OSM network at all...
+//				hm1 = distances.get(n1);		// a HashMap<Node, Double>
+//				for (Node n2 : hm1.keySet()) {	// inner loop over all nodes
+//					if (n2 != n1) {				// no connection to self!
+//						length = hm1.get(n2);	// the path length
+//						if (length > 1.e-8 && length < 1.e100) {	// ignore 0 (= self) and infinity (= no connection)
+//							osmNodeID2 = getOSMNodeIDForNode(n2);
+//
+//							// store length(n1, n2)
+//							if (osmNodeID2 != 0) {
+//								ShortestPathLength sPl1 = new ShortestPathLength(osmNodeID1, osmNodeID2, length);
+//								session.save(sPl1);
+//								
+//								// the same path in reverse direction: not necessary
+//								/*ShortestPathLength sPl2 = new ShortestPathLength(osmNodeID2, osmNodeID1, length);
+//								session.save(sPl2);*/
+//							}
+//						}
+//					}
+//				}
+//			}
+//		}
 		session.getTransaction().commit();
-		System.out.println("... finished: t = " + (double)(System.nanoTime() - t_start)*1.e-9 + "s");
+		timer.getRunTime(true, "... finished");
 		System.out.println("YEAH !");
 
 	}
 
 	private int getOSMNodeIDForNode(Node n1) {
-		int osmID = 0;
+		int osmID = -1;
 
 		Edge e = psg.getSingleEdgeAtNode(n1);	// get one edge connected to Node n2
 		if (e != null) {
@@ -118,7 +150,6 @@ public class CalculateODMatrix {
 			id_edge.put(e.getId(), e);
 		}
 		session.disconnect();
-		System.out.println("Edges read from database: " + id_edge.size());
 		return id_edge;
 	}
 
@@ -137,7 +168,6 @@ public class CalculateODMatrix {
 			id_node.put(e.getId(), e);
 		}
 		session.disconnect();
-		System.out.println("Nodes read from database: " + id_node.size());
 		return id_node;
 	}
 
