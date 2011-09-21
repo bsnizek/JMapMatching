@@ -83,7 +83,7 @@ public class Timer {
 		}
 		if (p > 0f) {	// percentage indicator
 			if (t_tot - t_tot_last[1] > progressInterval[1]) {	// show indicator every x seconds
-				System.out.printf(" %6.2f%%\n - ETA %fs", 100.*p, t_tot/p - t_tot);
+				System.out.printf(" %6.2f%% - ETA %fs\n", 100.*p, t_tot/p - t_tot);
 				t_tot_last[1] = t_tot;
 			}
 		}

@@ -40,16 +40,19 @@ public class CalculateODMatrix {
 		float dist[][] = psg.getAPSDistancesArr();//new double[nodes.size()][nodes.size()];
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
-		session.beginTransaction();
-		session.createQuery("DELETE FROM shortestpathlength");	// empty table
+		// TODO: empty the table shortestpathlength! But how?
+		//session.createQuery("DELETE FROM shortestpathlength");	// empty table
 
 		int osmNodeID1 = 0, osmNodeID2 = 0;
 		float length = 0.f;
 		//HashMap<Node, Double> hm1;
 		
-		System.out.println("Starting database import...");
-		timer.init();
+		System.out.println("Starting database export...");
+		timer.init(2.5, 50.);
+		double nn = dist.length*dist.length/2;	// approximate number of steps
+		long n = 0;
 		for (int i = 0; i < dist.length - 1; i++) {	// outer loop over all nodes
+			session.beginTransaction();
 			osmNodeID1 = i;//getOSMNodeIDForNode(n1);
 			if (osmNodeID1 >= 0) {				// check if node exists in OSM network at all...
 				for (int j = i+1; j < dist.length; j++) {	// inner loop over all nodes
@@ -60,6 +63,7 @@ public class CalculateODMatrix {
 
 							// store length(n1, n2)
 							if (osmNodeID2 >= 0) {
+								// TODO: can this be optimized by reusing sPl1 instead of creating it (new)?
 								ShortestPathLength sPl1 = new ShortestPathLength(osmNodeID1, osmNodeID2, length);
 								session.save(sPl1);
 								
@@ -69,8 +73,11 @@ public class CalculateODMatrix {
 							}
 						}
 					}
+					n++;
 				}
 			}
+			session.getTransaction().commit();	// complete the transaction in the outer loop, to prevent it from getting too big
+			timer.showProgress(n/nn);
 		}
 //		for (Node n1 : distances.keySet()) {	// outer loop over all nodes
 //			osmNodeID1 = getOSMNodeIDForNode(n1);
@@ -96,7 +103,6 @@ public class CalculateODMatrix {
 //				}
 //			}
 //		}
-		session.getTransaction().commit();
 		timer.getRunTime(true, "... finished");
 		System.out.println("YEAH !");
 
