@@ -40,6 +40,7 @@ public class CalculateODMatrix {
 		float dist[][] = psg.getAPSDistancesArr();//new double[nodes.size()][nodes.size()];
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
 		// TODO: empty the table shortestpathlength! But how?
 		//session.createQuery("DELETE FROM shortestpathlength");	// empty table
 
@@ -52,7 +53,6 @@ public class CalculateODMatrix {
 		double nn = dist.length*dist.length/2;	// approximate number of steps
 		long n = 0;
 		for (int i = 0; i < dist.length - 1; i++) {	// outer loop over all nodes
-			session.beginTransaction();
 			osmNodeID1 = i;//getOSMNodeIDForNode(n1);
 			if (osmNodeID1 >= 0) {				// check if node exists in OSM network at all...
 				for (int j = i+1; j < dist.length; j++) {	// inner loop over all nodes
@@ -76,7 +76,6 @@ public class CalculateODMatrix {
 					n++;
 				}
 			}
-			session.getTransaction().commit();	// complete the transaction in the outer loop, to prevent it from getting too big
 			timer.showProgress(n/nn);
 		}
 //		for (Node n1 : distances.keySet()) {	// outer loop over all nodes
@@ -103,6 +102,7 @@ public class CalculateODMatrix {
 //				}
 //			}
 //		}
+		session.getTransaction().commit();	// TODO: complete the transaction in the outer loop above, to prevent it from getting too big?
 		timer.getRunTime(true, "... finished");
 		System.out.println("YEAH !");
 

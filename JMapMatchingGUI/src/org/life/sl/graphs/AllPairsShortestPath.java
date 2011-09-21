@@ -165,8 +165,9 @@ public class AllPairsShortestPath {
 //					ni++;
 //				}
 //			if (bShowProgress) timer.showProgress(0);	// inner loop progress indicator
-			if (bShowProgress) timer.showProgress(ni/nnn);	// outer loop progress indicator
+			if (bShowProgress) timer.showProgress(ni/nn);	// outer loop progress indicator
 		}
+		ni *= nNodes;
 
 //		int k = 0;
 //		for(Node nodeK : nodes) {
@@ -187,8 +188,10 @@ public class AllPairsShortestPath {
 //			k++;
 //			if (bShowProgress) timer.showProgress((float)i/nn);	// outer loop progress indicator
 //		}
-		if (bShowProgress) timer.getRunTime(true, "Floyd-Warshall finished");
-		if (bShowProgress) System.out.println("Floyd-Warshall finished - computed " + ni + " distances in " + t_tot + "s (" + ni/t_tot + "/s)");
+		if (bShowProgress) {
+			t_tot = timer.getRunTime(true, "Floyd-Warshall finished");
+			System.out.println("Floyd-Warshall finished - computed " + ni + " distances in " + t_tot + "s (" + ni/t_tot + "/s)");
+		}
 	}
 	
 	private class DistInnerLoop implements Callable<Integer> {
