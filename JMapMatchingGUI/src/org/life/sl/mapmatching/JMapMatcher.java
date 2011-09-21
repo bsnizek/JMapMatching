@@ -23,9 +23,12 @@ import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
 import org.life.sl.utils.Timer;
 
+import com.vividsolutions.jts.geom.Coordinate;
+import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 //import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
+import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.Node;
 
 // JVM argument for max. heap size (required for large networks): -Xmx2048m
@@ -67,6 +70,8 @@ public class JMapMatcher {
 	
 	private double t_start;					// for timing purposes only
 	private int sourcerouteID = 0;
+	
+	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 
 	/**
 	 * default constructor: initialization with an empty graph (graph must then be be created later on)
@@ -223,21 +228,32 @@ public class JMapMatcher {
 	private boolean writeLabelToDatabase(Label label, boolean isChoice) {
 		boolean ok = false;
 		
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+		
 		List<DirectedEdge> dEdges = label.getRouteAsEdges();
 		// set up entry for route table:
 		ResultRoute route = new ResultRoute();
 		// set route parameters:
-		route.setGeometry(label.getRouteAsEdges().getGeometry());	// TODO: get a geometry object (??)
+		
 		route.setLength((float)label.getLength());
 		route.setSelected(isChoice);
 		route.setSourcerouteid(sourcerouteID);
 		// entry for node table:
-		ResultNodes nodes = new ResultNodes();	// TODO: create ORM connector
+		// ResultNode node = new ResultNode();	// TODO: create ORM connector
 		// get node list:
 		HashMap<String, Object> hm;
+		int i =  0;
+		Coordinate[] coordinates = new Coordinate[dEdges.size() +1];
 		for (DirectedEdge de : dEdges) {
-			hm = (HashMap<String, Object>)de.getEdge().getData();
-			Integer eID = (Integer)hm.get("id");
+			if (i==0) {
+				Node node1 = de.getFromNode();
+				coordinates[0] = node1.getCoordinate();
+			}
+				Node node2 = de.getToNode();
+				coordinates[i+1] = node2.getCoordinate();
+			
+			Integer eID = (Integer) de.getData().get("id");
 			//OSMEdge osme = new OSMEdge();
 			// TODO: How to go on from here:
 			// 1. get OSMEdge from database
@@ -245,9 +261,16 @@ public class JMapMatcher {
 			//    problem: direction of edge / sequnce of nodes??
 			// 3. store OSMNode-IDs in array
 			// 4. store this array in the table ResultNodes
-		}
+			i++;
+		} 
+
+		LineString lineString = fact.createLineString(coordinates);
+		route.setGeometry(lineString);
 		
-		// TODO: ok = ...
+		session.save(route);
+		session.getTransaction().commit();
+	
+		ok = true;
 		return ok;
 	}
 	

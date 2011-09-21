@@ -73,8 +73,6 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.io.ParseException;
-import com.vividsolutions.jts.io.WKTReader;
 
 import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Edge;
@@ -230,16 +228,16 @@ public class PathSegmentGraph {
 				addLineString(g, o.getId());
 			}
 			
-			try {
-				this.dumpBuffer(result, "results/buffer.shp");
-				System.out.println("buffer dumped");
-			} catch (SchemaException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
+//			try {
+//				this.dumpBuffer(result, "results/buffer.shp");
+//				System.out.println("buffer dumped");
+//			} catch (SchemaException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			} catch (IOException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
 		}
 		
 		session.disconnect();
