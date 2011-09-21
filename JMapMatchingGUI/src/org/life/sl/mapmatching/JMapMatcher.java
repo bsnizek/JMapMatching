@@ -242,7 +242,7 @@ public class JMapMatcher {
 		// entry for node table:
 		// ResultNode node = new ResultNode();	// TODO: create ORM connector
 		// get node list:
-		HashMap<String, Object> hm;
+		// HashMap<String, Object> hm;
 		int i =  0;
 		Coordinate[] coordinates = new Coordinate[dEdges.size() +1];
 		for (DirectedEdge de : dEdges) {
@@ -253,7 +253,7 @@ public class JMapMatcher {
 				Node node2 = de.getToNode();
 				coordinates[i+1] = node2.getCoordinate();
 			
-			Integer eID = (Integer) de.getData().get("id");
+			// Integer eID = (Integer) de.getData().get("id");
 			//OSMEdge osme = new OSMEdge();
 			// TODO: How to go on from here:
 			// 1. get OSMEdge from database
