@@ -239,32 +239,42 @@ public class JMapMatcher {
 		route.setLength((float)label.getLength());
 		route.setSelected(isChoice);
 		route.setSourcerouteid(sourcerouteID);
+		
 		// entry for node table:
 		// ResultNode node = new ResultNode();	// TODO: create ORM connector
 		// get node list:
 		// HashMap<String, Object> hm;
 		int i =  0;
-		Coordinate[] coordinates = new Coordinate[dEdges.size() +1];
+		
+		ArrayList<Coordinate> coordinates = new ArrayList<Coordinate>();
 		for (DirectedEdge de : dEdges) {
+		
+			// HashMap<String, Object> hm = (HashMap<String, Object>) de.getData();
+			HashMap<String, Object> data = (HashMap<String, Object>) de.getEdge().getData();
+			LineString ls = (LineString) data.get("geom");
+			int number_points = ls.getNumPoints();
+			
 			if (i==0) {
 				Node node1 = de.getFromNode();
-				coordinates[0] = node1.getCoordinate();
+				coordinates.add(node1.getCoordinate());
 			}
-				Node node2 = de.getToNode();
-				coordinates[i+1] = node2.getCoordinate();
+			for (int j=0; j<number_points; j++) {
+				coordinates.add(ls.getPointN(j).getCoordinate());
+			}
+			coordinates.add(de.getToNode().getCoordinate());
 			
-			// Integer eID = (Integer) de.getData().get("id");
-			//OSMEdge osme = new OSMEdge();
-			// TODO: How to go on from here:
-			// 1. get OSMEdge from database
-			// 2. get OSMNode-IDs from OSMEdge
-			//    problem: direction of edge / sequnce of nodes??
-			// 3. store OSMNode-IDs in array
-			// 4. store this array in the table ResultNodes
+			
 			i++;
 		} 
 
-		LineString lineString = fact.createLineString(coordinates);
+		Coordinate[] arrCoordinates = new Coordinate[coordinates.size()];
+		int k=0;
+		for (Coordinate co : coordinates) {
+			arrCoordinates[k] = co;
+			k++;
+		}
+		
+		LineString lineString = fact.createLineString(arrCoordinates);
 		route.setGeometry(lineString);
 		
 		session.save(route);

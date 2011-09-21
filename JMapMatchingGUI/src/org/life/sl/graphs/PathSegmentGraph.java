@@ -213,7 +213,7 @@ public class PathSegmentGraph {
 			
 			// ... build a buffer ...
 			
-			Geometry buffer = l.buffer(200);	// TODO: get  the buffer from the settings file
+			Geometry buffer = l.buffer(50);	// TODO: get  the buffer from the settings file
 	        
 	        Criteria testCriteria = session.createCriteria(OSMEdge.class);
 			testCriteria.add(SpatialRestrictions.within("geometry", buffer));
