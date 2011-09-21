@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 
 import org.geotools.feature.SchemaException;
 import org.hibernate.Query;
@@ -12,15 +14,18 @@ import org.hibernate.Session;
 //import org.geotools.util.logging.Logging;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
+import org.life.sl.orm.ResultRoute;
 import org.life.sl.orm.SourcePoint;
 import org.life.sl.orm.SourceRoute;
 import org.life.sl.readers.shapefile.PointFileReader;
 import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
+import org.life.sl.utils.Timer;
 
 import com.vividsolutions.jts.geom.Point;
 //import com.vividsolutions.jts.planargraph.Edge;
+import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Node;
 
 // JVM argument for max. heap size (required for large networks): -Xmx2048m
@@ -56,11 +61,12 @@ public class JMapMatcher {
 //	private static String kGraphDataFileName = "testdata/Sparse_bigger0.shp";
 //	private static String kGPSPointFileName = "testdata/GPS_Points_1.shp";
 	
-	private PathSegmentGraph graph = null;			///> data basis (graph)
+	private PathSegmentGraph graph = null;	///> data basis (graph)
 	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
 	private RFParams rfParams = null;		///> parameters for the route finding algorithm
 	
 	private double t_start;					// for timing purposes only
+	private int sourcerouteID = 0;
 
 	/**
 	 * default constructor: initialization with an empty graph (graph must then be be created later on)
@@ -109,6 +115,7 @@ public class JMapMatcher {
 	 */
 	public void match(int source_id)  {
 		loadGPSPointsFromDatabase(source_id);
+		sourcerouteID = source_id;	// store in class variable, for later use
 		match();
 	}
 	
@@ -146,18 +153,19 @@ public class JMapMatcher {
 		System.out.println("Origin:      " + fromNode.getCoordinate());
 		System.out.println("Destination: " + toNode.getCoordinate());
 
-		initTiming();	// initialize timer
+		Timer timer = new Timer();
+		timer.init();	// initialize timer
 		
 		RouteFinder rf = new RouteFinder(graph, initConstraints());	// perform the actual route finding procedure on the PathSegmentGraph
 		rf.calculateNearest();	// calculate nearest edges to all data points (needed for edges statistics)
 		// Prepare the evaluation (assigning score to labels):
 		@SuppressWarnings("unused")
 		EdgeStatistics eStat = new EdgeStatistics(rf, gpsPoints);
-		double t_2 = timing(true);
+		double t_2 = timer.getRunTime(true);
 
 		ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, calcGPSPathLength());	///> list containing all routes that were found (still unsorted)
 
-		double t_1 = timing(true, "++ Routefinding finished");
+		double t_1 = timer.getRunTime(true, "++ Routefinding finished");
 		
 		// loop over all result routes, store them together with their score: 
 		/*for (Label l : labels) {
@@ -165,72 +173,86 @@ public class JMapMatcher {
 		}*/
 		Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
 
-		t_2 += timing(true, "++ Edge statistics created");
+		t_2 += timer.getRunTime(true, "++ Edge statistics created");
 
 		Iterator<Label> it = labels.iterator();
-		boolean first = true;
+		boolean first = true, ok;
 		int nNonChoice = 0, nOut = 0;
 		String outFileName = "";
 		while (it.hasNext() && nOut++ < kMaxRoutesOutput) {	// use only the kMaximumNumberOfRoutes best routes
-			Label element = it.next();
-			System.out.println("score: " + element.getScore() 
-					+ ", length: " + element.getLength() + " / " + (rf.getGPSPathLength()/element.getLength())
-					+ ", a_tot: " + element.getTotalAngle() + ", nLeft: " + element.getLeftTurns() + ", nRight: " + element.getRightTurns());
-			try {
-				if (first) {	// the first route is the "choice" (best score) ...
-					first = false;
-					outFileName = kOutputDir + "Best.shp";
-				} else {	// ... the other routes are "non-choices"+
-					outFileName = String.format("%s%03d%s", kOutputDir + "NonChoice", nNonChoice, ".shp");
-					nNonChoice++;
-				}
-				element.dumpToShapeFile(outFileName);	// write result route to file
-			} catch (SchemaException e1) {
-				// TODO Auto-generated catch block
-				System.err.println("Error writing file " + outFileName + " (SchemaException)");
-				e1.printStackTrace();
-			} catch (IOException e2) {
-				// TODO Auto-generated catch block
-				System.err.println("Error writing file " + outFileName + " (IOException)");
-				e2.printStackTrace();
+			Label curLabel = it.next();
+			System.out.println("score: " + curLabel.getScore() 
+					+ ", length: " + curLabel.getLength() + " / " + (rf.getGPSPathLength()/curLabel.getLength())
+					+ ", a_tot: " + curLabel.getTotalAngle() + ", nLeft: " + curLabel.getLeftTurns() + ", nRight: " + curLabel.getRightTurns());
+			
+			if (writeLabelToDatabase(curLabel, first)) {
+				System.out.println("route stored in database");
+			} else {
+				System.out.println("ERROR storing route!!");
 			}
+			
+			first = false;	// remaining routes are non-choice
+			
+//			try {
+//				if (first) {	// the first route is the "choice" (best score) ...
+//					first = false;
+//					outFileName = kOutputDir + "Best.shp";
+//				} else {	// ... the other routes are "non-choices"+
+//					outFileName = String.format("%s%03d%s", kOutputDir + "NonChoice", nNonChoice, ".shp");
+//					nNonChoice++;
+//				}
+//				curLabel.dumpToShapeFile(outFileName);	// write result route to file
+//			} catch (SchemaException e1) {
+//				// TODO Auto-generated catch block
+//				System.err.println("Error writing file " + outFileName + " (SchemaException)");
+//				e1.printStackTrace();
+//			} catch (IOException e2) {
+//				// TODO Auto-generated catch block
+//				System.err.println("Error writing file " + outFileName + " (IOException)");
+//				e2.printStackTrace();
+//			}
 		}
 
-		double t_3 = timing(true, "++ Files written");
+		double t_3 = timer.getRunTime(true, "++ Files written");
 		System.out.println("++ findRoutes: " + t_1 + "s");
 		System.out.println("++ writeFiles: " + t_3 + "s");
 		System.out.println("++ Total time: " + (t_1 + t_2 + t_3) + "s");
 	}
 	
+	@SuppressWarnings("unchecked")
+	private boolean writeLabelToDatabase(Label label, boolean isChoice) {
+		boolean ok = false;
+		
+		List<DirectedEdge> dEdges = label.getRouteAsEdges();
+		// set up entry for route table:
+		ResultRoute route = new ResultRoute();
+		// set route parameters:
+		route.setGeometry(label.getRouteAsEdges().getGeometry...);	// TODO: get a geometry object (??)
+		route.setLength((float)label.getLength());
+		route.setSelected(isChoice);
+		route.setSourcerouteid(sourcerouteID);
+		// entry for node table:
+		ResultNodes nodes = new ResultNodes();	// TODO: create ORM connector
+		// get node list:
+		HashMap<String, Object> hm;
+		for (DirectedEdge de : dEdges) {
+			hm = (HashMap<String, Object>)de.getEdge().getData();
+			Integer eID = (Integer)hm.get("id");
+			//OSMEdge osme = new OSMEdge();
+			// TODO: How to go on from here:
+			// 1. get OSMEdge from database
+			// 2. get OSMNode-IDs from OSMEdge
+			//    problem: direction of edge / sequnce of nodes??
+			// 3. store OSMNode-IDs in array
+			// 4. store this array in the table ResultNodes
+		}
+		
+		// TODO: ok = ...
+		return ok;
+	}
+	
 	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
 		return new PathSegmentGraph(track);
-	}
-	/**
-	 * small utility to initialize the timing functionality
-	 */
-	private void initTiming() {
-		t_start = ((double)System.nanoTime()) * 1.e-9;
-	}
-	/**
-	 * small timing utility: calculate the time passed since t_start
-	 * @param reset if true, t_start is reset to the current time (i.e., a new interval is started)
-	 * @return the time interval in seconds passed since t_start
-	 */
-	private double timing(boolean reset) {
-		double t = ((double)System.nanoTime()) * 1.e-9 - t_start;
-		if (reset) initTiming();
-		return t;
-	}
-	/**
-	 * small timing utility: calculate the time passed since t_start and write out a corresponding message
-	 * @param reset if true, t_start is reset to the current time (i.e., a new interval is started)
-	 * @param msg an additional message to show on the console
-	 * @return the time interval in seconds passed since t_start
-	 */
-	private double timing(boolean reset, String msg) {
-		double t = timing(reset);
-		System.out.println(msg + ", t = " + t + "s");
-		return t;
 	}
 	
 	/**
