@@ -62,22 +62,42 @@ public class AllPairsShortestPath {
 		double ni = 0, nn2 = nNodes*nNodes;
 		if (bUndirectedEdges) nn2 /= 2;
 		Node node1, node2;
-		for (i = 0; i < nNodes; i++) {
+		
+		int kNumThreads = 1, nIncr = (int)Math.round((double)nNodes / (double)kNumThreads + 1.);	// round up
+		DistInnerLoop[] runners1 = new DistInnerLoop[kNumThreads];
+		ExecutorService executor1 = Executors.newCachedThreadPool(); 
+
+		for(i = 0; i < nNodes; i++) {
 			node1 = nodesA[i];
-			j0 = (bUndirectedEdges ? i : 0);
-			//distances.put(node1, new HashMap<Node, Double>());
-			for (j = j0; j < nNodes; j++) {
-				node2 = nodesA[j];
-				d = (float)getDirectDistance(node1, node2);
-				dist[i][j] = d;
-				if (bUndirectedEdges && i != j) dist[j][i] = d;
-				//(distances.get(node1)).put(node2, getDirectDistance(node1, node2));
-				if (bShowProgress) timer.showProgress(0f);	// inner loop progress indicator
-				ni++;
+			if (bUndirectedEdges) nIncr = (int)Math.round((double)(nNodes-i) / (double)kNumThreads + 1.);
+			int nc = (bUndirectedEdges ? i: 0);
+			for (j = 0; j < kNumThreads; j++) {
+				runners1[j].init(i, nc, Math.min(nc+nIncr, nNodes), node1, nodesA);	// make sure the last thread does not exceed the range 
+				executor1.execute(runners1[j]);
+				nc += nIncr;
 			}
+			executor1.shutdown();
+			ni += nNodes;
 			if (bShowProgress) timer.showProgress(ni/nn2);	// outer loop progress indicator
-			//System.out.println(" - " + ni + " " + nn2 + " - ");
 		}
+		
+//		for (i = 0; i < nNodes; i++) {
+//			node1 = nodesA[i];
+//			j0 = (bUndirectedEdges ? i : 0);
+//			//distances.put(node1, new HashMap<Node, Double>());
+//			for (j = j0; j < nNodes; j++) {
+//				node2 = nodesA[j];
+//				d = (float)getDirectDistance(node1, node2);
+//				dist[i][j] = d;
+//				if (bUndirectedEdges && i != j) dist[j][i] = d;
+//				//(distances.get(node1)).put(node2, getDirectDistance(node1, node2));
+//				if (bShowProgress) timer.showProgress(0f);	// inner loop progress indicator
+//				ni++;
+//			}
+//			if (bShowProgress) timer.showProgress(ni/nn2);	// outer loop progress indicator
+//			//System.out.println(" - " + ni + " " + nn2 + " - ");
+//		}
+
 //		for(Node node1 : nodes) {
 //			j = 0;
 //			//distances.put(node1, new HashMap<Node, Double>());
@@ -102,14 +122,18 @@ public class AllPairsShortestPath {
 		float distance;
 		t_start = timer.init(kShowProgressInterval1, 5.*kShowProgressInterval2);
 
-		FloydWarshallInnerLoop r1, r2, r3, r4;
-		ExecutorService executor = Executors.newCachedThreadPool(); 
-		 
+		FloydWarshallInnerLoop[] runners = new FloydWarshallInnerLoop[kNumThreads];
+		ExecutorService executor2 = Executors.newCachedThreadPool(); 
+
 		for(int k = 0; k < nNodes; k++) {
 			for(i = 0; i < nNodes; i++) {
-				r1 = new FloydWarshallInnerLoop(nNodes, i, k);
-				executor.execute(r1);
-				executor.shutdown();
+				int nc = 0;
+				for (j = 0; j < kNumThreads; j++) {
+					runners[j].init(k, i, nc, Math.min(nc+nIncr, nNodes));	// make sure the last thread does not exceed the range 
+					executor2.execute(runners[j]);
+					nc += nIncr;
+				}
+				executor1.shutdown();
 				ni += nNodes;
 //				for(j = 0; j < nNodes; j++) {
 //					dist[i][j] = Math.min(dist[i][j], dist[i][k] + dist[k][j]);
@@ -143,20 +167,49 @@ public class AllPairsShortestPath {
 		if (bShowProgress) System.out.println("Floyd-Warshall finished - computed " + (int)ni + " distances in " + t_tot + "s (" + ni/t_tot + "/s)");
 	}
 	
-	private class FloydWarshallInnerLoop implements Runnable {
-		private int nNodes, idx_i, idx_k;
+	private class DistInnerLoop implements Runnable {
+		private int idx_i, idx_k, idx_j0, idx_j1;
+		Node node1 = null;
+		Node[] nodesA;
 		
-		public FloydWarshallInnerLoop(int n, int i, int k) {
-			nNodes = n;
+		public void init(int i, int j0, int j1, Node node10, Node[] nodesA0) {
 			idx_i = i;
-			idx_k = k;
+			idx_j0 = j0;
+			idx_j1 = j1;
+			node1 = node10;
+			nodesA = nodesA0;
 		}
 		public void run() {
-			for(int j = 0; j < nNodes; j++) {
+			float d;
+			Node node2;
+			for (int j = idx_j0; j < idx_j1; j++) {
+				node2 = nodesA[j];
+				d = (float)getDirectDistance(node1, node2);
+				dist[idx_i][j] = d;
+				if (bUndirectedEdges && idx_i != j) dist[j][idx_i] = d;
+			}
+			
+			for (int j = idx_j0; j < idx_j1; j++) {
 				dist[idx_i][j] = Math.min(dist[idx_i][j], dist[idx_i][idx_k] + dist[idx_k][j]);
 			}
 		}
 		
+	}
+	
+	final class FloydWarshallInnerLoop implements Runnable {
+		private int idx_i, idx_k, idx_j0, idx_j1;
+		
+		public void init(int k, int i, int j0, int j1) {
+			idx_i = i;
+			idx_k = k;
+			idx_j0 = j0;
+			idx_j1 = j1;
+		}
+		public void run() {
+			for (int j = idx_j0; j < idx_j1; j++) {
+				dist[idx_i][j] = Math.min(dist[idx_i][j], dist[idx_i][idx_k] + dist[idx_k][j]);
+			}
+		}
 	}
 	
 	public float getDistance(Node node1, Node node2) {
