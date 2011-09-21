@@ -34,7 +34,7 @@
 
         <id name="id" column="id">
         </id>
-        <property name="geometry" type="org.hibernatespatial.GeometryUserType">
+        <property name="location" type="org.hibernatespatial.GeometryUserType">
         	<column name="geom" />
         </property>
         <property name="fromnode" ></property>

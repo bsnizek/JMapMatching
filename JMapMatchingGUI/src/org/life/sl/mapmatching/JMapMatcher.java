@@ -227,7 +227,7 @@ public class JMapMatcher {
 		// set up entry for route table:
 		ResultRoute route = new ResultRoute();
 		// set route parameters:
-		route.setGeometry(label.getRouteAsEdges().getGeometry...);	// TODO: get a geometry object (??)
+		route.setGeometry(label.getRouteAsEdges().getGeometry());	// TODO: get a geometry object (??)
 		route.setLength((float)label.getLength());
 		route.setSelected(isChoice);
 		route.setSourcerouteid(sourcerouteID);

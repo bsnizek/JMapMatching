@@ -73,6 +73,8 @@ import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.io.ParseException;
+import com.vividsolutions.jts.io.WKTReader;
 
 import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Edge;
@@ -195,19 +197,28 @@ public class PathSegmentGraph {
 			
 			Iterator<Point> trackIter = track.iterator();
 			
-			ArrayList<Coordinate> coords = new ArrayList<Coordinate>();
+//			ArrayList<Coordinate> coords = new ArrayList<Coordinate>();
+//			while (trackIter.hasNext()) {
+//				Point p = trackIter.next();	
+//				coords.add(p.getCoordinate());
+//			}
+			
+			Coordinate[] coords = new Coordinate[track.size()];
+			int i =0;
 			while (trackIter.hasNext()) {
 				Point p = trackIter.next();	
-				coords.add(p.getCoordinate());
+				coords[i] = p.getCoordinate();
+				i++;
 			}
-			LineString l = fact.createLineString((Coordinate[]) coords.toArray());
+			
+			LineString l = fact.createLineString(coords);
 			
 			// ... build a buffer ...
 			
-			Geometry buffer = l.buffer(500);	// TODO: get  the buffer from the settings file
-			Criteria testCriteria = session.createCriteria(OSMEdge.class);
-			testCriteria.add(SpatialRestrictions.within("location", buffer));
-			@SuppressWarnings("unchecked")
+			Geometry buffer = l.buffer(200);	// TODO: get  the buffer from the settings file
+	        
+	        Criteria testCriteria = session.createCriteria(OSMEdge.class);
+			testCriteria.add(SpatialRestrictions.within("geometry", buffer));
 			List<OSMEdge> result = testCriteria.list();
 			
 			System.out.println("Spatial query selected " + result.size());

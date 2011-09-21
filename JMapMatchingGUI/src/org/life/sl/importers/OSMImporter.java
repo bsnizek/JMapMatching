@@ -121,13 +121,16 @@ public class OSMImporter {
 		for (Way way : ways) {
 			if (way.get("highway") != null) {
 				if (
-					way.get("highway").equals("residential") || 
+					way.get("highway").equals("primary") || 
 					way.get("highway").equals("tertiary") || 
-					way.get("highway").equals("secondary") || 
+					way.get("highway").equals("secondary") ||
+					way.get("highway").equals("residential") || 
 					way.get("highway").equals("cycleway") || 
 					way.get("highway").equals("footway") ||
 					way.get("highway").equals("path") ||
-					way.get("highway").equals("service")
+					way.get("highway").equals("service") ||
+					way.get("highway").equals("track") ||
+					way.get("highway").equals("pedestrian")
 					
 					) {
 
