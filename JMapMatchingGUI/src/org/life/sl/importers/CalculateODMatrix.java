@@ -3,6 +3,7 @@ package org.life.sl.importers;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import org.hibernate.CacheMode;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.life.sl.graphs.PathSegmentGraph;
@@ -40,9 +41,15 @@ public class CalculateODMatrix {
 		float dist[][] = psg.getAPSDistancesArr();//new double[nodes.size()][nodes.size()];
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		// first, empty the database table:
 		session.beginTransaction();
-		// TODO: empty the table shortestpathlength! But how?
-		//session.createQuery("DELETE FROM shortestpathlength");	// empty table
+		session.setCacheMode(CacheMode.IGNORE);
+		int nDel = session.createQuery("delete ShortestPathLength").executeUpdate();
+		session.flush();
+		//session.getTransaction().commit();
+		System.out.println("Deleted " + nDel + " records from shortestpathlength");
+
+		//session.beginTransaction();
 
 		int osmNodeID1 = 0, osmNodeID2 = 0;
 		float length = 0.f;
@@ -66,6 +73,10 @@ public class CalculateODMatrix {
 								// TODO: can this be optimized by reusing sPl1 instead of creating it (new)?
 								ShortestPathLength sPl1 = new ShortestPathLength(osmNodeID1, osmNodeID2, length);
 								session.save(sPl1);
+								if (++n % 20 == 0) {
+									session.flush();
+									session.clear();
+								}
 								
 								// the same path in reverse direction: not necessary
 								/*ShortestPathLength sPl2 = new ShortestPathLength(osmNodeID2, osmNodeID1, length);
@@ -73,7 +84,6 @@ public class CalculateODMatrix {
 							}
 						}
 					}
-					n++;
 				}
 			}
 			timer.showProgress(n/nn);
