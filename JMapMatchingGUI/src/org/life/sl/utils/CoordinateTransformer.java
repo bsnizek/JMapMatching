@@ -150,8 +150,8 @@ public class CoordinateTransformer {
 			e.printStackTrace();
 		}
 		
-		String srs1 = "EPSG:21781"; //22184 //25832 //32632 25832
 		String srs2 = "EPSG:4326";
+		//String srs1 = "EPSG:21781"; //22184 //25832 //32632 25832
 		//CoordinateTransformer ct = new CoordinateTransformer(srs1, srs2);
 		
 		CoordinateTransformer ct = new CoordinateTransformer(crs1, srs2);

@@ -38,8 +38,6 @@ package org.life.sl.graphs;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.net.MalformedURLException;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -94,7 +92,6 @@ public class PathSegmentGraph {
 	private AllPairsShortestPath allPairsShortestPath;
 	private boolean distancesCalculated;
 	private LineMergeGraphH4cked lineMergeGraphH4cked;
-	private boolean bUseDatabase = false;
 	
 	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 
@@ -130,7 +127,6 @@ public class PathSegmentGraph {
 	 */
 	public PathSegmentGraph(int i) {
 		this();
-		bUseDatabase = true;
 		addLineStringsFromDatabase(null);
 	}
 	
@@ -140,7 +136,6 @@ public class PathSegmentGraph {
 	 */
 	public PathSegmentGraph(ArrayList<Point> track) {
 		this();
-		bUseDatabase = true;
 		addLineStringsFromDatabase(track);
 	}
 	
@@ -217,6 +212,7 @@ public class PathSegmentGraph {
 	        
 	        Criteria testCriteria = session.createCriteria(OSMEdge.class);
 			testCriteria.add(SpatialRestrictions.within("geometry", buffer));
+			@SuppressWarnings("unchecked")
 			List<OSMEdge> result = testCriteria.list();
 			
 			System.out.println("Spatial query selected " + result.size());

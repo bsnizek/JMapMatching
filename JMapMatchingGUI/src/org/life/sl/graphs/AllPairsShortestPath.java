@@ -32,7 +32,8 @@ public class AllPairsShortestPath {
 	
 	private HashMap<Node, HashMap<Node, Float>> distances;		///> container for the distances; a simple array would probably perform much better...
 	private float dist[][];
-	
+	private Node[] nodesA;
+
 	private Timer timer = new Timer(kShowProgressInterval1, kShowProgressInterval2);
 	
 	public HashMap<Node, HashMap<Node, Float>> getDistances() {
@@ -49,7 +50,7 @@ public class AllPairsShortestPath {
 		ArrayList<Node> nodes = graph.getNodes();
 		int nNodes = nodes.size();
 		dist = new float[nNodes][nNodes];
-		Node[] nodesA = new Node[nNodes];
+		nodesA = new Node[nNodes];
 		int i = 0;
 		for(Node node1 : nodes) {
 			nodesA[i++] = node1;
@@ -167,6 +168,7 @@ public class AllPairsShortestPath {
 //			if (bShowProgress) timer.showProgress(0);	// inner loop progress indicator
 			if (bShowProgress) timer.showProgress(ni/nn);	// outer loop progress indicator
 		}
+		executor2.shutdown();
 		ni *= nNodes;
 
 //		int k = 0;
@@ -253,13 +255,35 @@ public class AllPairsShortestPath {
 	}
 	
 	public float getDistance(Node node1, Node node2) {
-		return (distances.get(node1)).get(node2);
+		//return (distances.get(node1)).get(node2);
+		int[] ni = getNodeIndex2(node1, node2);
+		return dist[ni[0]][ni[1]];
 	}
 	
 	private void setDistance(Node node1, Node node2, float distance) {
-		(distances.get(node1)).put(node2, distance);
+		//(distances.get(node1)).put(node2, distance);
+		int[] ni = getNodeIndex2(node1, node2);
+		dist[ni[0]][ni[1]] = distance;
 	}
 	
+	private int getNodeIndex(Node node) {
+		int idx = -1;
+		for (int i = 0; i < nodesA.length; i++) {
+			if (nodesA[i] == node) {
+				idx = i;
+				break;
+			}
+		}
+		return idx;
+	}
+	private int[] getNodeIndex2(Node node1, Node node2) {
+		int[] idx = { -1, -1 };
+		for (int i = 0; (i < nodesA.length) && (idx[0] < 0 || idx[1] < 0); i++) {
+			if (nodesA[i] == node1) idx[0] = i;
+			if (nodesA[i] == node2) idx[1] = i;
+		}
+		return idx;
+	}
 	
 	/**
 	 * @param node1
@@ -267,14 +291,12 @@ public class AllPairsShortestPath {
 	 * @return The shortest direct distance between node1 and node2, or Double.MAX_VALUE if no direct connection exists.
 	 */
 	private float getDirectDistance(Node node1, Node node2) {
-		float distance = Float.MAX_VALUE;
-		if(node1 == node2) {
-			distance = 0.0f;
-		}
-		for(Object obj : Node.getEdgesBetween(node1, node2)) {	// this does the actual work!
+		float d = Float.MAX_VALUE;		// default: "no connection"
+		if(node1 == node2) d = 0.0f;	// "connection to self"
+		for(Object obj : Node.getEdgesBetween(node1, node2)) {	// Node.getEdgesBetween() does the actual work here! (returns a list of connecting paths)
 			LineMergeEdge edge = (LineMergeEdge) obj;
-			distance = Math.min(distance, (float)edge.getLine().getLength());
+			d = Math.min(d, (float)edge.getLine().getLength());	// the shortest of all connecting paths
 		}
-		return distance;
+		return d;
 	}
 }

@@ -8,7 +8,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.geotools.feature.SchemaException;
 import org.hibernate.Query;
 import org.hibernate.Session;
 //import org.geotools.util.logging.Logging;
@@ -28,7 +27,6 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 //import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
-import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.Node;
 
 // JVM argument for max. heap size (required for large networks): -Xmx2048m
@@ -68,7 +66,6 @@ public class JMapMatcher {
 	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
 	private RFParams rfParams = null;		///> parameters for the route finding algorithm
 	
-	private double t_start;					// for timing purposes only
 	private int sourcerouteID = 0;
 	
 	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
@@ -181,9 +178,10 @@ public class JMapMatcher {
 		t_2 += timer.getRunTime(true, "++ Edge statistics created");
 
 		Iterator<Label> it = labels.iterator();
-		boolean first = true, ok;
-		int nNonChoice = 0, nOut = 0;
-		String outFileName = "";
+//		String outFileName = "";
+//		int nNonChoice = 0;
+		int nOut = 0;
+		boolean first = true;
 		while (it.hasNext() && nOut++ < kMaxRoutesOutput) {	// use only the kMaximumNumberOfRoutes best routes
 			Label curLabel = it.next();
 			System.out.println("score: " + curLabel.getScore() 
@@ -224,7 +222,6 @@ public class JMapMatcher {
 		System.out.println("++ Total time: " + (t_1 + t_2 + t_3) + "s");
 	}
 	
-	@SuppressWarnings("unchecked")
 	private boolean writeLabelToDatabase(Label label, boolean isChoice) {
 		boolean ok = false;
 		
@@ -241,28 +238,35 @@ public class JMapMatcher {
 		route.setSourcerouteid(sourcerouteID);
 		// entry for node table:
 		// ResultNode node = new ResultNode();	// TODO: create ORM connector
-		// get node list:
-		// HashMap<String, Object> hm;
-		int i =  0;
-		Coordinate[] coordinates = new Coordinate[dEdges.size() +1];
-		for (DirectedEdge de : dEdges) {
-			if (i==0) {
-				Node node1 = de.getFromNode();
-				coordinates[0] = node1.getCoordinate();
-			}
-				Node node2 = de.getToNode();
-				coordinates[i+1] = node2.getCoordinate();
-			
-			// Integer eID = (Integer) de.getData().get("id");
-			//OSMEdge osme = new OSMEdge();
-			// TODO: How to go on from here:
-			// 1. get OSMEdge from database
-			// 2. get OSMNode-IDs from OSMEdge
-			//    problem: direction of edge / sequnce of nodes??
-			// 3. store OSMNode-IDs in array
-			// 4. store this array in the table ResultNodes
-			i++;
+		
+		// get node list to create the lineString representing the route:
+		List<Node> nodes = label.getNodes();
+		Coordinate[] coordinates = new Coordinate[nodes.size()];
+		int i = 0;
+		for (Node curNode : nodes) {
+			coordinates[i++] = curNode.getCoordinate();
 		} 
+		
+		// HashMap<String, Object> hm;
+//		Coordinate[] coordinates = new Coordinate[dEdges.size() +1];
+//		for (DirectedEdge de : dEdges) {
+//			if (i==0) {
+//				Node node1 = de.getFromNode();
+//				coordinates[0] = node1.getCoordinate();
+//			}
+//				Node node2 = de.getToNode();
+//				coordinates[i+1] = node2.getCoordinate();
+//			
+//			// Integer eID = (Integer) de.getData().get("id");
+//			//OSMEdge osme = new OSMEdge();
+//			// TODO: How to go on from here:
+//			// 1. get OSMEdge from database
+//			// 2. get OSMNode-IDs from OSMEdge
+//			//    problem: direction of edge / sequnce of nodes??
+//			// 3. store OSMNode-IDs in array
+//			// 4. store this array in the table ResultNodes
+//			i++;
+//		} 
 
 		LineString lineString = fact.createLineString(coordinates);
 		route.setGeometry(lineString);

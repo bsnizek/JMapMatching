@@ -56,7 +56,7 @@
         <property name="current_session_context_class">thread</property>
 
         <!-- enable use of JDBC2 batch processing -->
-        <property name="hibernate.jdbc.batch_size">20</property>
+        <property name="hibernate.jdbc.batch_size">100</property>
     	
     	<mapping package="org.life.sl.orm" /> 
         
