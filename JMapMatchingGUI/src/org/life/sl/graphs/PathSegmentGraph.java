@@ -45,6 +45,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.DefaultTransaction;
 import org.geotools.data.Transaction;
@@ -95,6 +96,8 @@ public class PathSegmentGraph {
 	
 	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 
+	private Logger logger = Logger.getRootLogger();
+
 	public HashMap<Node, HashMap<Node, Float>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
 	}
@@ -127,16 +130,16 @@ public class PathSegmentGraph {
 	 */
 	public PathSegmentGraph(int i) {
 		this();
-		addLineStringsFromDatabase(null);
+		addLineStringsFromDatabase();
 	}
 	
 	/**
 	 * initialize the graph from a section of the (database-stored) network enveloping the GPS track 
 	 * @param track array of points on the track under examination
 	 */
-	public PathSegmentGraph(ArrayList<Point> track) {
+	public PathSegmentGraph(ArrayList<Point> track, float bufferSize) {
 		this();
-		addLineStringsFromDatabase(track);
+		addLineStringsFromDatabase(track, bufferSize);
 	}
 	
 	/**
@@ -166,7 +169,16 @@ public class PathSegmentGraph {
 	/**
 	 * Create a new graph, with linestrings read from the database (using the complete table OSMEdge!) 
 	 */
-	public void addLineStringsFromDatabase(ArrayList<Point> track) {
+	public void addLineStringsFromDatabase() {
+		addLineStringsFromDatabase(null, 0);
+	}
+
+	/**
+	 * Create a new graph, with linestrings read from the database (optionally using only a buffer around a given track for the network)
+	 * @param track GPS track consisting of a list of data points
+	 * @param bufferSize size of the buffer to select around the track
+	 */
+	public void addLineStringsFromDatabase(ArrayList<Point> track, float bufferSize) {
 		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
 		distancesCalculated = false;
 
@@ -208,14 +220,14 @@ public class PathSegmentGraph {
 			
 			// ... build a buffer ...
 			
-			Geometry buffer = l.buffer(200);	// TODO: get  the buffer from the settings file
+			Geometry buffer = l.buffer(bufferSize);
 	        
 	        Criteria testCriteria = session.createCriteria(OSMEdge.class);
 			testCriteria.add(SpatialRestrictions.within("geometry", buffer));
 			@SuppressWarnings("unchecked")
 			List<OSMEdge> result = testCriteria.list();
 			
-			System.out.println("Spatial query selected " + result.size());
+			logger.info("Spatial query selected " + result.size());
 			
 			Iterator<OSMEdge> iter = result.iterator();
 			while (iter.hasNext() ) {
@@ -259,7 +271,7 @@ public class PathSegmentGraph {
 			
 		}
 		
-		System.out.println("Writing to shapefile " + filename);
+		logger.info("Writing to shapefile " + filename);
 		File newFile = new File(filename);
 		// File newFile = getNewShapeFile(file);
 
@@ -296,7 +308,7 @@ public class PathSegmentGraph {
             }
             // System.exit(0); // success!
         } else {
-            System.out.println(typeName + " does not support read/write access");
+            logger.error(typeName + " does not support read/write access");
             System.exit(1);	// exit program with status 1 (error)
         }
 	}
@@ -417,6 +429,10 @@ public class PathSegmentGraph {
 	@SuppressWarnings("unchecked")
 	public Collection<Edge> getEdges() {
 		return (Collection<Edge>) getLineMergeGraphH4cked().getEdges();
+	}
+	
+	public int getSize_Edges() {
+		return getLineMergeGraphH4cked().getEdges().size();
 	}
 
 	public LineMergeGraphH4cked getLineMergeGraphH4cked() {

@@ -33,6 +33,7 @@ public class AllPairsShortestPath {
 	private HashMap<Node, HashMap<Node, Float>> distances;		///> container for the distances; a simple array would probably perform much better...
 	private float dist[][];
 	private Node[] nodesA;
+	long validRoutes;
 
 	private Timer timer = new Timer(kShowProgressInterval1, kShowProgressInterval2);
 	
@@ -96,6 +97,7 @@ public class AllPairsShortestPath {
 			}
 			if (bShowProgress) timer.showProgress(ni/nn2);	// outer loop progress indicator
 		}
+//		executor1.shutdown();
 
 //		for (i = 0; i < nNodes; i++) {
 //			node1 = nodesA[i];
@@ -137,28 +139,34 @@ public class AllPairsShortestPath {
 		double nn = nNodes*nNodes, nnn = nn*nNodes;
 //		float distance;
 		t_start = timer.init(kShowProgressInterval1, 5.*kShowProgressInterval2);
+		validRoutes = 0;
+//		kNumThreads = 1;
+//		nIncr = nNodes;
+		nIncr = (int)Math.round((double)nNodes / (double)kNumThreads + 1.);	// round up
 
 		ArrayList<Callable<Integer>> runners2 = new ArrayList<Callable<Integer>>();//new DistInnerLoop[kNumThreads];
 		for (j = 0; j < kNumThreads; j++) runners2.add(new FloydWarshallInnerLoop());
-		ExecutorService executor2 = Executors.newFixedThreadPool(kNumThreads); 
+//		ExecutorService executor2 = Executors.newFixedThreadPool(kNumThreads); 
 
 		for(int k = 0; k < nNodes; k++) {
-			int nc = 0;
-			for (j = 0; j < kNumThreads; j++) {
-				FloydWarshallInnerLoop fwil = (FloydWarshallInnerLoop)runners2.get(j);
-				fwil.init(k, nc, Math.min(nc+nIncr, nNodes), nNodes);	// make sure the last thread does not exceed the range 
-				nc += nIncr;
-			}
-			try {
-				for (Future<Integer> f : executor2.invokeAll(runners2)) {
-					ni += f.get();
+			for (i = 0; i < nNodes; i++) {
+				int nc = 0;
+				for (int t = 0; t < kNumThreads; t++) {
+					FloydWarshallInnerLoop fwil = (FloydWarshallInnerLoop)runners2.get(t);
+					fwil.init(k, i, nc, Math.min(nc+nIncr, nNodes));	// make sure the last thread does not exceed the range 
+					nc += nIncr;
 				}
-			} catch (InterruptedException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (ExecutionException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+				try {
+					for (Future<Integer> f : executor1.invokeAll(runners2)) {
+						ni += f.get();
+					}
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (ExecutionException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
 			//ni += nn;
 //				for(j = 0; j < nNodes; j++) {
@@ -166,10 +174,10 @@ public class AllPairsShortestPath {
 //					ni++;
 //				}
 //			if (bShowProgress) timer.showProgress(0);	// inner loop progress indicator
-			if (bShowProgress) timer.showProgress(ni/nn);	// outer loop progress indicator
+			if (bShowProgress) timer.showProgress(ni/nnn);	// outer loop progress indicator
 		}
-		executor2.shutdown();
-		ni *= nNodes;
+		executor1.shutdown();
+//		ni *= nNodes;
 
 //		int k = 0;
 //		for(Node nodeK : nodes) {
@@ -192,7 +200,7 @@ public class AllPairsShortestPath {
 //		}
 		if (bShowProgress) {
 			t_tot = timer.getRunTime(true, "Floyd-Warshall finished");
-			System.out.println("Floyd-Warshall finished - computed " + ni + " distances in " + t_tot + "s (" + ni/t_tot + "/s)");
+			System.out.println("Floyd-Warshall finished - computed " + ni + " distances in " + t_tot + "s (" + ni/t_tot + "/s) - " + validRoutes);
 		}
 	}
 	
@@ -231,26 +239,25 @@ public class AllPairsShortestPath {
 	}
 	
 	final class FloydWarshallInnerLoop implements Callable<Integer> {
-		private int nNodes, idx_k, idx_i0, idx_i1;
+		private int idx_k, idx_i, idx_j0, idx_j1;
 		
-		public void init(int k, int i0, int i1, int nNodes0) {
+		public void init(int k, int i, int j0, int j1) {
 			idx_k = k;
-			idx_i0 = i0;
-			idx_i1 = i1;
-			nNodes = nNodes0;
+			idx_i = i;
+			idx_j0 = j0;
+			idx_j1 = j1;
 		}
 		/**
 		 * @return the number of steps performed in the outer loop
 		 */
 		public Integer call() {
-			Integer n = 0;
-			for (int i = idx_i0; i < idx_i1; i++) {
-				for (int j = 0; j < nNodes; j++) {
-					dist[i][j] = Math.min(dist[i][j], dist[i][idx_k] + dist[idx_k][j]);
-				}
-				n++;
+			float d;
+			for (int j = idx_j0; j < idx_j1; j++) {
+				d = Math.min(dist[idx_i][j], dist[idx_i][idx_k] + dist[idx_k][j]);
+				dist[idx_i][j] = d;
+				if (d < Float.MAX_VALUE) validRoutes++;
 			}
-			return n;
+			return idx_j1 - idx_j0 + 1;
 		}
 	}
 	

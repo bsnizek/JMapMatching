@@ -9,6 +9,7 @@ import java.util.Properties;
 
 import java.util.Stack;
 
+import org.apache.log4j.Logger;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.routefinder.Label;
@@ -74,6 +75,8 @@ public class RouteFinder {
 	private double maxPathLength = 0.;
 	private EdgeStatistics edgeStatistics = null;
 
+	private Logger logger = Logger.getLogger("RouteFinder");
+	
 	/**
 	 * create a Routefinder from a PathSegmentGraph, using default parameters
 	 * @param network the input PathSegmentGraph
@@ -98,15 +101,15 @@ public class RouteFinder {
 	private void initDefaults() {
 		rfParams = new RFParams();
 
-		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 100);	///> maximum number of routes to find
+		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 1000);	///> maximum number of routes to find
 		rfParams.setInt(RFParams.Type.BridgeOverlap, 1);
 		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);		///> how often each edge may be used
 //		constraints.setInt(Constraints.Type.ArticulationPointOverlap, 2);
 		rfParams.setInt(RFParams.Type.NodeOverlap, 1);		///> how often each single node may be crossed
-		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.2);	///> how much the route may deviate from the shortest possible
+		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);	///> how much the route may deviate from the shortest possible
 		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///> minimum route length
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///> maximum route length (quasi no limit here)
-		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 300.);	///> buffer size in meters (!)
+		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///> buffer size in meters (!)
 	}
 	
 	/**
@@ -142,7 +145,7 @@ public class RouteFinder {
 		// check that startNode and endNode belong to same graph
 		if (network.findClosestNode(startNode.getCoordinate()) == null ||
 				network.findClosestNode(endNode.getCoordinate()) == null) {
-			System.out.println("---- origin and/or destination are not in network!");	// indicate failure
+			logger.warn("---- origin and/or destination are not in network!");	// indicate failure
 			return new ArrayList<Label>();
 		}
 
@@ -166,9 +169,10 @@ public class RouteFinder {
 			System.err.println("Warning: invalid GPS data? referencePathLength < minDist (" + maxPathLength + " < " + minDist + ")");
 			maxPathLength = 0.;
 		}
-		System.out.println("Euclidian GPS Path length = " + gpsPathLength + ", path length limit = " + maxPathLength);
+		logger.info("Euclidian GPS Path length = " + gpsPathLength + ", path length limit = " + maxPathLength);
 
-		System.out.println("Network size (nodes): " + network.getNodes().size());
+		//logger.info("Network size (nodes): " + network.getNodes().size());
+		logger.info("Network size (edges): " + network.getSize_Edges());
 
 		///////////////////////////////////////////////
 		// START ALGORITHM
@@ -203,7 +207,7 @@ public class RouteFinder {
 					// is label a new valid route?
 					if (isValidRoute(currentLabel))	{	// valid route means: it ends in the destination node and fulfills the length constraints
 						result.add(currentLabel);		// add the valid route to list of routes
-						System.out.println("## " + result.size());
+						//System.out.println("## " + result.size());
 						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
 						if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
 							System.out.println("Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
@@ -215,18 +219,17 @@ public class RouteFinder {
 				//System.out.println("--");
 				
 				if (bShowProgress) {	// some log output?
-					if (numLabels%10000 == 0) System.out.print(".");
-					if (numLabels%500000 == 0) System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength) + " - " + expandingLabel.getTreeLevel());
-	//				System.out.println(stack.size() + " - " + (expandingLabel.getLength() / gpsPathLength));
+					if (numLabels%50000 == 0) System.out.print(".");
+					if (numLabels%5000000 == 0) System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength) + " - " + expandingLabel.getTreeLevel() + " ## " + result.size());
 				}
 			} else {	// "Sackgasse" - this label is invalid
 				numDeadEnds++;
 			}
 		}
-		if (result.isEmpty()) result.add(new Label(startNode));	// if nothing was found, return only the start node
+		//if (result.isEmpty()) result.add(new Label(startNode));	// if nothing was found, return only the start node
 		// some statistics on the computation:
-		System.out.printf("\nlabels analyzed:\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",
-				numLabels, numDeadEnds, (100.*numDeadEnds/numLabels), numLabels_rejected, (100.*numLabels_rejected/numLabels), 
+		System.out.printf("\nlabels analyzed:\t%14d\nvalid routes:\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",
+				numLabels, result.size(), numDeadEnds, (100.*numDeadEnds/numLabels), numLabels_rejected, (100.*numLabels_rejected/numLabels), 
 				network.getNodes().size());
 		return result;
 	}
@@ -331,7 +334,7 @@ public class RouteFinder {
 //				if (nodeOccurances > getIntegerConstraint(Constraint.ArticulationPointOverlap)) continue;
 //			} else {	// node is not an articulation point, so we have to check for max. overlap:
 				if (nodeOccurrences > rfParams.getInt(RFParams.Type.NodeOverlap)) {
-					if (bLogAll) System.out.println("Constraint reached: NodeOccurrences = " + nodeOccurrences);
+					logger.trace("Constraint reached: NodeOccurrences = " + nodeOccurrences);
 					continue;	// don't consider this label
 				}
 //			}
@@ -354,8 +357,8 @@ public class RouteFinder {
 	 */
 	private boolean checkPathLength(double len, double maxLen, String msg) {
 		boolean b = (len > maxLen);
-		if (b && bLogAll) {
-			System.out.println("Constraint reached: distance too large (" + msg + "). " + len + " > " + maxLen);
+		if (b) {
+			logger.trace("Constraint reached: distance too large (" + msg + "). " + len + " > " + maxLen);
 		}
 		return b;
 	}
