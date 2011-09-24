@@ -10,8 +10,53 @@ public class OSMEdge {
 	private int tonode;
 	private double length;
 	private String roadname;
+	private String highway;
+	private String cycleway;
+	private String foot;
+	private String bicycle;
+	private String segregated;
 	
 	
+	public String getCycleway() {
+		return cycleway;
+	}
+
+	public void setCycleway(String cycleway) {
+		this.cycleway = cycleway;
+	}
+
+	public String getFoot() {
+		return foot;
+	}
+
+	public void setFoot(String foot) {
+		this.foot = foot;
+	}
+
+	public String getBicycle() {
+		return bicycle;
+	}
+
+	public void setBicycle(String bicycle) {
+		this.bicycle = bicycle;
+	}
+
+	public String getSegregated() {
+		return segregated;
+	}
+
+	public void setSegregated(String segregated) {
+		this.segregated = segregated;
+	}
+
+	public String getHighway() {
+		return highway;
+	}
+
+	public void setHighway(String highway) {
+		this.highway = highway;
+	}
+
 	public String getRoadname() {
 		return roadname;
 	}

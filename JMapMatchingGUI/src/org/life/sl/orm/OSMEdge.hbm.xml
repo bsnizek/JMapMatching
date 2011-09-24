@@ -41,6 +41,16 @@
         <property name="tonode" ></property>
         <property name="length" ></property>
         <property name="roadname" type="string"></property>
+        <property name="highway" type="string"></property>
+ 		<property name="cycleway" type="string"></property>
+ 		<property name="bicycle" type="string"></property>
+ 		<property name="foot" type="string"></property>
+ 		<property name="segregated" type="string"></property>
+ 		
+ 		
+        
+                
+        
 
     </class>
 
