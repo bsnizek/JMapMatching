@@ -55,8 +55,10 @@
         <!-- define the session context class, whatever that is -->
         <property name="current_session_context_class">thread</property>
 
-        <!-- Names the annotated entity class -->
-        <mapping package="org.life.sl.orm" /> 
+        <!-- enable use of JDBC2 batch processing -->
+        <property name="hibernate.jdbc.batch_size">100</property>
+    	
+    	<mapping package="org.life.sl.orm" /> 
         
         <mapping resource="org/life/sl/orm/OSMNode.hbm.xml"/>
         <mapping resource="org/life/sl/orm/OSMEdge.hbm.xml"/>

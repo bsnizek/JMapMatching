@@ -77,7 +77,7 @@ public class GPSShapeFileImporter {
 
 		try {
 			while (iterator.hasNext()) {
-				Point point = null;
+				//Point point = null;
 				SimpleFeature feature = iterator.next();
 				Geometry geometry = (Geometry) feature.getDefaultGeometry();
 				// Debug output:

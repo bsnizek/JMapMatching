@@ -130,7 +130,8 @@ public class OSMImporter {
 					way.get("highway").equals("path") ||
 					way.get("highway").equals("service") ||
 					way.get("highway").equals("track") ||
-					way.get("highway").equals("pedestrian")
+					way.get("highway").equals("pedestrian") ||
+					way.get("cycleway") != null
 					
 					) {
 
@@ -164,6 +165,11 @@ public class OSMImporter {
 						oe.setTonode((int) way.getNode(way.getNodesCount()-1).getId());
 						oe.setLength(lineString.getLength());
 						oe.setRoadname(way.getName());
+						oe.setHighway(way.get("highway"));
+						oe.setSegregated(way.get("segregated"));
+						oe.setBicycle(way.get("bicycle"));
+						oe.setFoot(way.get("foot"));
+						oe.setCycleway(way.get("cycleway"));
 						System.out.print(".");
 						session.save(oe);
 					}

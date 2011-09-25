@@ -213,26 +213,26 @@ public class Label implements Comparable<Label> {
 	 * @param eStat edge statistics
 	 */
 	public void calcScore(EdgeStatistics eStat) {
-		if (false) {
-			double s = 0;
-			List<DirectedEdge> edges = this.getRouteAsEdges();	
-			for (DirectedEdge e : edges) {
-				s += eStat.getCount(e.getEdge());
-			}
-			score = s/this.getLength();
-		} else {
-			score = 0.;
-			scoreCount = 0;
-			if (parent != null) {
-				//System.out.println((int)(parent.getScore(eStat) * parent.getLength()) + " - " + eStat.getCount(backEdge.getEdge()));
-				lastScoreCount = eStat.getCount(backEdge.getEdge());
-				lastScore = lastScoreCount / lastEdgeLength;
-				scoreCount = parent.getScoreCount(eStat) + lastScoreCount;
-				//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
-				if (length > 0.) score = scoreCount / length;
-			}
+// the old version, calculating the score explicitely
+//		double s = 0;
+//		List<DirectedEdge> edges = this.getRouteAsEdges();	
+//		for (DirectedEdge e : edges) {
+//			s += eStat.getCount(e.getEdge());
+//		}
+//		score = s/this.getLength();
+// the new version, doing it recursively:
+		score = 0.;
+		scoreCount = 0;
+		if (parent != null) {
+			//System.out.println((int)(parent.getScore(eStat) * parent.getLength()) + " - " + eStat.getCount(backEdge.getEdge()));
+			lastScoreCount = eStat.getCount(backEdge.getEdge());
+			lastScore = lastScoreCount / lastEdgeLength;
+			scoreCount = parent.getScoreCount(eStat) + lastScoreCount;
+			//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
+			if (length > 0.) score = scoreCount / length;
 		}
 	}
+	
 	/**
 	 * @return the score of this label, freshly calculated from the edge statistics, if necessary
 	 * @param eStat edge statistics
@@ -309,6 +309,20 @@ public class Label implements Comparable<Label> {
 			label = label.getParent();
 		}
 		Collections.reverse(results);	// now, the topmost label represents the first edge in the list
+		return results;
+	}
+
+	/**
+	 * @return a list of all the Nodes of this label starting with the origin 
+	 */
+	public List<Node> getNodes() {
+		ArrayList<Node> results = new ArrayList<Node>();
+		Label label = this;
+		while(label.getParent() != null) {
+			results.add(label.getNode());
+			label = label.getParent();
+		}
+		Collections.reverse(results);	// now, the origin node is first in the list
 		return results;
 	}
 

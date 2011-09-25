@@ -3,8 +3,10 @@ package org.life.sl.importers;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import org.hibernate.CacheMode;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.hibernate.cfg.Configuration;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMEdge;
@@ -18,8 +20,8 @@ import com.vividsolutions.jts.planargraph.Node;
 
 public class CalculateODMatrix {
 
-	PathSegmentGraph psg = null;
-
+	private PathSegmentGraph psg = null;
+	
 	// a hashmap mapping OSM ids to OSM Edges
 	HashMap<Integer, OSMEdge> ids_edges = null;
 	HashMap<Integer, OSMNode> ids_nodes = null;
@@ -40,37 +42,56 @@ public class CalculateODMatrix {
 		float dist[][] = psg.getAPSDistancesArr();//new double[nodes.size()][nodes.size()];
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		// first, empty the database table:
 		session.beginTransaction();
-		session.createQuery("DELETE FROM shortestpathlength");	// empty table
+		session.setCacheMode(CacheMode.IGNORE);
+		int nDel = session.createQuery("delete ShortestPathLength").executeUpdate();
+		session.flush();
+		//session.getTransaction().commit();
+		System.out.println("Deleted " + nDel + " records from shortestpathlength");
+
+		//session.beginTransaction();
 
 		int osmNodeID1 = 0, osmNodeID2 = 0;
 		float length = 0.f;
 		//HashMap<Node, Double> hm1;
 		
-		System.out.println("Starting database import...");
-		timer.init();
+		System.out.println("Starting database export...");
+		Integer batchSize = Integer.getInteger(new Configuration().getProperty("hibernate.jdbc.batch_size"), 30);
+		System.out.println("Database batch size: " + batchSize);
+
+		timer.init(2.5, 50.);
+		double nn = dist.length*dist.length/2;	// approximate number of steps
+		long n = 0, nc = 0;
 		for (int i = 0; i < dist.length - 1; i++) {	// outer loop over all nodes
 			osmNodeID1 = i;//getOSMNodeIDForNode(n1);
 			if (osmNodeID1 >= 0) {				// check if node exists in OSM network at all...
 				for (int j = i+1; j < dist.length; j++) {	// inner loop over all nodes
 					if (i != j) {				// no connection to self!
 						length = dist[i][j];	// the path length
-						if (length > 1.e-8 && length < 1.e100) {	// ignore 0 (= self) and infinity (= no connection)
+						if (length > 1.e-8 && length < .5f*Float.MAX_VALUE) {	// ignore 0 (= self) and infinity (= no connection)
 							osmNodeID2 = j;//getOSMNodeIDForNode(n2);
 
 							// store length(n1, n2)
 							if (osmNodeID2 >= 0) {
+								// TODO: can this be optimized by reusing sPl1 instead of creating it (new)?
 								ShortestPathLength sPl1 = new ShortestPathLength(osmNodeID1, osmNodeID2, length);
 								session.save(sPl1);
+								if (++n % batchSize == 0) {
+									session.flush();
+									session.clear();
+								}
 								
 								// the same path in reverse direction: not necessary
 								/*ShortestPathLength sPl2 = new ShortestPathLength(osmNodeID2, osmNodeID1, length);
 								session.save(sPl2);*/
 							}
 						}
+						nc++;
 					}
 				}
 			}
+			timer.showProgress(nc/nn);
 		}
 //		for (Node n1 : distances.keySet()) {	// outer loop over all nodes
 //			osmNodeID1 = getOSMNodeIDForNode(n1);
@@ -96,7 +117,7 @@ public class CalculateODMatrix {
 //				}
 //			}
 //		}
-		session.getTransaction().commit();
+		session.getTransaction().commit();	// TODO: complete the transaction in the outer loop above, to prevent it from getting too big?
 		timer.getRunTime(true, "... finished");
 		System.out.println("YEAH !");
 
@@ -173,7 +194,8 @@ public class CalculateODMatrix {
 
 
 	public static void main(String[] args) {	
-		CalculateODMatrix codm = new CalculateODMatrix();
+		//CalculateODMatrix codm = 
+				new CalculateODMatrix();
 	}
 
 }

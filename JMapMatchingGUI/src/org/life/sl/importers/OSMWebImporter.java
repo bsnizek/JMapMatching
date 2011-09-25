@@ -25,20 +25,18 @@ public class OSMWebImporter {
 
 
 	public OSMWebImporter(int sourcerouteId) throws IOException, URISyntaxException, IllegalDataException, FactoryException, TransformException {
-
 		
 		// String OSM_API_STRING = "http://api.openstreetmap.org/api/0.6/map?bbox=";
 		String OSM_API_STRING = "http://open.mapquestapi.com/xapi/api/0.6/map?bbox=";
-
-		
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 
 		Query result = session.createQuery("from SourcePoint WHERE sourcerouteid=" + sourcerouteId);
+		@SuppressWarnings("unchecked")
 		Iterator<SourcePoint> iter = result.iterate();
 
-		GeometryFactory factory = new GeometryFactory();
+		//GeometryFactory factory = new GeometryFactory();
 
 		Point[] coordinates = new Point[result.list().size()];
 
@@ -50,17 +48,17 @@ public class OSMWebImporter {
 			i = i + 1;
 		}
 
-		MultiPoint mP = factory.createMultiPoint(coordinates);
-		Geometry boundary = mP.getEnvelope();
+		//MultiPoint mP = factory.createMultiPoint(coordinates);
+		//Geometry boundary = mP.getEnvelope();
 		// Coordinate[] coords = boundary.getCoordinates();
 		// Coordinate c0 = coords[0];
 		// Coordinate c1 = coords[1];
 
 		Double step = 0.0100;
 		Double left = 12.4910;
-		Double top = 55.6550;
-		for (int j=-14; j<=11; j++) {  //left-right
-			for (int k=-1; k<=6;k++) {  // bottom -> top
+		Double top = 55.6350;
+		for (int j=-19; j<=20; j++) {  //left-right
+			for (int k=-22; k<=16;k++) {  // bottom -> top
 				Double new_left = j*step + left;
 				Double new_right = new_left + step;
 				Double new_top = k*step + top;

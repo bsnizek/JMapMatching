@@ -1,5 +1,7 @@
 package org.life.sl.utils;
 
+import org.apache.log4j.Logger;
+
 public class Timer {
 	private double t_start, t_tot;						///> start and current time, in seconds
 	private double[] progressInterval = { 2.5f, 10.f };	///> progress indicator is only updated after this interval, not faster
@@ -67,7 +69,8 @@ public class Timer {
 	 */
 	public double getRunTime(boolean reset, String msg) {
 		double t = getRunTime(reset);
-		System.out.println(msg + ", t = " + t + "s");
+		//System.out.println(msg + ", t = " + t + "s");
+		Logger.getRootLogger().info(msg + ", t = " + t + "s");
 		return t;
 	}
 
@@ -83,7 +86,7 @@ public class Timer {
 		}
 		if (p > 0f) {	// percentage indicator
 			if (t_tot - t_tot_last[1] > progressInterval[1]) {	// show indicator every x seconds
-				System.out.printf(" %6.2f%%\n - ETA %fs", 100.*p, t_tot/p - t_tot);
+				System.out.printf(" %6.2f%% - ETA %fs\n", 100.*p, t_tot/p - t_tot);
 				t_tot_last[1] = t_tot;
 			}
 		}
