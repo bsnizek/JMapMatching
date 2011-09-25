@@ -31,11 +31,13 @@
 <hibernate-mapping package="org.life.sl.orm">
 
     <class name="ShortestPathLength" table="shortestpathlength">
-        <id name="id" column="id">
+        <!--
+        	<id name="id" column="id">
             <generator class="increment"/>
         </id>
-        <property name="fromnode" type="java.lang.Integer" column="fromnode"/>
-        <property name="tonode" type="java.lang.Integer" column="tonode"/>
+       -->
+        <property name="fromnode" type="java.lang.Integer" column="fromnode index="idx_fromnode"/>
+        <property name="tonode" type="java.lang.Integer" column="tonode" index="idx_tonode"/>
         <property name="length" type="java.lang.Double" column="length"/>
        
     </class>

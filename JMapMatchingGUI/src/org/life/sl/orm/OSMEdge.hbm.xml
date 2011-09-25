@@ -46,11 +46,6 @@
  		<property name="bicycle" type="string"></property>
  		<property name="foot" type="string"></property>
  		<property name="segregated" type="string"></property>
- 		
- 		
-        
-                
-        
 
     </class>
 

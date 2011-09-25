@@ -61,9 +61,21 @@ public class OSMPlanarizedImporter {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> data2 = (HashMap<String, Object>) e.getData();
 			Object geom = data2.get("geom");
+			String bicycle = (String) data2.get("bicycle");
+			String cycleway = (String) data2.get("cycleway");
+			String foot = (String) data2.get("foot");
+			String highway = (String) data2.get("highway");
+			String roadname = (String) data2.get("roadname");
+			
 			LineString ls = (LineString) geom;
+			
 			osmEdge.setGeometry(ls);
 			osmEdge.setId(j);
+			osmEdge.setBicycle(bicycle);
+			osmEdge.setCycleway(cycleway);
+			osmEdge.setFoot(foot);
+			osmEdge.setHighway(highway);
+			osmEdge.setRoadname(roadname);
 			
 			Node from_node = e.getDirEdge(0).getFromNode();
 			Node to_node = e.getDirEdge(0).getToNode();
