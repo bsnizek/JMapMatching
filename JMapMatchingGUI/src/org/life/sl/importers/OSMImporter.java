@@ -1,18 +1,14 @@
 package org.life.sl.importers;
 
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
-
 import java.util.Collection;
-
 import java.util.List;
 
 import org.hibernate.Query;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
-import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMEdge;
 import org.life.sl.orm.OSMNode;
@@ -31,11 +27,8 @@ import org.openstreetmap.josm.data.projection.Epsg4326;
 import org.openstreetmap.josm.io.IllegalDataException;
 import org.openstreetmap.josm.io.OsmReader;
 
-
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-
-import com.vividsolutions.jts.geom.GeometryFactory;
 
 
 //import com.vividsolutions.jts.operation.linemerge.LineMergeGraph;
@@ -46,13 +39,8 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  */
 public class OSMImporter {
 
-	private static PathSegmentGraph psg;
-	private static GeometryFactory gf;
 
 	public OSMImporter() {
-		// initialize the geometry factory
-		gf = new GeometryFactory();
-		psg = new PathSegmentGraph();
 	}
 
 	/**

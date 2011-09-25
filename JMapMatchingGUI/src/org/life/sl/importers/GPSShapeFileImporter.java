@@ -1,7 +1,6 @@
 package org.life.sl.importers;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -30,7 +29,6 @@ import com.vividsolutions.jts.geom.Point;
 
 public class GPSShapeFileImporter {
 
-	private ArrayList<Point> points;
 	private Session session;
 	
 	public GPSShapeFileImporter(String directory) {
@@ -40,10 +38,6 @@ public class GPSShapeFileImporter {
 	public GPSShapeFileImporter(File file) throws IOException {
 		
 		setUp();
-		
-		// 
-		
-		points = new ArrayList<Point>();
 
 		Map<String,Serializable> connectParameters = new HashMap<String,Serializable>();
 		connectParameters.put("url", file.toURI().toURL());
@@ -77,27 +71,16 @@ public class GPSShapeFileImporter {
 
 		try {
 			while (iterator.hasNext()) {
-				//Point point = null;
+				
 				SimpleFeature feature = iterator.next();
 				Geometry geometry = (Geometry) feature.getDefaultGeometry();
-				// Debug output:
-				//System.out.println(geometry.getClass());
-
+				
 				if(geometry.getClass() != Point.class && geometry.getClass() != Point.class) {
 					//    				ErrorHandler.getInstance().error("Error, shapefile must contain lines", 2);
 					System.out.println("ERROR: Shapefile must contain points, but does not.");
 					return;
 				}
-
-				//                if(geometry.getClass() == Point.class) {
-				//    				// add linestring
-				//    				point = (Point) geometry;
-				//    				if(CoordinateArrays.hasRepeatedPoints(point.getCoordinates())) {
-				//    					// TODO: ErrorHandler.getInstance().error("Found LineString with repeated coordinates (skipping): " + lineString.getCoordinates(), 2);					
-				//    					continue;
-				//    				}
-				//    			}
-				// read data from the row
+				
 				HashMap<String, Object> attributes = new HashMap<String, Object>();
 				for (String fn : fieldnames) {
 					attributes.put(fn, feature.getAttribute(fn));
