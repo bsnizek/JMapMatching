@@ -101,12 +101,12 @@ public class RouteFinder {
 	private void initDefaults() {
 		rfParams = new RFParams();
 
-		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 1000);	///> maximum number of routes to find
+		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 1000);	///> maximum number of routes to find (or 0 for infinite)
 		rfParams.setInt(RFParams.Type.BridgeOverlap, 1);
 		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);		///> how often each edge may be used
 //		constraints.setInt(Constraints.Type.ArticulationPointOverlap, 2);
 		rfParams.setInt(RFParams.Type.NodeOverlap, 1);		///> how often each single node may be crossed
-		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);	///> how much the route may deviate from the shortest possible
+		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);		///> how much the route may deviate from the shortest possible
 		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///> minimum route length
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///> maximum route length (quasi no limit here)
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///> buffer size in meters (!)
