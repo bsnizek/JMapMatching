@@ -19,7 +19,7 @@ import com.vividsolutions.jts.planargraph.Node;
 // Imports any graph into the postgresql, creating new ids for nodes and edges
 
 
-public class OSMPlanarizedImporter {
+public class ShapeFileImporter {
 
 	private PathSegmentGraph pSg;
 	private Session session;
@@ -95,14 +95,14 @@ public class OSMPlanarizedImporter {
 		
 	}
 	
-	public OSMPlanarizedImporter(String shapefile) throws IOException {
+	public ShapeFileImporter(String shapefile) throws IOException {
 		session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		pSg = new PathSegmentGraph(shapefile);
 	}
 	
 	public static void main(String[] args) throws IOException {
-		OSMPlanarizedImporter oSMPI = new OSMPlanarizedImporter("testdata/osmdata/osmplanarized.shp");
+		ShapeFileImporter oSMPI = new ShapeFileImporter("testdata/osmdata/osmplanarized.shp");
 		oSMPI.dumpToPostgresql();
 		System.out.println("Finished");
 	}
