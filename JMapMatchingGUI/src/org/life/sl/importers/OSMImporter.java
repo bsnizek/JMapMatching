@@ -4,11 +4,16 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import org.hibernate.Query;
 import org.hibernate.SQLQuery;
 import org.hibernate.Session;
+import org.life.sl.orm.Bicycletype;
+import org.life.sl.orm.Cyclewaytype;
+import org.life.sl.orm.Foottype;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMEdge;
 import org.life.sl.orm.OSMNode;
@@ -86,6 +91,52 @@ public class OSMImporter {
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
+		
+		// the bicycletype lookup table
+		
+		HashMap<String, Integer> bicycletype = new HashMap<String, Integer>();	
+		Query q1 = session.createQuery("from Bicycletype");
+		Iterator<Bicycletype> i1 = q1.iterate();
+		while (i1.hasNext()) {
+			Bicycletype bt = (Bicycletype) i1.next();
+			bicycletype.put(bt.getDescr(), bt.getId());
+		}
+		
+		// the cyclewaytype lookup table
+		
+		HashMap<String, Integer> cyclewaytype = new HashMap<String, Integer>();
+		Query q2 = session.createQuery("from Cyclewaytype");
+		Iterator<Cyclewaytype> i2= q2.iterate();
+		while (i2.hasNext()) {
+			Cyclewaytype cwt = (Cyclewaytype) i2.next();
+			cyclewaytype.put(cwt.getDescr(), cwt.getId());
+		}
+		
+		// the foottype lookup table
+		
+		HashMap<String, Integer> foottype = new HashMap<String, Integer>();
+		Query q3 = session.createQuery("from Foottype");
+		Iterator<Foottype> i3 = q3.iterate();
+		while (i3.hasNext()) {
+			Foottype ftt = (Foottype) i3.next();
+			foottype.put(ftt.getDescr(), ftt.getId());
+		}
+		
+		HashMap<String, Integer> segregatedtype = new HashMap<String, Integer>();
+		Query q4 = session.createQuery("from Foottype");
+		Iterator<Foottype> i4 = q4.iterate();
+		while (i4.hasNext()) {
+			Foottype stt = (Foottype) i4.next();
+			segregatedtype.put(stt.getDescr(), stt.getId());
+		}		
+		
+		HashMap<String, Integer> highwaytype = new HashMap<String, Integer>();
+		Query q5 = session.createQuery("from Foottype");
+		Iterator<Foottype> i5 = q5.iterate();
+		while (i5.hasNext()) {
+			Foottype ht = (Foottype) i4.next();
+			highwaytype.put(ht.getDescr(), ht.getId());
+		}
 
 		for (Node node : all_nodes) {
 
@@ -153,11 +204,17 @@ public class OSMImporter {
 						oe.setTonode((int) way.getNode(way.getNodesCount()-1).getId());
 						oe.setLength(lineString.getLength());
 						oe.setRoadname(way.getName());
-						oe.setHighway(way.get("highway"));
-						oe.setSegregated(way.get("segregated"));
-						oe.setBicycle(way.get("bicycle"));
-						oe.setFoot(way.get("foot"));
-						oe.setCycleway(way.get("cycleway"));
+						
+						oe.setHighwaytype(highwaytype.get(way.get("highway")));
+						
+						oe.setSegregatedtype(segregatedtype.get(way.get("segregated")));
+						
+						oe.setBicycletype(bicycletype.get(way.get("bicycle")));
+						
+						oe.setFoottype(foottype.get(way.get("foot")));
+						
+						oe.setCyclewaytype(cyclewaytype.get(way.get("cycleway")));
+						
 						System.out.print(".");
 						session.save(oe);
 					}

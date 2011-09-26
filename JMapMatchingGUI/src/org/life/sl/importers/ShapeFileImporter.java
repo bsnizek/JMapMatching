@@ -61,20 +61,23 @@ public class ShapeFileImporter {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> data2 = (HashMap<String, Object>) e.getData();
 			Object geom = data2.get("geom");
-			String bicycle = (String) data2.get("bicycle");
-			String cycleway = (String) data2.get("cycleway");
-			String foot = (String) data2.get("foot");
-			String highway = (String) data2.get("highway");
+			
+			int bicycle = (Integer) data2.get("bicycletype");
+			int cycleway = (Integer) data2.get("cyclewaytype");
+			int foot = (Integer) data2.get("foottype");
+			int highway = (Integer) data2.get("highwaytype");
+			int segregated = (Integer) data2.get("segregatedtype");
+			
 			String roadname = (String) data2.get("roadname");
 			
 			LineString ls = (LineString) geom;
 			
 			osmEdge.setGeometry(ls);
 			osmEdge.setId(j);
-			osmEdge.setBicycle(bicycle);
-			osmEdge.setCycleway(cycleway);
-			osmEdge.setFoot(foot);
-			osmEdge.setHighway(highway);
+			osmEdge.setBicycletype(bicycle);
+			osmEdge.setCyclewaytype(cycleway);
+			osmEdge.setFoottype(foot);
+			osmEdge.setHighwaytype(highway);
 			osmEdge.setRoadname(roadname);
 			
 			Node from_node = e.getDirEdge(0).getFromNode();
