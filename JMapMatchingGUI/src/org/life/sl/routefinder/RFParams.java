@@ -1,6 +1,13 @@
 package org.life.sl.routefinder;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
+import java.util.Map;
+
+import org.apache.log4j.Logger;
+import org.ini4j.Ini;
+import org.ini4j.InvalidFileFormatException;
 
 public class RFParams {
 	public enum Type {
@@ -106,5 +113,61 @@ public class RFParams {
 	public double getDouble(Type type) {
 		Double d = c_double.get(type);
 		return d;
+	}
+	
+	/**
+	 * read parameters from a given ini-File (Win-Ini format)
+	 * @param iniFileName name of the configuration file 
+	 * @return number of parameters read from the file; -1 if the file could not be opened
+	 */
+	public int readFromFile(String iniFileName) {
+		Logger.getRootLogger().info("Reading ini file " + iniFileName);
+		int r = -1;	// default: no file found
+		try {
+			Ini ini = new Ini(new File(iniFileName));
+			Map<String, String> iniMap = ini.get("RouteFinder");
+			
+			r = 0;
+			if (map2Int(iniMap, "MaximumNumberOfRoutes", Type.MaximumNumberOfRoutes)) r++;
+			if (map2Int(iniMap, "NodeOverlap", Type.NodeOverlap)) r++;
+			if (map2Int(iniMap, "ArticulationPointOverlap", Type.ArticulationPointOverlap)) r++;
+			if (map2Int(iniMap, "EdgeOverlap", Type.EdgeOverlap)) r++;
+			if (map2Int(iniMap, "BridgeOverlap", Type.BridgeOverlap)) r++;
+			if (map2Double(iniMap, "MinimumLength", Type.MinimumLength)) r++;
+			if (map2Double(iniMap, "MaximumLength", Type.MaximumLength)) r++;
+			if (map2Double(iniMap, "DistanceFactor", Type.DistanceFactor)) r++;
+			if (map2Double(iniMap, "NetworkBufferSize", Type.NetworkBufferSize)) r++;
+		} catch (InvalidFileFormatException e) {
+			Logger.getRootLogger().error("Invalid file format");
+		} catch (IOException e) {
+			Logger.getRootLogger().error("Error reading ini file - " + e);
+		}
+		return r;
+	}
+	
+	/**
+	 * from a given Map, read an integer value and store it in the Integer Hashmap
+	 * @param iniMap the map containing keys and values
+	 * @param mapKey key to look for in the map
+	 * @param parKey parameter key (enum) to store the value
+	 * @return
+	 */
+	private boolean map2Int(Map<String, String> iniMap, String mapKey, Type parKey) {
+		boolean ok = iniMap.containsKey(mapKey); 
+		if (ok) setInt(parKey, Integer.parseInt(iniMap.get("mapKey")));
+		return ok;
+	}
+	/**
+	 * from a given Map, read a floating point value and store it in the Double Hashmap
+	 * @see map2Int
+	 * @param iniMap the map containing keys and values
+	 * @param mapKey key to look for in the map
+	 * @param parKey parameter key (enum) to store the value
+	 * @return
+	 */
+	private boolean map2Double(Map<String, String> iniMap, String mapKey, Type parKey) {
+		boolean ok = iniMap.containsKey(mapKey); 
+		if (ok) setDouble(parKey, Double.parseDouble(iniMap.get("mapKey")));
+		return ok;
 	}
 }

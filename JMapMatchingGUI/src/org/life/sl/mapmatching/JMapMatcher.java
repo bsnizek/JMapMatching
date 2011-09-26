@@ -45,6 +45,7 @@ public class JMapMatcher {
 		BULK_PGSQLDATABASE
 	}
 
+	private static String kCfgFileName = "JMM.cfg";
 	private static int kMaxRoutesOutput = 10;	///> the result is constrained to this max. number of routes
 	private static String kOutputDir = "results/";
 	// input data:
@@ -330,6 +331,7 @@ public class JMapMatcher {
 		// initialize constraint fields:
 		rfParams = new RFParams();
 
+		// initialize with hardwired default values:
 		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 2000);	///> maximum number of routes to find (or 0 for infinite)
 		rfParams.setInt(RFParams.Type.BridgeOverlap, 1);
 		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);		///> how often each edge may be used
@@ -339,6 +341,11 @@ public class JMapMatcher {
 		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///> minimum route length
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///> maximum route length (quasi no limit here)
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///> buffer size in meters (!)
+		
+		// read config file, eventually overwriting existing values:
+		int r = rfParams.readFromFile(kCfgFileName);
+		if (r < 0) logger.warn("Config file " + kCfgFileName + " not found!");
+		else logger.info("Read " + r + " from config file " + kCfgFileName);
 		
 		return rfParams;
 	}
