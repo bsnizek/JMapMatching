@@ -2,7 +2,7 @@ package org.life.sl.orm;
 
 public class Segregatedtype {
 	
-	private int id;
+	private Short id;
 	private String descr;
 
 
@@ -14,11 +14,11 @@ public class Segregatedtype {
 		this.descr = descr;
 	}
 
-	public int getId() {
+	public Short getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(Short id) {
 		this.id = id;
 	}
 

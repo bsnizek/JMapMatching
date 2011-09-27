@@ -1,6 +1,6 @@
 package org.life.sl.orm;
 
-public class Cyclewaytype {
+public class Highwaytype {
 	
 	private Short id;
 	private String descr;
@@ -14,7 +14,7 @@ public class Cyclewaytype {
 		this.descr = descr;
 	}
 
-	public Short getId() {
+	public int Short() {
 		return id;
 	}
 
@@ -22,6 +22,10 @@ public class Cyclewaytype {
 		this.id = id;
 	}
 
+	public Short getId() {
+		return id;
+	}
+	
 	
 }
     

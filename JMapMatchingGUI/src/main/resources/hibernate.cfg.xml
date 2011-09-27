@@ -72,6 +72,7 @@
          <mapping resource="org/life/sl/orm/Cyclewaytype.hbm.xml"/>
          <mapping resource="org/life/sl/orm/Foottype.hbm.xml"/>
          <mapping resource="org/life/sl/orm/Segregatedtype.hbm.xml"/>
+         <mapping resource="org/life/sl/orm/Highwaytype.hbm.xml"/>
         
         
 	</session-factory>

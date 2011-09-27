@@ -2,7 +2,7 @@ package org.life.sl.orm;
 
 public class Foottype {
 	
-	private int id;
+	private Short id;
 	private String descr;
 
 
@@ -14,14 +14,18 @@ public class Foottype {
 		this.descr = descr;
 	}
 
-	public int getId() {
+	public int Short() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(Short id) {
 		this.id = id;
 	}
 
+	public Short getId() {
+		return id;
+	}
+	
 	
 }
     
