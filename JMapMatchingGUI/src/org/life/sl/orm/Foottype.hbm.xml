@@ -30,7 +30,7 @@
 
 <hibernate-mapping package="org.life.sl.orm">
 
-    <class name="Cyclewaytype" table="cyclewaytype">
+    <class name="Foottype" table="foottype">
 
         <id name="id" column="id">
         </id>

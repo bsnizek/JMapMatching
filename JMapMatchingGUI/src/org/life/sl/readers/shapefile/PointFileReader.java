@@ -58,7 +58,7 @@ public class PointFileReader {
 
         for (AttributeDescriptor ad : ads) {
         	String ln = ad.getLocalName();
-        	if (ln != "the_geom") {
+        	if (ln != "geom") {
         		fieldnames.add(ln);
         	}
         }

@@ -339,12 +339,12 @@ public class PathSegmentGraph {
 		}
 
 		Edge edge = getLineMergeGraphH4cked().addEdge(lineString);
-		//Object userdata = lineString.getUserData();
-		//System.out.println(id);
-		HashMap<String, Object> hm = new HashMap<String, Object>();
-		hm.put("id", id);
-		hm.put("geom", lineString);
-		edge.setData(hm);
+		HashMap<String, Object> userdata = (HashMap<String, Object>) lineString.getUserData();
+		// HashMap<String, Object> hm = new HashMap<String, Object>();
+		
+		userdata.put("id", id);
+// 		userdata.put("geom", lineString);
+		edge.setData(userdata);
 	}
 
 	private void modifyEnvelope(Coordinate[] coordinates) {

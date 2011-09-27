@@ -10,11 +10,11 @@ public class OSMEdge {
 	private int tonode;
 	private double length;
 	private String roadname;
-	private int highwaytype;
-	private int cyclewaytype;
-	private int foottype;
-	private int bicycletype;
-	private int segregatedtype;
+	private Short highwaytype;
+	private Short cyclewaytype;
+	private Short foottype;
+	private Short bicycletype;
+	private Short segregatedtype;
 	
 	
 
@@ -58,43 +58,43 @@ public class OSMEdge {
 		this.roadname = roadname;
 	}
 
-	public int getHighwaytype() {
+	public Short getHighwaytype() {
 		return highwaytype;
 	}
 
-	public void setHighwaytype(int highwaytype) {
+	public void setHighwaytype(Short highwaytype) {
 		this.highwaytype = highwaytype;
 	}
 
-	public int getCyclewaytype() {
+	public Short getCyclewaytype() {
 		return cyclewaytype;
 	}
 
-	public void setCyclewaytype(int cyclewaytype) {
+	public void setCyclewaytype(Short cyclewaytype) {
 		this.cyclewaytype = cyclewaytype;
 	}
 
-	public int getFoottype() {
+	public Short getFoottype() {
 		return foottype;
 	}
 
-	public void setFoottype(int foottype) {
+	public void setFoottype(Short foottype) {
 		this.foottype = foottype;
 	}
 
-	public int getBicycletype() {
+	public Short getBicycletype() {
 		return bicycletype;
 	}
 
-	public void setBicycletype(int bicycletype) {
+	public void setBicycletype(Short bicycletype) {
 		this.bicycletype = bicycletype;
 	}
 
-	public int getSegregatedtype() {
+	public Short getSegregatedtype() {
 		return segregatedtype;
 	}
 
-	public void setSegregatedtype(int segregatedtype) {
+	public void setSegregatedtype(Short segregatedtype) {
 		this.segregatedtype = segregatedtype;
 	}
 

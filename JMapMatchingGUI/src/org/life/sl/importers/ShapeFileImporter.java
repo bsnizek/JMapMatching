@@ -60,15 +60,24 @@ public class ShapeFileImporter {
 			OSMEdge osmEdge = new OSMEdge();
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> data2 = (HashMap<String, Object>) e.getData();
-			Object geom = data2.get("geom");
+			Object geom = data2.get("geometry");
 			
-			int bicycle = (Integer) data2.get("bicycletype");
-			int cycleway = (Integer) data2.get("cyclewaytype");
-			int foot = (Integer) data2.get("foottype");
-			int highway = (Integer) data2.get("highwaytype");
-			int segregated = (Integer) data2.get("segregatedtype");
+			Integer bint = new Integer((Integer) data2.get("BICYCLETYP"));
+			Short bicycle = bint.shortValue();
 			
-			String roadname = (String) data2.get("roadname");
+			Integer cwint = new Integer((Integer) data2.get("CYCLEWAYTY"));
+			Short cycleway = cwint.shortValue();
+			
+			Integer fint = new Integer((Integer) data2.get("FOOTTYPE"));
+			Short foot = fint.shortValue();
+			
+			Integer hwt = new Integer((Integer) data2.get("HIGHWAYTYP"));
+			Short highway = hwt.shortValue();
+			
+			Integer sgrd = new Integer((Integer) data2.get("SEGREGATED"));
+			Short segregated = sgrd.shortValue();
+			
+			String roadname = (String) data2.get("ROADNAME");
 			
 			LineString ls = (LineString) geom;
 			
@@ -79,6 +88,7 @@ public class ShapeFileImporter {
 			osmEdge.setFoottype(foot);
 			osmEdge.setHighwaytype(highway);
 			osmEdge.setRoadname(roadname);
+			osmEdge.setSegregatedtype(segregated);
 			
 			Node from_node = e.getDirEdge(0).getFromNode();
 			Node to_node = e.getDirEdge(0).getToNode();
@@ -92,9 +102,11 @@ public class ShapeFileImporter {
 			
 			session.save(osmEdge);
 			j++;
+			System.out.print(".");
 		}
-		
 		session.getTransaction().commit();
+		System.out.println("Import finished");
+		
 		
 	}
 	
@@ -105,7 +117,7 @@ public class ShapeFileImporter {
 	}
 	
 	public static void main(String[] args) throws IOException {
-		ShapeFileImporter oSMPI = new ShapeFileImporter("testdata/osmdata/osmplanarized.shp");
+		ShapeFileImporter oSMPI = new ShapeFileImporter("testdata/osmdata/planarized.shp");
 		oSMPI.dumpToPostgresql();
 		System.out.println("Finished");
 	}
