@@ -16,6 +16,49 @@ public class OSMEdge {
 	private Short bicycletype;
 	private Short segregatedtype;
 	
+	// HSP specific attributes
+	
+	private Short EnvType;
+	private Short CykType;
+	private double GroenPct;
+	private double GroenM;
+	
+	
+	
+	public Short getEnvType() {
+		return EnvType;
+	}
+
+	public void setEnvType(Short envType) {
+		EnvType = envType;
+	}
+
+	public Short getCykType() {
+		return CykType;
+	}
+
+	public void setCykType(Short cykType) {
+		CykType = cykType;
+	}
+
+	public double getGroenPct() {
+		return GroenPct;
+	}
+
+	public void setGroenPct(double groenPct) {
+		GroenPct = groenPct;
+	}
+
+	public double getGroenM() {
+		return GroenM;
+	}
+
+	public void setGroenM(double groenM) {
+		GroenM = groenM;
+	}
+
+
+	
 	
 
 	public int getId() {
