@@ -35,10 +35,10 @@
  		
  		<!-- The HSP specific stuff -->
  		
-		<property name="EnvType" type="short"></property>
-		<property name="CykType" type="short"></property>
-		<property name="GroenPct" type="double"></property>
-		<property name="GroenM" type="double"></property>
+		<property name="envtype" type="short"></property>
+		<property name="cyktype" type="short"></property>
+		<property name="groenpct" type="double"></property>
+		<property name="groenm" type="double"></property>
 
     </class>
 
