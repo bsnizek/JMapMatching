@@ -77,6 +77,17 @@ public class ShapeFileImporter {
 			Integer sgrd = new Integer((Integer) data2.get("SEGREGATED"));
 			Short segregated = sgrd.shortValue();
 			
+			// The HSP-specific stuff
+			
+			Integer envtp = new Integer((Integer) data2.get("ENVTYPE"));
+			Short envType = envtp.shortValue();
+
+			Integer cyktp = new Integer((Integer) data2.get("CYKTYPE"));
+			Short cykType = cyktp.shortValue();
+			
+			float groenPct = new Float((Float) data2.get("GROENPCT"));
+			float groenM = new Float((Float) data2.get("GROENM"));
+			
 			String roadname = (String) data2.get("ROADNAME");
 			
 			LineString ls = (LineString) geom;
@@ -89,6 +100,11 @@ public class ShapeFileImporter {
 			osmEdge.setHighwaytype(highway);
 			osmEdge.setRoadname(roadname);
 			osmEdge.setSegregatedtype(segregated);
+			
+			osmEdge.setEnvType(envType);
+			osmEdge.setCykType(cykType);
+			osmEdge.setGroenPct(groenPct);
+			osmEdge.setGroenM(groenM);
 			
 			Node from_node = e.getDirEdge(0).getFromNode();
 			Node to_node = e.getDirEdge(0).getToNode();
