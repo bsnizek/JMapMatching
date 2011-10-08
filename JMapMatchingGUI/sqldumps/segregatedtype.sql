@@ -22,7 +22,7 @@ CREATE TABLE "segregatedtype" (
 	"descr" char(16)
 )
 WITH (OIDS=FALSE);
-ALTER TABLE "segregatedtype" OWNER TO "postgres";
+ALTER TABLE "segregatedtype" OWNER TO "biker";
 
 -- ----------------------------
 --  Records of "segregatedtype"

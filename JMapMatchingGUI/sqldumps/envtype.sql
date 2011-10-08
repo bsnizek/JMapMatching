@@ -22,7 +22,7 @@ CREATE TABLE "envtype" (
 	"descr" char(64)
 )
 WITH (OIDS=FALSE);
-ALTER TABLE "envtype" OWNER TO "postgres";
+ALTER TABLE "envtype" OWNER TO "biker";
 
 -- ----------------------------
 --  Records of "envtype"

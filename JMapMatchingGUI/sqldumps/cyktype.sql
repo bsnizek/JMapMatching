@@ -22,7 +22,7 @@ CREATE TABLE "cyktype" (
 	"descr" char(64)
 )
 WITH (OIDS=FALSE);
-ALTER TABLE "cyktype" OWNER TO "postgres";
+ALTER TABLE "cyktype" OWNER TO "biker";
 
 -- ----------------------------
 --  Records of "cyktype"

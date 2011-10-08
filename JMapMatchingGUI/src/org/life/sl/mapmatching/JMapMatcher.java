@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -372,7 +371,7 @@ public class JMapMatcher {
 
 	/**
 	 * main method: loads the data and invokes the matching algorithm
-	 * @param args
+	 * @param args command line arguments: 1: route ID; 2: route ID (end of range)
 	 * @throws IOException 
 	 */
 	public static void main(String... args) throws IOException {
@@ -402,7 +401,8 @@ public class JMapMatcher {
 			org.hibernate.classic.Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 			session.beginTransaction();
 			
-			Query result = session.createQuery("from SourceRoute");
+			Query result;
+			result = session.createQuery("from SourceRoute");
 			@SuppressWarnings("unchecked")
 			Iterator<SourceRoute> iterator = result.iterate();
 			logger.info(result.list().size() + " tracks to be matched");

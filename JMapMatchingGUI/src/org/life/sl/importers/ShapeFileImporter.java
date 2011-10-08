@@ -26,11 +26,15 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 
+import org.apache.log4j.Logger;
+import org.hibernate.CacheMode;
 import org.hibernate.Session;
+import org.hibernate.cfg.Configuration;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMEdge;
 import org.life.sl.orm.OSMNode;
+import org.life.sl.utils.Timer;
 
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.planargraph.Edge;
@@ -41,41 +45,76 @@ import com.vividsolutions.jts.planargraph.Node;
 
 public class ShapeFileImporter {
 
-	private PathSegmentGraph pSg;
+	private PathSegmentGraph psg;
 	private Session session;
 
 	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 
+	static Logger logger = Logger.getLogger("ShapeFileImporter");
+
 	public void dumpToPostgresql() {
-		ArrayList<Node> nodes = pSg.getNodes();
+		ArrayList<Node> nodes = psg.getNodes();
 		Iterator<Node> iter = nodes.iterator();
 
-		System.out.println("Writing nodes...");
-		int i = 0;
+		session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		
+		// first, empty the database table:
+		session.beginTransaction();
+		session.setCacheMode(CacheMode.IGNORE);
+		int nDel = session.createQuery("delete OSMNode").executeUpdate();
+		session.flush();
+		logger.info("Deleted " + nDel + " records from OSMNode");
+		nDel = session.createQuery("delete OSMEdge").executeUpdate();
+		session.flush();
+		logger.info("Deleted " + nDel + " records from OSMEdge");
+
+		logger.info("Writing nodes...");
+		Integer batchSize = Integer.getInteger(new Configuration().getProperty("hibernate.jdbc.batch_size"), 30);
+		logger.info("Database batch size: " + batchSize);
+
+		Timer timer = new Timer();
+		timer.init();
+
+		int nNodes = 0;	// will be used as node ID
+		double nNodesMax = nodes.size();
 		HashMap<Node, Integer> node__nodeId = new HashMap<Node, Integer>();
 		while (iter.hasNext()) {
 			Node n = iter.next();
+			nNodes++;
 
 			OSMNode osmNode = new OSMNode();
 			osmNode.setGeometry(fact.createPoint(n.getCoordinate()));
 			// @SuppressWarnings("unchecked")
 			// HashMap<String, Integer> data = (HashMap<String, Integer>) n.getData();
 			// int id = data.get("id");
-			osmNode.setId(i); //  todo set this properly
+			osmNode.setId(nNodes); //  todo set this properly
 
-			node__nodeId.put(n, i);
+			node__nodeId.put(n, nNodes);
 			session.save(osmNode);
-			i++;
+			if (nNodes % batchSize == 0) {
+				session.flush();
+				session.clear();
+			}
+			timer.showProgress((double)nNodes/nNodesMax);
 		}
+		if (nNodes % batchSize == 0) {
+			session.flush();
+			session.clear();
+		}
+		System.out.println();
 
-		Collection<Edge> edges = pSg.getEdges();
+		Collection<Edge> edges = psg.getEdges();
 		Iterator<Edge> iter2 = edges.iterator();
 
-		System.out.println("Writing edges...");
-		int j=0;
+		logger.info("Writing edges...");
+		int nEdges=0;	// will be used as edge ID
+		double nEdgesMax = edges.size();
 
 		while (iter2.hasNext()){
 			Edge e = iter2.next();
+			nEdges++;
 
 			OSMEdge osmEdge = new OSMEdge();
 			@SuppressWarnings("unchecked")
@@ -88,7 +127,6 @@ public class ShapeFileImporter {
 				Short bicycle = bint.shortValue();
 				osmEdge.setBicycletype(bicycle);
 			}
-
 
 			Object cycleway_s = data2.get("CYCLEWAYTY");
 			if (cycleway_s != null) {
@@ -104,13 +142,11 @@ public class ShapeFileImporter {
 				osmEdge.setFoottype(foot);
 			}
 
-
 			Object hwt_s = data2.get("HIGHWAYTYP");
 			if (hwt_s != null) {
 				Integer hwt = new Integer((Integer) hwt_s);
 				Short highway = hwt.shortValue();
 				osmEdge.setHighwaytype(highway);
-
 			}
 
 			Object sgrd_s = data2.get("SEGREGATED");
@@ -137,11 +173,10 @@ public class ShapeFileImporter {
 			Double groenPct = new Double((Double) data2.get("GroenPct"));
 			Double groenM = new Double((Double) data2.get("GroenM"));
 
-
 			LineString ls = (LineString) geom;
 
 			osmEdge.setGeometry(ls);
-			osmEdge.setId(j);
+			osmEdge.setId(nEdges);
 			osmEdge.setEnvtype(envType);
 			osmEdge.setCyktype(cykType);
 			osmEdge.setGroenpct(groenPct);
@@ -158,19 +193,25 @@ public class ShapeFileImporter {
 			osmEdge.setLength(ls.getLength());
 
 			session.save(osmEdge);
-			j++;
-			System.out.print(".");
+			if (nEdges % batchSize == 0) {
+				session.flush();
+				session.clear();
+			}
+			timer.showProgress((double)nEdges/nEdgesMax);
 		}
+		if (nEdges % batchSize == 0) {
+			session.flush();
+			session.clear();
+		}
+		System.out.println();
+
 		session.getTransaction().commit();
-		System.out.println("Import finished");
-
-
+		logger.info("Imported "+nNodes+" nodes, "+nEdges+" edges");
+		timer.getRunTime(true, "... import finished");
 	}
 
 	public ShapeFileImporter(String shapefile) throws IOException {
-		session = HibernateUtil.getSessionFactory().getCurrentSession();
-		session.beginTransaction();
-		pSg = new PathSegmentGraph(shapefile);
+		psg = new PathSegmentGraph(shapefile);
 	}
 
 	public static void main(String[] args) throws IOException {

@@ -22,7 +22,7 @@ CREATE TABLE "highwaytype" (
 	"descr" char(16)
 )
 WITH (OIDS=FALSE);
-ALTER TABLE "highwaytype" OWNER TO "postgres";
+ALTER TABLE "highwaytype" OWNER TO "biker";
 
 -- ----------------------------
 --  Records of "highwaytype"

@@ -21,14 +21,12 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.life.sl.utils.Timer;
 
@@ -78,16 +76,15 @@ public class AllPairsShortestPath {
 		}
 
 		double t_tot = 0.f;	// timing variables
-		double t_start = timer.init();
+		timer.init();
 
 		// initialize matrix: each element is assigned the direct distance
 		if (bShowProgress) System.out.println("Initializing AllPairsShortestPath-Matrix...");
 		i = 0;
-		int j = 0, j0 = 0;
-		float d = 0;
+		int j = 0;
 		double ni = 0, nn2 = nNodes*nNodes;
 		if (bUndirectedEdges) nn2 /= 2;
-		Node node1, node2;
+		Node node1;
 		
 		int kNumThreads = 4;
 		int nIncr = (int)Math.round((double)nNodes / (double)kNumThreads + 1.);	// round up
@@ -119,6 +116,9 @@ public class AllPairsShortestPath {
 		}
 //		executor1.shutdown();
 
+//		int j0 = 0;
+//		float d = 0;
+//		Node node2;
 //		for (i = 0; i < nNodes; i++) {
 //			node1 = nodesA[i];
 //			j0 = (bUndirectedEdges ? i : 0);
@@ -158,7 +158,7 @@ public class AllPairsShortestPath {
 		ni = 0;
 		double nn = nNodes*nNodes, nnn = nn*nNodes;
 //		float distance;
-		t_start = timer.init(kShowProgressInterval1, 5.*kShowProgressInterval2);
+		timer.init(kShowProgressInterval1, 5.*kShowProgressInterval2);
 		validRoutes = 0;
 //		kNumThreads = 1;
 //		nIncr = nNodes;

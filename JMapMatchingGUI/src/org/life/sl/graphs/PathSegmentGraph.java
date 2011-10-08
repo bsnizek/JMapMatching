@@ -359,6 +359,7 @@ public class PathSegmentGraph {
 		}
 
 		Edge edge = getLineMergeGraphH4cked().addEdge(lineString);
+		@SuppressWarnings("unchecked")
 		HashMap<String, Object> userdata = (HashMap<String, Object>) lineString.getUserData();
 		// HashMap<String, Object> hm = new HashMap<String, Object>();
 		
@@ -464,10 +465,7 @@ public class PathSegmentGraph {
 	}
 
 	public static void main(String[] args) {
-	
 		PathSegmentGraph psg = new PathSegmentGraph();
-		
 	}
-	
 
 }

@@ -22,7 +22,7 @@ CREATE TABLE "foottype" (
 	"descr" char(16)
 )
 WITH (OIDS=FALSE);
-ALTER TABLE "foottype" OWNER TO "postgres";
+ALTER TABLE "foottype" OWNER TO "biker";
 
 -- ----------------------------
 --  Records of "foottype"

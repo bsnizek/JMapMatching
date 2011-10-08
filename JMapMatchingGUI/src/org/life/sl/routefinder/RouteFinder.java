@@ -69,7 +69,6 @@ public class RouteFinder {
 		BestLastEdge,	///> traverse label in reverse natural order, considering only the last edge
 	}
 
-	private static boolean bLogAll = false;			///> output all warnings etc.?
 	private static boolean bShowProgress = true;	///> show a progress indicator while finding routes?
 
 	private LabelTraversal itLabelOrder = LabelTraversal.BestFirst;
