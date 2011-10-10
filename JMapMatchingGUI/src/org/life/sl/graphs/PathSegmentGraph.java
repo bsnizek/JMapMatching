@@ -247,10 +247,12 @@ public class PathSegmentGraph {
 			@SuppressWarnings("unchecked")
 			List<OSMEdge> result = testCriteria.list();
 			
-			logger.info("Spatial query selected " + result.size());
+			logger.info("Spatial query selected " + result.size() + " edges");
 			
 			Iterator<OSMEdge> iter = result.iterator();
+			i = 0;
 			while (iter.hasNext() ) {
+				i++;
 				OSMEdge  o = iter.next();
 				LineString g = o.getGeometry();
 				addLineString(g, o.getId());
@@ -359,6 +361,7 @@ public class PathSegmentGraph {
 		}
 
 		Edge edge = getLineMergeGraphH4cked().addEdge(lineString);
+		if (lineString.getUserData() == null) lineString.setUserData(new HashMap<String, Object>(2));
 		@SuppressWarnings("unchecked")
 		HashMap<String, Object> userdata = (HashMap<String, Object>) lineString.getUserData();
 		// HashMap<String, Object> hm = new HashMap<String, Object>();

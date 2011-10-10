@@ -209,7 +209,7 @@ public class JMapMatcher {
 			t_2 += timer.getRunTime(true, "++ Edge statistics created");
 			Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
 	
-			int nOK = saveData(labels);
+			int nOK = saveData(labels, rf.getNumLabels());
 			
 			t_3 = timer.getRunTime(true, "++ " + nOK + " routes stored");
 			logger.info("++ findRoutes: " + t_1 + "s");
@@ -218,7 +218,7 @@ public class JMapMatcher {
 		logger.info("++ Total time: " + (t_1 + t_2 + t_3) + "s");
 	}
 	
-	private int saveData(ArrayList<Label> labels) {
+	private int saveData(ArrayList<Label> labels, long nLabels) {
 		Iterator<Label> it = labels.iterator();
 		// clear database table:
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
@@ -236,7 +236,7 @@ public class JMapMatcher {
 					+ ", length: " + curLabel.getLength() + " / " + (rf.getGPSPathLength()/curLabel.getLength())
 					+ ", a_tot: " + curLabel.getTotalAngle() + ", nLeft: " + curLabel.getLeftTurns() + ", nRight: " + curLabel.getRightTurns());*/
 			
-			if (writeLabelToDatabase(curLabel, first)) {
+			if (writeLabelToDatabase(curLabel, first, nLabels)) {
 				//System.out.println("route stored in database");
 				nOK++;
 			} else {
@@ -267,7 +267,7 @@ public class JMapMatcher {
 		return nOK;
 	}
 	
-	private boolean writeLabelToDatabase(Label label, boolean isChoice) {
+	private boolean writeLabelToDatabase(Label label, boolean isChoice, long nLabels) {
 		boolean ok = false;
 		
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
@@ -317,10 +317,18 @@ public class JMapMatcher {
 		if (ok) try {
 			LineString lineString = fact.createLineString(coordinates);
 			route.setGeometry(lineString);
+			route.setnAlternatives(nLabels);
+			route.setnPtsOn(label.getScoreCount());
+			route.setnPtsOff(gpsPoints.size() - label.getScoreCount());
+			route.setnEdgesWOPts(label.getnEdgesWOPoints());
+			route.setMatchScore(label.getScore());
+			route.setMatchFrac(1. - label.getNoMatchLength() / label.getLength());
+			route.setTrackLengthFrac(label.getLength() / calcGPSPathLength());
 			session.save(route);
 			session.getTransaction().commit();
 		} catch (Exception e) {
 			ok = false;
+			System.out.println(e);
 		}
 
 		return ok;
@@ -364,7 +372,7 @@ public class JMapMatcher {
 		// read config file, eventually overwriting existing values:
 		int r = rfParams.readFromFile(kCfgFileName);
 		if (r < 0) logger.warn("Config file " + kCfgFileName + " not found!");
-		else logger.info("Read " + r + " from config file " + kCfgFileName);
+		else logger.info("Read " + r + " values from config file " + kCfgFileName);
 		
 		return rfParams;
 	}
@@ -402,7 +410,11 @@ public class JMapMatcher {
 			session.beginTransaction();
 			
 			Query result;
-			result = session.createQuery("from SourceRoute");
+			String query = "from SourceRoute";
+			if (args.length == 1) query += " WHERE id="+args[0];
+			if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
+			System.out.println(query);
+			result = session.createQuery(query);
 			@SuppressWarnings("unchecked")
 			Iterator<SourceRoute> iterator = result.iterate();
 			logger.info(result.list().size() + " tracks to be matched");

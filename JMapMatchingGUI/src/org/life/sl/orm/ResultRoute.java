@@ -29,6 +29,14 @@ public class ResultRoute {
 	private boolean selected;
 	private float length;
 	private int sourcerouteid;
+	private long nAlternatives;
+	private int nPtsOn;
+	private int nPtsOff;
+	private int nEdgesWOPts;
+	private double distPEavg, distPEavg5, distPEavg95;
+	private double matchScore;
+	private double matchFrac;
+	private double trackLengthFrac;
 	
 	
 	public boolean isSelected() {
@@ -63,7 +71,6 @@ public class ResultRoute {
 		this.id = id;
 	}
 	
-	
 	public LineString getGeometry() {
 		return geometry;
 	}
@@ -71,4 +78,85 @@ public class ResultRoute {
 	public void setGeometry(LineString geometry) {
 		this.geometry = geometry;
 	}
+
+	public long getnAlternatives() {
+		return nAlternatives;
+	}
+
+	public void setnAlternatives(long nAlternatives) {
+		this.nAlternatives = nAlternatives;
+	}
+
+	public int getnPtsOn() {
+		return nPtsOn;
+	}
+
+	public void setnPtsOn(int nPtsOn) {
+		this.nPtsOn = nPtsOn;
+	}
+
+	public int getnPtsOff() {
+		return nPtsOff;
+	}
+
+	public void setnPtsOff(int nPtsOff) {
+		this.nPtsOff = nPtsOff;
+	}
+
+	public int getnEdgesWOPts() {
+		return nEdgesWOPts;
+	}
+
+	public void setnEdgesWOPts(int nEdgesWOPts) {
+		this.nEdgesWOPts = nEdgesWOPts;
+	}
+
+	public double getDistPEavg() {
+		return distPEavg;
+	}
+
+	public void setDistPEavg(double distPEavg) {
+		this.distPEavg = distPEavg;
+	}
+
+	public double getDistPEavg5() {
+		return distPEavg5;
+	}
+
+	public void setDistPEavg5(double distPEavg5) {
+		this.distPEavg5 = distPEavg5;
+	}
+
+	public double getDistPEavg95() {
+		return distPEavg95;
+	}
+
+	public void setDistPEavg95(double distPEavg95) {
+		this.distPEavg95 = distPEavg95;
+	}
+
+	public double getMatchScore() {
+		return matchScore;
+	}
+
+	public void setMatchScore(double matchScore) {
+		this.matchScore = matchScore;
+	}
+
+	public double getMatchFrac() {
+		return matchFrac;
+	}
+
+	public void setMatchFrac(double matchFrac) {
+		this.matchFrac = matchFrac;
+	}
+
+	public double getTrackLengthFrac() {
+		return trackLengthFrac;
+	}
+
+	public void setTrackLengthFrac(double trackLengthFrac) {
+		this.trackLengthFrac = trackLengthFrac;
+	}
+
 }

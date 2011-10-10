@@ -21,27 +21,17 @@
 
 <hibernate-mapping package="org.life.sl.orm">
 
-	<class name="ResultRoute" table="resultroute">
+	<class name="ResultNodeChoice" table="resultnodechoice">
 
 		<id name="id" column="id">
 			<generator class="native" />
 		</id>
-		<property name="geometry" type="org.hibernatespatial.GeometryUserType">
-			<column name="geom" />
-		</property>
-		<property name="sourcerouteid"></property>
+		<property name="routeid"></property>
+		<property type="int" name="nodeID"></property>
+		<property type="int" name="edgeID"></property>
 		<property type="boolean" name="selected"></property>
-		<property type="float" name="length"></property>
-		<property type="long" name="nAlternatives"></property>
-		<property type="int" name="nPtsOn"></property>
-		<property type="int" name="nPtsOff"></property>
-		<property type="int" name="nEdgesWOPts"></property>
-		<property type="double" name="distPEavg"></property>
-		<property type="double" name="distPEavg5"></property>
-		<property type="double" name="distPEavg95"></property>
-		<property type="double" name="matchScore"></property>
-		<property type="double" name="matchFrac"></property>
-		<property type="double" name="trackLengthFrac"></property>
+		<property type="float" name="dist"></property>
+		<property type="float" name="angleToDest"></property>
 
 	</class>
 

@@ -174,7 +174,7 @@ public class RFParams {
 	 */
 	private boolean map2Int(Map<String, String> iniMap, String mapKey, Type parKey) {
 		boolean ok = iniMap.containsKey(mapKey); 
-		if (ok) setInt(parKey, Integer.parseInt(iniMap.get("mapKey")));
+		if (ok) setInt(parKey, Integer.parseInt(iniMap.get(mapKey)));
 		return ok;
 	}
 	/**
@@ -187,7 +187,7 @@ public class RFParams {
 	 */
 	private boolean map2Double(Map<String, String> iniMap, String mapKey, Type parKey) {
 		boolean ok = iniMap.containsKey(mapKey); 
-		if (ok) setDouble(parKey, Double.parseDouble(iniMap.get("mapKey")));
+		if (ok) setDouble(parKey, Double.parseDouble(iniMap.get(mapKey)));
 		return ok;
 	}
 }

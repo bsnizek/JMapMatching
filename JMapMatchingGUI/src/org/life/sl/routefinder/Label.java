@@ -80,6 +80,8 @@ public class Label implements Comparable<Label> {
 	private int scoreCount = -1;	///> the unweighted score of the label (nearest points-count)
 	private double lastScore = 0.;	///> the same but considering only the last edge	
 	private int lastScoreCount = 0;
+	private int nEdgesWOPoints = 0;	///> number of edges on this route not containing any points of the GPS track
+	private double noMatchLength = 0;	///> (absolute) length of the route not matched to GPS points
 	
 	private double length = 0.;		///> if the label represents a route, this is the length of the route (sum of all backEdges)
 	private double lastEdgeLength = 0.;	///> length of last backEdge
@@ -87,7 +89,7 @@ public class Label implements Comparable<Label> {
 	private double angle_rel = 0.;	///> angle change relative to previous edge
 	private double angle_tot = 0.;	///> sum of all angle changes
 	private int nLeftTurns = 0, nRightTurns = 0;
-
+	
 	/**
 	 * Create a new Label as descendant of a parent label
 	 * @param parent The Label that this Label was expanded from
@@ -225,7 +227,7 @@ public class Label implements Comparable<Label> {
 	 * @return number of right turns performed along the route so far
 	 */
 	public int getRightTurns() { return nRightTurns; }
-		
+
 	/**
 	 * calculate the weighted and unweighted score of this label from the edge statistics;
 	 * 	this is a measure of the quality of the route: number of fitting data points, normalized to route length
@@ -250,6 +252,13 @@ public class Label implements Comparable<Label> {
 			scoreCount = parent.getScoreCount(eStat) + lastScoreCount;
 			//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
 			if (length > 0.) score = scoreCount / length;
+			
+			nEdgesWOPoints = parent.getnEdgesWOPoints();
+			noMatchLength = parent.getNoMatchLength();
+			if (lastScoreCount == 0) {
+				nEdgesWOPoints++;
+				noMatchLength += lastEdgeLength;
+			}
 		}
 	}
 	
@@ -283,6 +292,14 @@ public class Label implements Comparable<Label> {
 	}
 	public int getLastScoreCount() {
 		return lastScoreCount;
+	}
+
+	public int getnEdgesWOPoints() {
+		return nEdgesWOPoints;
+	}
+
+	public double getNoMatchLength() {
+		return noMatchLength;
 	}
 
 	/**
