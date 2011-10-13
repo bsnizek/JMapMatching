@@ -25,7 +25,7 @@
         </property>
         <property name="fromnode" ></property>
         <property name="tonode" ></property>
-        <property name="length" ></property>
+        <property name="length" type="float"></property>
         <property name="roadname" type="string"></property>
         <property name="highwaytype" type="short"></property>
  		<property name="cyclewaytype" type="short"></property>
@@ -37,8 +37,8 @@
  		
 		<property name="envtype" type="short"></property>
 		<property name="cyktype" type="short"></property>
-		<property name="groenpct" type="double"></property>
-		<property name="groenm" type="double"></property>
+		<property name="groenpct" type="float"></property>
+		<property name="groenm" type="float"></property>
 
     </class>
 

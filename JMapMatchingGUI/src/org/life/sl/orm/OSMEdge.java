@@ -21,12 +21,32 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
 import com.vividsolutions.jts.geom.LineString;
-
+/**
+ * ORM class for Edges created from OpenStreetMap data
+ * @see https://github.com/bsnizek/JMapMatching/wiki/LookupTableCodes
+ */
 public class OSMEdge {
 
 	private int id;
-	private LineString geometry;
-	private int fromnode;
+	private LineString geometry;	///< edge geometry data (line string)
+	private int fromnode;			///< start node ID (start node of this edge)
+	private int tonode;				///< end node ID
+	private float length;			///< edge length [m]
+	private String roadname;		///< road name associated with this edge 
+
+	// edge type attributes:
+	private Short highwaytype;		///< highway type parameter - @see highwaytype table
+	private Short cyclewaytype;		///< cycleway type parameter - @see cyclewaytype table
+	private Short foottype;			///< footpath type parameter - @see highwaytype table
+	private Short bicycletype;		///< bicycle type parameter - @see bicycletype table
+	private Short segregatedtype;	///< if road is segregated or not - @see segregatedtype table
+
+	// HSP specific attributes:
+	private Short envtype;	///< type of environment surrounding the edge - @see envType table
+	private Short cyktype;	///< type of bicycle facility - @see cykType table
+	private float groenpct;	///< percentage of the edge running through a green environment; GroenM = shape_length * GroenPct
+	private float groenm;	///< length [m] of the edge running thorough a green environment; GroenM = shape_length * GroenPct
+
 	public int getId() {
 		return id;
 	}
@@ -51,10 +71,10 @@ public class OSMEdge {
 	public void setTonode(int tonode) {
 		this.tonode = tonode;
 	}
-	public double getLength() {
+	public float getLength() {
 		return length;
 	}
-	public void setLength(double length) {
+	public void setLength(float length) {
 		this.length = length;
 	}
 	public String getRoadname() {
@@ -105,33 +125,16 @@ public class OSMEdge {
 	public void setCyktype(Short cyktype) {
 		this.cyktype = cyktype;
 	}
-	public double getGroenpct() {
+	public float getGroenpct() {
 		return groenpct;
 	}
-	public void setGroenpct(double groenpct) {
+	public void setGroenpct(float groenpct) {
 		this.groenpct = groenpct;
 	}
-	public double getGroenm() {
+	public float getGroenm() {
 		return groenm;
 	}
-	public void setGroenm(double groenm) {
+	public void setGroenm(float groenm) {
 		this.groenm = groenm;
 	}
-	private int tonode;
-	private double length;
-	private String roadname;
-	private Short highwaytype;
-	private Short cyclewaytype;
-	private Short foottype;
-	private Short bicycletype;
-	private Short segregatedtype;
-
-	// HSP specific attributes
-
-	private Short envtype;
-	private Short cyktype;
-	private double groenpct;
-	private double groenm;
-
-
 }

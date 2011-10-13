@@ -228,7 +228,7 @@ public class OSMImporter {
 						oe.setId((int) way.getId());
 						oe.setFromnode((int) way.getNode(0).getId());
 						oe.setTonode((int) way.getNode(way.getNodesCount()-1).getId());
-						oe.setLength(lineString.getLength());
+						oe.setLength((float)lineString.getLength());
 						oe.setRoadname(way.getName());
 						
 						oe.setHighwaytype(highwaytype.get(way.get("highway")));

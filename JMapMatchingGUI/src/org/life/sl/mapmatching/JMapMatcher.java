@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
@@ -35,7 +36,10 @@ import org.hibernate.Session;
 //import org.geotools.util.logging.Logging;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
+import org.life.sl.orm.OSMEdge;
+import org.life.sl.orm.OSMNode;
 import org.life.sl.orm.ResultRoute;
+import org.life.sl.orm.ResultNodeChoice;
 import org.life.sl.orm.SourcePoint;
 import org.life.sl.orm.SourceRoute;
 import org.life.sl.readers.shapefile.PointFileReader;
@@ -65,7 +69,6 @@ public class JMapMatcher {
 	}
 
 	private static String kCfgFileName = "JMM.cfg";
-	private static int kMaxRoutesOutput = 10;	///> the result is constrained to this max. number of routes
 	private static String kOutputDir = "results/";
 	// input data:
 	//static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
@@ -88,6 +91,7 @@ public class JMapMatcher {
 	private PathSegmentGraph graph = null;	///> data basis (graph)
 	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
 	private RFParams rfParams = null;		///> parameters for the route finding algorithm
+	private JMMConfig cfg = new JMMConfig(kCfgFileName);	///> parameters for the MapMatching controller
 	
 	private int sourcerouteID = 0;
 	
@@ -209,7 +213,7 @@ public class JMapMatcher {
 			t_2 += timer.getRunTime(true, "++ Edge statistics created");
 			Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
 	
-			int nOK = saveData(labels, rf.getNumLabels());
+			int nOK = saveData(labels, rf.getNumLabels(), fromNode, toNode);
 			
 			t_3 = timer.getRunTime(true, "++ " + nOK + " routes stored");
 			logger.info("++ findRoutes: " + t_1 + "s");
@@ -218,25 +222,26 @@ public class JMapMatcher {
 		logger.info("++ Total time: " + (t_1 + t_2 + t_3) + "s");
 	}
 	
-	private int saveData(ArrayList<Label> labels, long nLabels) {
+	private int saveData(ArrayList<Label> labels, long nLabels, Node fromNode, Node toNode) {
 		Iterator<Label> it = labels.iterator();
 		// clear database table:
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		session.createQuery("delete from ResultRoute where sourcerouteid=" + sourcerouteID).executeUpdate();
+		session.createQuery("delete from ResultNodeChoice where sourcerouteid=" + sourcerouteID).executeUpdate();
 		session.getTransaction().commit();
 		
 //		String outFileName = "";
 //		int nNonChoice = 0;
 		int nOut = 0, nOK = 0;
 		boolean first = true;
-		while (it.hasNext() && nOut++ < kMaxRoutesOutput) {	// use only the kMaximumNumberOfRoutes best routes
+		while (it.hasNext() && nOut++ < cfg.nRoutesToWrite) {	// use only the kMaximumNumberOfRoutes best routes
 			Label curLabel = it.next();
 			/*System.out.println("score: " + curLabel.getScore() 
 					+ ", length: " + curLabel.getLength() + " / " + (rf.getGPSPathLength()/curLabel.getLength())
 					+ ", a_tot: " + curLabel.getTotalAngle() + ", nLeft: " + curLabel.getLeftTurns() + ", nRight: " + curLabel.getRightTurns());*/
 			
-			if (writeLabelToDatabase(curLabel, first, nLabels)) {
+			if (writeLabelToDatabase(curLabel, first, nLabels, fromNode, toNode)) {
 				//System.out.println("route stored in database");
 				nOK++;
 			} else {
@@ -267,7 +272,7 @@ public class JMapMatcher {
 		return nOK;
 	}
 	
-	private boolean writeLabelToDatabase(Label label, boolean isChoice, long nLabels) {
+	private boolean writeLabelToDatabase(Label label, boolean isChoice, long nLabels, Node fromNode, Node toNode) {
 		boolean ok = false;
 		
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
@@ -277,54 +282,99 @@ public class JMapMatcher {
 		// set up entry for route table:
 		ResultRoute route = new ResultRoute();
 		// set route parameters:
-		
 		route.setLength((float)label.getLength());
 		route.setSelected(isChoice);
 		route.setSourcerouteid(sourcerouteID);
-		// entry for node table:
-		// ResultNode node = new ResultNode();	// TODO: create ORM connector
 		
 		// get node list to create the lineString representing the route:
-		List<Node> nodes = label.getNodes();
-		Coordinate[] coordinates = new Coordinate[nodes.size()];
-		int i = 0;
-		for (Node curNode : nodes) {
-			coordinates[i++] = curNode.getCoordinate();
-		} 
-		ok = (i > 0);	// true if there were any points in the route
+		Coordinate[] coordinates = label.getCoordinates();
+		ok = (coordinates.length > 0);	// true if there were any points in the route
 		
-		// HashMap<String, Object> hm;
-//		Coordinate[] coordinates = new Coordinate[dEdges.size() +1];
-//		for (DirectedEdge de : dEdges) {
-//			if (i==0) {
-//				Node node1 = de.getFromNode();
-//				coordinates[0] = node1.getCoordinate();
-//			}
-//				Node node2 = de.getToNode();
-//				coordinates[i+1] = node2.getCoordinate();
-//			
-//			// Integer eID = (Integer) de.getData().get("id");
-//			//OSMEdge osme = new OSMEdge();
-//			// TODO: How to go on from here:
-//			// 1. get OSMEdge from database
-//			// 2. get OSMNode-IDs from OSMEdge
-//			//    problem: direction of edge / sequnce of nodes??
-//			// 3. store OSMNode-IDs in array
-//			// 4. store this array in the table ResultNodes
-//			i++;
-//		} 
-
 		if (ok) try {
 			LineString lineString = fact.createLineString(coordinates);
 			route.setGeometry(lineString);
 			route.setnAlternatives(nLabels);
 			route.setnPtsOn(label.getScoreCount());
 			route.setnPtsOff(gpsPoints.size() - label.getScoreCount());
+			route.setnEdges(dEdges.size());
 			route.setnEdgesWOPts(label.getnEdgesWOPoints());
-			route.setMatchScore(label.getScore());
-			route.setMatchFrac(1. - label.getNoMatchLength() / label.getLength());
-			route.setTrackLengthFrac(label.getLength() / calcGPSPathLength());
+			//route.setdistPEavg...
+			route.setMatchScore((float)label.getScore());
+			route.setMatchFrac((float)(1. - label.getNoMatchLength() / label.getLength()));
+			route.setTrackLengthFrac((float)(label.getLength() / calcGPSPathLength()));
+			
+			route.setnLeftTurns((short)label.getLeftTurns());
+			route.setnRightTurns((short)label.getRightTurns());
+			route.setnTrafficLights((short)label.getnTrafficLights());
+			route.setEnvAttr(label.getEnvAttr());
+			route.setCykAttr(label.getCykAttr());
+			route.setGroenM((float)label.getGroenM());
+			
 			session.save(route);
+			
+			// create output for the choice experiment:
+			if (cfg.bWriteChoices && isChoice) {	// (this is required only for the chosen route)
+				ResultNodeChoice choice = new ResultNodeChoice(route.getId(), sourcerouteID);
+				
+				double dist = 0.;
+				int i = 0;	// counter
+				double[] edgeLengths = label.getEdgeLengths();
+				DirectedEdge lastEdge = null;
+				List<DirectedEdge> edges = label.getRouteAsEdges();
+				for (DirectedEdge e : edges) {		// for each node along the route:
+					@SuppressWarnings("unchecked")
+					HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
+					Integer edgeID = (Integer)ed.get("id");
+					
+					Node node = e.getFromNode();	// node at beginning of edge
+					Coordinate c_n = node.getCoordinate();
+
+					// get node ID from database:
+					int nodeID = 0;
+					String s = " from OSMEdge where id=" + edgeID;
+					//s = "from OSMNode where id in ( (select fromnode"+s+"), (select tonode"+s+") )";	// this sometimes yields only 1 record instead of 2!?!
+					s = "from OSMNode where (id = (select fromnode"+s+") or id = (select tonode"+s+"))";
+					Query nodeRes = session.createQuery(s);
+					// match coordinates:
+					@SuppressWarnings("unchecked")
+					Iterator<OSMNode> it = nodeRes.iterate();
+					while (it.hasNext()) {
+						OSMNode on = it.next();
+						Coordinate onc = on.getGeometry().getCoordinate();
+						if (Math.abs(c_n.x - onc.x) < 1.e-6 && Math.abs(c_n.x - onc.x) < 1.e-6) {
+							nodeID = on.getId();
+							break;
+						}								
+					}	// now, nodeID is either 0 or the database ID of the corresponding node
+					choice.setNodeID(nodeID);
+					choice.setI(i);
+					choice.setDist((float)(dist / label.getLength()));	// distance along the route as fraction of the whole route
+					
+					// angle from node to destination:
+					Coordinate c_d = toNode.getCoordinate();
+					double angle_direct = Math.atan2(c_d.y - c_n.y, c_d.x - c_n.x);
+
+					@SuppressWarnings("unchecked")
+					List<DirectedEdge> outEdges = node.getOutEdges().getEdges();
+					for (DirectedEdge oe : outEdges) {
+						if (lastEdge != null && oe != lastEdge) {	// don't use the backEdge!
+							@SuppressWarnings("unchecked")
+							HashMap<String, Object> ed2 = (HashMap<String, Object>) oe.getEdge().getData();
+							choice.setSelected(oe == e);
+							choice.setEdgeID((Integer)ed2.get("id"));
+							choice.setEnvType((Short)ed2.get("et"));
+							choice.setCykType((Short)ed2.get("ct"));
+							choice.setAngleToDest((float)(Math.toDegrees(oe.getAngle() - angle_direct)));	// store value in degrees
+	
+							session.save(choice.clone());	// save 1 choice/nonchoice for each outEdge!
+						}
+					}
+					dist += edgeLengths[i++];
+					lastEdge = e;	// save for next comparison
+				}
+				
+			}
+			
 			session.getTransaction().commit();
 		} catch (Exception e) {
 			ok = false;

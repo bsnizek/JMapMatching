@@ -26,13 +26,17 @@
 		<id name="id" column="id">
 			<generator class="native" />
 		</id>
-		<property name="routeid"></property>
+		<property name="routeID"></property>
+		<property name="sourceRouteID"></property>
+		<property type="int" name="i"></property>
 		<property type="int" name="nodeID"></property>
 		<property type="int" name="edgeID"></property>
 		<property type="boolean" name="selected"></property>
 		<property type="float" name="dist"></property>
 		<property type="float" name="angleToDest"></property>
-
+		<property name="envType"></property>
+		<property name="cykType"></property>
+		
 	</class>
 
 </hibernate-mapping>

@@ -32,11 +32,18 @@ public class ResultRoute {
 	private long nAlternatives;
 	private int nPtsOn;
 	private int nPtsOff;
+	private int nEdges;
 	private int nEdgesWOPts;
-	private double distPEavg, distPEavg5, distPEavg95;
-	private double matchScore;
-	private double matchFrac;
-	private double trackLengthFrac;
+	private float distPEavg, distPEavg5, distPEavg95;
+	private float matchScore;
+	private float matchFrac;
+	private float trackLengthFrac;
+	private short nLeftTurns;
+	private short nRightTurns;
+	private short nTrafficLights;
+	private float[] envAttr;
+	private float[] cykAttr;
+	private float groenM;
 	
 	
 	public boolean isSelected() {
@@ -103,6 +110,14 @@ public class ResultRoute {
 		this.nPtsOff = nPtsOff;
 	}
 
+	public int getnEdges() {
+		return nEdges;
+	}
+
+	public void setnEdges(int nEdges) {
+		this.nEdges = nEdges;
+	}
+
 	public int getnEdgesWOPts() {
 		return nEdgesWOPts;
 	}
@@ -111,52 +126,99 @@ public class ResultRoute {
 		this.nEdgesWOPts = nEdgesWOPts;
 	}
 
-	public double getDistPEavg() {
+	public float getDistPEavg() {
 		return distPEavg;
 	}
 
-	public void setDistPEavg(double distPEavg) {
+	public void setDistPEavg(float distPEavg) {
 		this.distPEavg = distPEavg;
 	}
 
-	public double getDistPEavg5() {
+	public float getDistPEavg5() {
 		return distPEavg5;
 	}
 
-	public void setDistPEavg5(double distPEavg5) {
+	public void setDistPEavg5(float distPEavg5) {
 		this.distPEavg5 = distPEavg5;
 	}
 
-	public double getDistPEavg95() {
+	public float getDistPEavg95() {
 		return distPEavg95;
 	}
 
-	public void setDistPEavg95(double distPEavg95) {
+	public void setDistPEavg95(float distPEavg95) {
 		this.distPEavg95 = distPEavg95;
 	}
 
-	public double getMatchScore() {
+	public float getMatchScore() {
 		return matchScore;
 	}
 
-	public void setMatchScore(double matchScore) {
+	public void setMatchScore(float matchScore) {
 		this.matchScore = matchScore;
 	}
 
-	public double getMatchFrac() {
+	public float getMatchFrac() {
 		return matchFrac;
 	}
 
-	public void setMatchFrac(double matchFrac) {
+	public void setMatchFrac(float matchFrac) {
 		this.matchFrac = matchFrac;
 	}
 
-	public double getTrackLengthFrac() {
+	public float getTrackLengthFrac() {
 		return trackLengthFrac;
 	}
 
-	public void setTrackLengthFrac(double trackLengthFrac) {
+	public void setTrackLengthFrac(float trackLengthFrac) {
 		this.trackLengthFrac = trackLengthFrac;
 	}
 
+	public short getnLeftTurns() {
+		return nLeftTurns;
+	}
+
+	public void setnLeftTurns(short nLeftTurns) {
+		this.nLeftTurns = nLeftTurns;
+	}
+
+	public short getnRightTurns() {
+		return nRightTurns;
+	}
+
+	public void setnRightTurns(short nRightTurns) {
+		this.nRightTurns = nRightTurns;
+	}
+
+	public short getnTrafficLights() {
+		return nTrafficLights;
+	}
+
+	public void setnTrafficLights(short nTrafficLights) {
+		this.nTrafficLights = nTrafficLights;
+	}
+
+	public float[] getEnvAttr() {
+		return envAttr;
+	}
+
+	public void setEnvAttr(float[] envAttr) {
+		this.envAttr = envAttr;
+	}
+
+	public float[] getCykAttr() {
+		return cykAttr;
+	}
+
+	public void setCykAttr(float[] cykAttr) {
+		this.cykAttr = cykAttr;
+	}
+
+	public float getGroenM() {
+		return groenM;
+	}
+
+	public void setGroenM(float groenM) {
+		this.groenM = groenM;
+	}
 }

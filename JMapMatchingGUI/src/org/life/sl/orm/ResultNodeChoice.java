@@ -23,13 +23,51 @@ package org.life.sl.orm;
 public class ResultNodeChoice {
 
 	private int id;
-	private int routeid;
+	private int routeID;
+	private int sourceRouteID;
+	private int i;	///> index - sequence in route
 	private int edgeID;
 	private int nodeID;
 	private boolean selected;
 	private float dist;
 	private float angleToDest;
+	private short envType;
+	private short cykType;
 
+	public ResultNodeChoice() {}
+
+	/**
+	 * constructor with route IDs
+	 * @param routeID database ID of the corresponding matched route (resultRoute) 
+	 * @param sourceRouteID database ID of the corresponding GPS track
+	 */
+	public ResultNodeChoice(int routeID, int sourceRouteID) {
+		this.routeID = routeID;
+		this.sourceRouteID = sourceRouteID;
+	}
+
+	/**
+	 * copy constructor
+	 * @param rnc the original object to copy from
+	 */
+	public ResultNodeChoice(ResultNodeChoice rnc) {
+		this.id = rnc.id;
+		this.routeID = rnc.routeID;
+		this.sourceRouteID = rnc.sourceRouteID;
+		this.i = rnc.i;
+		this.edgeID = rnc.edgeID;
+		this.nodeID = rnc.nodeID;
+		this.selected = rnc.selected;
+		this.dist = rnc.dist;
+		this.angleToDest = rnc.angleToDest;
+		this.envType = rnc.envType;
+		this.cykType = rnc.cykType;
+	}
+
+	public ResultNodeChoice clone() {
+		return new ResultNodeChoice(this);
+	}
+	
 	public int getId() {
 		return id;
 	}
@@ -54,12 +92,20 @@ public class ResultNodeChoice {
 		this.dist = dist;
 	}
 
-	public int getRouteid() {
-		return routeid;
+	public int getRouteID() {
+		return routeID;
 	}
 
-	public void setRouteid(int routeid) {
-		this.routeid = routeid;
+	public void setRouteID(int routeID) {
+		this.routeID = routeID;
+	}
+
+	public int getSourceRouteID() {
+		return sourceRouteID;
+	}
+
+	public void setSourceRouteID(int sourceRouteID) {
+		this.sourceRouteID = sourceRouteID;
 	}
 
 	public int getEdgeID() {
@@ -86,5 +132,28 @@ public class ResultNodeChoice {
 		this.angleToDest = angleToDest;
 	}
 
+	public short getEnvType() {
+		return envType;
+	}
+
+	public void setEnvType(short envType) {
+		this.envType = envType;
+	}
+
+	public short getCykType() {
+		return cykType;
+	}
+
+	public void setCykType(short cykType) {
+		this.cykType = cykType;
+	}
+
+	public int getI() {
+		return i;
+	}
+
+	public void setI(int i) {
+		this.i = i;
+	}
 
 }

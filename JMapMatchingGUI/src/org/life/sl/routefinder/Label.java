@@ -46,6 +46,7 @@ import org.life.sl.mapmatching.EdgeStatistics;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Edge;
@@ -58,7 +59,7 @@ import com.vividsolutions.jts.planargraph.Node;
  */
 public class Label implements Comparable<Label> {
 
-	private static double kTurnLimit = 1.;	///> bottom limit determining when a change in angle is counted as a left/right turn, in radians
+	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///> limits determining when a change in angle is counted as a left/right turn, in radians
 	
 	/**
 	 * Comparator comparing only the last edge of two labels
@@ -88,8 +89,16 @@ public class Label implements Comparable<Label> {
 	private double angle = 0.;		///> angle relative to the global x-y coordinate system
 	private double angle_rel = 0.;	///> angle change relative to previous edge
 	private double angle_tot = 0.;	///> sum of all angle changes
-	private int nLeftTurns = 0, nRightTurns = 0;
+	private short nLeftTurns = 0, nRightTurns = 0;
 	
+	private short nTrafficLights = 0;
+	private float[] envAttr;	///> numbers of edges with various environmental attributes [0,1...8]
+	private float[] cykAttr;	///> numbers of edges with various cycleway attributes [0...4]
+	private double groenM = 0.;
+	
+	private List<Node> nodeList = null;
+	private List<DirectedEdge> edgeList = null;
+
 	/**
 	 * Create a new Label as descendant of a parent label
 	 * @param parent The Label that this Label was expanded from
@@ -111,9 +120,9 @@ public class Label implements Comparable<Label> {
 			angle_rel = angle - parent.getAngle();
 			angle_tot = parent.getTotalAngle() + Math.abs(angle_rel);
 			// is it a turn?
-			boolean bTurn = (Math.abs(angle_rel) > kTurnLimit); 
-			nLeftTurns = parent.getLeftTurns() + (bTurn && angle_rel > 0 ? 1 : 0);
-			nRightTurns = parent.getLeftTurns() + (bTurn && angle_rel < 0 ? 1 : 0);
+			boolean bTurn = (Math.abs(angle_rel) > kTurnLimit0 && Math.abs(angle_rel) < kTurnLimit1); 
+			nLeftTurns = (short)(parent.getLeftTurns() + (bTurn && angle_rel > 0 ? 1 : 0));
+			nRightTurns = (short)(parent.getLeftTurns() + (bTurn && angle_rel < 0 ? 1 : 0));
 		}
 	}
 
@@ -222,11 +231,22 @@ public class Label implements Comparable<Label> {
 	/**
 	 * @return number of left turns performed along the route so far
 	 */
-	public int getLeftTurns() { return nLeftTurns; }
+	public short getLeftTurns() { return nLeftTurns; }
 	/**
 	 * @return number of right turns performed along the route so far
 	 */
-	public int getRightTurns() { return nRightTurns; }
+	public short getRightTurns() { return nRightTurns; }
+	/**
+	 * @return number of traffic lights crossed along the route so far
+	 */
+	public short getnTrafficLights() { return nTrafficLights; }
+	/**
+	 * @return number of green environment
+	 */
+	public double getGroenM() { return groenM; }
+
+	public float[] getEnvAttr() { return envAttr; }
+	public float[] getCykAttr() { return cykAttr; }
 
 	/**
 	 * calculate the weighted and unweighted score of this label from the edge statistics;
@@ -259,6 +279,19 @@ public class Label implements Comparable<Label> {
 				nEdgesWOPoints++;
 				noMatchLength += lastEdgeLength;
 			}
+			
+			@SuppressWarnings("unchecked")
+			HashMap<String, Object> userdata = (HashMap<String, Object>) backEdge.getEdge().getData();	// the user data object of the Edge
+			envAttr = parent.envAttr.clone();	// clone!!
+			envAttr[(Short)userdata.get("et")]++;
+			cykAttr = parent.cykAttr.clone();	// clone!!
+			cykAttr[(Short)userdata.get("ct")]++;
+		} else {
+			// initialize attributes arrays:
+			envAttr = new float[9];
+			for (int i = 0; i < envAttr.length; i++) envAttr[i] = 0;
+			cykAttr = new float[5];
+			for (int i = 0; i < cykAttr.length; i++) cykAttr[i] = 0;
 		}
 	}
 	
@@ -336,31 +369,67 @@ public class Label implements Comparable<Label> {
 	}
 
 	/**
-	 * @return Get the route represented by this label as a list of directed edges.
+	 * Create a list of all the directed edges along this route, starting at the origin;
+	 * for efficiency, this list is only compiled once and cached in edgeList.
+	 * @return the route represented by this label as a list of directed edges
 	 */
 	public List<DirectedEdge> getRouteAsEdges() {
-		ArrayList<DirectedEdge> results = new ArrayList<DirectedEdge>();
-		Label label = this;
-		while(label.getParent() != null) {
-			results.add(label.getBackEdge());
-			label = label.getParent();
+		if (edgeList == null || edgeList.size() == 0) {
+			edgeList = new ArrayList<DirectedEdge>();
+			Label label = this;
+			while(label.getParent() != null) {
+				edgeList.add(label.getBackEdge());
+				label = label.getParent();
+			}
+			Collections.reverse(edgeList);	// now, the topmost label represents the first edge in the list
 		}
-		Collections.reverse(results);	// now, the topmost label represents the first edge in the list
-		return results;
+		return edgeList;
 	}
 
 	/**
+	 * Create a list of all the Nodes along this route, starting with the origin;
+	 * for efficiency, this list is only compiled once and cached in nodeList.
 	 * @return a list of all the Nodes of this label starting with the origin 
 	 */
 	public List<Node> getNodes() {
-		ArrayList<Node> results = new ArrayList<Node>();
+		if (nodeList == null || nodeList.size() == 0) {
+			nodeList = new ArrayList<Node>();
+			Label label = this;
+			while(label.getParent() != null) {
+				nodeList.add(label.getNode());
+				label = label.getParent();
+			}
+			Collections.reverse(nodeList);	// now, the origin node is first in the list
+		}
+		return nodeList;
+	}
+	
+	/**
+	 * @return an array of Coordinates of all nodes (sorted from start to end)
+	 */
+	public Coordinate[] getCoordinates() {
+		List<Node> nodes = getNodes();
+		Coordinate[] coordinates = new Coordinate[nodes.size()];
+		int i = 0;
+		for (Node curNode : nodes) {
+			coordinates[i++] = curNode.getCoordinate();
+		}
+		return coordinates;
+	}
+
+	/**
+	 * @return an array of edge lengths (from first to last edge)
+	 */
+	public double[] getEdgeLengths() {
+		double[] lengths = new double[treeLevel];
+		int i = treeLevel;
 		Label label = this;
-		while(label.getParent() != null) {
-			results.add(label.getNode());
+		while(label.getParent() != null && i > 0) {	// topmost label: has no length
+			i--;
+			lengths[i] = label.lastEdgeLength;
 			label = label.getParent();
 		}
-		Collections.reverse(results);	// now, the origin node is first in the list
-		return results;
+		return lengths;
 	}
 
 	/**

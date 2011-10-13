@@ -182,7 +182,7 @@ public class PathSegmentGraph {
 				first = false;
 			}
 	
-			addLineString(ls, ++id);
+			addLineString(ls, ++id, (short)0, (short)0);
 		}
 	}
 
@@ -215,7 +215,7 @@ public class PathSegmentGraph {
 			while (iter.hasNext() ) {
 				OSMEdge  o = iter.next();
 				LineString g = o.getGeometry();
-				addLineString(g, o.getId());
+				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype());
 			}
 		} else {
 			// let us join the nodes of the track to a linestring ....
@@ -255,7 +255,7 @@ public class PathSegmentGraph {
 				i++;
 				OSMEdge  o = iter.next();
 				LineString g = o.getGeometry();
-				addLineString(g, o.getId());
+				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype());
 			}
 			
 //			try {
@@ -335,15 +335,17 @@ public class PathSegmentGraph {
         }
 	}
 
+	public void addLineString(LineString lineString, int id) {
+		addLineString(lineString, id, (short)0, (short)0);
+	}
+
 	/**
 	 * Adds an Edge, DirectedEdges, and Nodes for the given LineString representation
 	 * of an edge. Snaps all vertices according to GlobalRegister.GLOBAL_SNAP
-	 */
-	/**
 	 * @param lineString
 	 * @param id : the id coming out of OSM
 	 */
-	public void addLineString(LineString lineString, int id) {
+	public void addLineString(LineString lineString, int id, short envType, short cykType) {
 
 		distancesCalculated = false;
 
@@ -361,12 +363,14 @@ public class PathSegmentGraph {
 		}
 
 		Edge edge = getLineMergeGraphH4cked().addEdge(lineString);
-		if (lineString.getUserData() == null) lineString.setUserData(new HashMap<String, Object>(2));
+		if (lineString.getUserData() == null) lineString.setUserData(new HashMap<String, Object>(3));
 		@SuppressWarnings("unchecked")
 		HashMap<String, Object> userdata = (HashMap<String, Object>) lineString.getUserData();
 		// HashMap<String, Object> hm = new HashMap<String, Object>();
 		
 		userdata.put("id", id);
+		userdata.put("et", envType);
+		userdata.put("ct", cykType);
 // 		userdata.put("geom", lineString);
 		edge.setData(userdata);
 	}

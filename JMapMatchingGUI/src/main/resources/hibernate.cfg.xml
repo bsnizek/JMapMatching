@@ -63,6 +63,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 		<mapping resource="org/life/sl/orm/SourcePoint.hbm.xml" />
 		<mapping resource="org/life/sl/orm/SourceRoute.hbm.xml" />
 		<mapping resource="org/life/sl/orm/Resultroute.hbm.xml" />
+		<mapping resource="org/life/sl/orm/ResultNodeChoice.hbm.xml" />
 
 		<mapping resource="org/life/sl/orm/Bicycletype.hbm.xml" />
 		<mapping resource="org/life/sl/orm/Cyclewaytype.hbm.xml" />

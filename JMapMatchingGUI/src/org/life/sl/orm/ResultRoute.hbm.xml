@@ -33,15 +33,24 @@
 		<property type="boolean" name="selected"></property>
 		<property type="float" name="length"></property>
 		<property type="long" name="nAlternatives"></property>
+
 		<property type="int" name="nPtsOn"></property>
 		<property type="int" name="nPtsOff"></property>
+		<property type="int" name="nEdges"></property>
 		<property type="int" name="nEdgesWOPts"></property>
-		<property type="double" name="distPEavg"></property>
-		<property type="double" name="distPEavg5"></property>
-		<property type="double" name="distPEavg95"></property>
-		<property type="double" name="matchScore"></property>
-		<property type="double" name="matchFrac"></property>
-		<property type="double" name="trackLengthFrac"></property>
+		<property type="float" name="distPEavg"></property>
+		<property type="float" name="distPEavg5"></property>
+		<property type="float" name="distPEavg95"></property>
+		<property type="float" name="matchScore"></property>
+		<property type="float" name="matchFrac"></property>
+		<property type="float" name="trackLengthFrac"></property>
+
+		<property type="short" name="nLeftTurns"></property>
+		<property type="short" name="nRightTurns"></property>
+		<property type="short" name="nTrafficLights"></property>
+		<property name="envAttr"></property>
+		<property name="cykAttr"></property>
+		<property type="float" name="groenM"></property>
 
 	</class>
 

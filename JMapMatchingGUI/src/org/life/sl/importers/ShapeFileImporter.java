@@ -179,8 +179,8 @@ public class ShapeFileImporter {
 			osmEdge.setId(nEdges);
 			osmEdge.setEnvtype(envType);
 			osmEdge.setCyktype(cykType);
-			osmEdge.setGroenpct(groenPct);
-			osmEdge.setGroenm(groenM);
+			osmEdge.setGroenpct(groenPct.floatValue());
+			osmEdge.setGroenm(groenM.floatValue());
 
 			Node from_node = e.getDirEdge(0).getFromNode();
 			Node to_node = e.getDirEdge(0).getToNode();
@@ -190,7 +190,7 @@ public class ShapeFileImporter {
 
 			osmEdge.setFromnode(from_node_id);
 			osmEdge.setTonode(to_node_id);
-			osmEdge.setLength(ls.getLength());
+			osmEdge.setLength((float)ls.getLength());
 
 			session.save(osmEdge);
 			if (nEdges % batchSize == 0) {
