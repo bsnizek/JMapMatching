@@ -31,6 +31,7 @@ import java.util.List;
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
+import org.geotools.feature.SchemaException;
 import org.hibernate.Query;
 import org.hibernate.Session;
 //import org.geotools.util.logging.Logging;
@@ -224,50 +225,50 @@ public class JMapMatcher {
 	
 	private int saveData(ArrayList<Label> labels, long nLabels, Node fromNode, Node toNode) {
 		Iterator<Label> it = labels.iterator();
-		// clear database table:
-		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
-		session.beginTransaction();
-		session.createQuery("delete from ResultRoute where sourcerouteid=" + sourcerouteID).executeUpdate();
-		session.createQuery("delete from ResultNodeChoice where sourcerouteid=" + sourcerouteID).executeUpdate();
-		session.getTransaction().commit();
 		
-//		String outFileName = "";
-//		int nNonChoice = 0;
+		// clear database table:
+		if (cfg.bWriteToDatabase) {
+			Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+			session.beginTransaction();
+			session.createQuery("delete from ResultRoute where sourcerouteid=" + sourcerouteID).executeUpdate();
+			session.createQuery("delete from ResultNodeChoice where sourcerouteid=" + sourcerouteID).executeUpdate();
+			session.getTransaction().commit();
+		}	
+		
+		String outFileName = "";
+		int nNonChoice = 0;
 		int nOut = 0, nOK = 0;
 		boolean first = true;
 		while (it.hasNext() && nOut++ < cfg.nRoutesToWrite) {	// use only the kMaximumNumberOfRoutes best routes
 			Label curLabel = it.next();
-			/*System.out.println("score: " + curLabel.getScore() 
-					+ ", length: " + curLabel.getLength() + " / " + (rf.getGPSPathLength()/curLabel.getLength())
-					+ ", a_tot: " + curLabel.getTotalAngle() + ", nLeft: " + curLabel.getLeftTurns() + ", nRight: " + curLabel.getRightTurns());*/
 			
-			if (writeLabelToDatabase(curLabel, first, nLabels, fromNode, toNode)) {
-				//System.out.println("route stored in database");
-				nOK++;
-			} else {
-				logger.error("ERROR storing route!!");
+			if (cfg.bWriteToDatabase) {
+				if (writeLabelToDatabase(curLabel, first, nLabels, fromNode, toNode)) {
+					//System.out.println("route stored in database");
+					nOK++;
+				} else {
+					logger.error("ERROR storing route!!");
+				}
 			}
 			
-			first = false;	// remaining routes are non-choice
+			if (cfg.bWriteToShapefiles) {
+				try {
+					if (first) {	// the first route is the "choice" (best score) ...
+						first = false;
+						outFileName = kOutputDir + "Best.shp";
+					} else {	// ... the other routes are "non-choices"+
+						outFileName = String.format("%s%03d%s", kOutputDir + "NonChoice", nNonChoice, ".shp");
+						nNonChoice++;
+					}
+					curLabel.dumpToShapeFile(outFileName);	// write result route to file
+				} catch (SchemaException e1) {
+					System.err.println("Error writing file " + outFileName + " (SchemaException)");
+				} catch (IOException e2) {
+					System.err.println("Error writing file " + outFileName + " (IOException)");
+				}
+			}
 			
-//			try {
-//				if (first) {	// the first route is the "choice" (best score) ...
-//					first = false;
-//					outFileName = kOutputDir + "Best.shp";
-//				} else {	// ... the other routes are "non-choices"+
-//					outFileName = String.format("%s%03d%s", kOutputDir + "NonChoice", nNonChoice, ".shp");
-//					nNonChoice++;
-//				}
-//				curLabel.dumpToShapeFile(outFileName);	// write result route to file
-//			} catch (SchemaException e1) {
-//				// TODO Auto-generated catch block
-//				System.err.println("Error writing file " + outFileName + " (SchemaException)");
-//				e1.printStackTrace();
-//			} catch (IOException e2) {
-//				// TODO Auto-generated catch block
-//				System.err.println("Error writing file " + outFileName + " (IOException)");
-//				e2.printStackTrace();
-//			}
+			first = false;	// remaining routes are non-choices
 		}
 		return nOK;
 	}

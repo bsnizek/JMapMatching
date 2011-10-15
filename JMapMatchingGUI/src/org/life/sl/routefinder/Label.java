@@ -241,7 +241,7 @@ public class Label implements Comparable<Label> {
 	 */
 	public short getnTrafficLights() { return nTrafficLights; }
 	/**
-	 * @return number of green environment
+	 * @return parameter for green environment
 	 */
 	public double getGroenM() { return groenM; }
 

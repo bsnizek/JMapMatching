@@ -11,6 +11,8 @@ import org.ini4j.InvalidFileFormatException;
 public class JMMConfig {
 	public int nRoutesToWrite = 10;
 	public boolean bWriteChoices = true;
+	public boolean bWriteToShapefiles = false;
+	public boolean bWriteToDatabase = true;
 	
 	public JMMConfig() {}
 	
@@ -35,6 +37,8 @@ public class JMMConfig {
 			
 			if (iniMap.containsKey("RoutesToWrite")) nRoutesToWrite = Integer.parseInt(iniMap.get("RoutesToWrite"));
 			if (iniMap.containsKey("WriteChoices")) bWriteChoices = Boolean.parseBoolean(iniMap.get("WriteChoices"));
+			if (iniMap.containsKey("WriteToShapefiles")) bWriteToShapefiles = Boolean.parseBoolean(iniMap.get("WriteToShapefiles"));
+			if (iniMap.containsKey("WriteToDatabase")) bWriteToDatabase = Boolean.parseBoolean(iniMap.get("WriteToDatabase"));
 		} catch (InvalidFileFormatException e) {
 			Logger.getRootLogger().error("Invalid file format");
 		} catch (IOException e) {
