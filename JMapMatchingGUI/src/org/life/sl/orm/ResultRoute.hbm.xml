@@ -29,27 +29,42 @@
 		<property name="geometry" type="org.hibernatespatial.GeometryUserType">
 			<column name="geom" />
 		</property>
-		<property name="sourcerouteid"></property>
+		<property name="sourceRouteID"></property>
+		<property name="respondentID"></property>
 		<property type="boolean" name="selected"></property>
 		<property type="float" name="length"></property>
-		<property type="long" name="nAlternatives"></property>
+		<property type="float" name="trackLengthR"></property>
 
-		<property type="int" name="nPtsOn"></property>
-		<property type="int" name="nPtsOff"></property>
 		<property type="int" name="nEdges"></property>
 		<property type="int" name="nEdgesWOPts"></property>
+		<property type="float" name="pPtsOn"></property>
+		<property type="float" name="pPtsOff"></property>
+		<property type="float" name="matchLengthR"></property>
+		<property type="float" name="noMatchLengthR"></property>
 		<property type="float" name="distPEavg"></property>
 		<property type="float" name="distPEavg5"></property>
 		<property type="float" name="distPEavg95"></property>
 		<property type="float" name="matchScore"></property>
-		<property type="float" name="matchFrac"></property>
-		<property type="float" name="trackLengthFrac"></property>
 
 		<property type="short" name="nLeftTurns"></property>
 		<property type="short" name="nRightTurns"></property>
 		<property type="short" name="nTrafficLights"></property>
-		<property name="envAttr"></property>
-		<property name="cykAttr"></property>
+		<property name="envAttr00"></property>
+		<property name="envAttr01"></property>
+		<property name="envAttr02"></property>
+		<property name="envAttr03"></property>
+		<property name="envAttr04"></property>
+		<property name="envAttr05"></property>
+		<property name="envAttr06"></property>
+		<property name="envAttr07"></property>
+		<property name="envAttr08"></property>
+		<property name="cykAttr00"></property>
+		<property name="cykAttr01"></property>
+		<property name="cykAttr02"></property>
+		<property name="cykAttr03"></property>
+		<property name="cykAttr04"></property>
+		<!-- <property name="envAttr"></property>
+		<property name="cykAttr"></property> -->
 		<property type="float" name="groenM"></property>
 
 	</class>

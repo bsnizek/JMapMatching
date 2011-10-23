@@ -182,7 +182,7 @@ public class PathSegmentGraph {
 				first = false;
 			}
 	
-			addLineString(ls, ++id, (short)0, (short)0);
+			addLineString(ls, ++id, (short)0, (short)0, 0);
 		}
 	}
 
@@ -215,7 +215,7 @@ public class PathSegmentGraph {
 			while (iter.hasNext() ) {
 				OSMEdge  o = iter.next();
 				LineString g = o.getGeometry();
-				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype());
+				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype(), o.getGroenm());
 			}
 		} else {
 			// let us join the nodes of the track to a linestring ....
@@ -255,7 +255,7 @@ public class PathSegmentGraph {
 				i++;
 				OSMEdge  o = iter.next();
 				LineString g = o.getGeometry();
-				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype());
+				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype(), o.getGroenm());
 			}
 			
 //			try {
@@ -336,7 +336,7 @@ public class PathSegmentGraph {
 	}
 
 	public void addLineString(LineString lineString, int id) {
-		addLineString(lineString, id, (short)0, (short)0);
+		addLineString(lineString, id, (short)0, (short)0, 0);
 	}
 
 	/**
@@ -345,7 +345,7 @@ public class PathSegmentGraph {
 	 * @param lineString
 	 * @param id : the id coming out of OSM
 	 */
-	public void addLineString(LineString lineString, int id, short envType, short cykType) {
+	public void addLineString(LineString lineString, int id, short envType, short cykType, double groenM) {
 
 		distancesCalculated = false;
 
@@ -371,6 +371,7 @@ public class PathSegmentGraph {
 		userdata.put("id", id);
 		userdata.put("et", envType);
 		userdata.put("ct", cykType);
+		userdata.put("gm", groenM);	// groenM
 // 		userdata.put("geom", lineString);
 		edge.setData(userdata);
 	}

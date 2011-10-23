@@ -1,5 +1,8 @@
 package org.life.sl.orm;
 
+import org.apache.log4j.Logger;
+import org.hibernate.Session;
+
 /*
 JMapMatcher
 
@@ -21,6 +24,27 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
 public class Respondent {
+	
+	/**
+	 * create a respondent associated with a source route
+	 * @param sourcerouteID database ID of the source route
+	 * @return the respondent for the source route
+	 */
+	static public Respondent getForSourceRouteID(int sourcerouteID) {
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+		Respondent resp = null;
+		try {
+			SourceRoute sr = (SourceRoute) session.load(SourceRoute.class, sourcerouteID);
+			resp = (Respondent) session.load(Respondent.class, sr.getRespondentid());
+		} catch(Exception e) {
+			Logger.getRootLogger().error("Could not find respondent for sourcerouteID " + sourcerouteID + " - " + e.toString());
+		}
+		session.getTransaction().commit();
+		//session.close();
+		return resp;
+	}
+
 	private int id;
 
 	public int getId() {
@@ -30,7 +54,5 @@ public class Respondent {
 	public void setId(int id) {
 		this.id = id;
 	}
-
-	
 }
     

@@ -28,21 +28,38 @@ public class ResultRoute {
 	private LineString geometry;
 	private boolean selected;
 	private float length;
-	private int sourcerouteid;
+	private float trackLengthR;
+	private int sourceRouteID;
+	private int respondentID;
 	private long nAlternatives;
-	private int nPtsOn;
-	private int nPtsOff;
+	private float pPtsOn;
+	private float pPtsOff;
 	private int nEdges;
 	private int nEdgesWOPts;
+	private float matchLengthR;
+	private float noMatchLengthR;
 	private float distPEavg, distPEavg5, distPEavg95;
 	private float matchScore;
-	private float matchFrac;
-	private float trackLengthFrac;
 	private short nLeftTurns;
 	private short nRightTurns;
 	private short nTrafficLights;
-	private float[] envAttr;
-	private float[] cykAttr;
+	//private float[] envAttr;
+	//private float[] cykAttr;
+	private float envAttr00;
+	private float envAttr01;
+	private float envAttr02;
+	private float envAttr03;
+	private float envAttr04;
+	private float envAttr05;
+	private float envAttr06;
+	private float envAttr07;
+	private float envAttr08;
+	private float cykAttr00;
+	private float cykAttr01;
+	private float cykAttr02;
+	private float cykAttr03;
+	private float cykAttr04;
+
 	private float groenM;
 	
 	
@@ -62,12 +79,20 @@ public class ResultRoute {
 		this.length = length;
 	}
 
-	public int getSourcerouteid() {
-		return sourcerouteid;
+	public int getSourceRouteID() {
+		return sourceRouteID;
 	}
 
-	public void setSourcerouteid(int sourcerouteid) {
-		this.sourcerouteid = sourcerouteid;
+	public void setSourceRouteID(int sourceRouteID) {
+		this.sourceRouteID = sourceRouteID;
+	}
+
+	public int getRespondentID() {
+		return respondentID;
+	}
+
+	public void setRespondentID(int respondentID) {
+		this.respondentID = respondentID;
 	}
 
 	public int getId() {
@@ -94,20 +119,20 @@ public class ResultRoute {
 		this.nAlternatives = nAlternatives;
 	}
 
-	public int getnPtsOn() {
-		return nPtsOn;
+	public float getpPtsOn() {
+		return pPtsOn;
 	}
 
-	public void setnPtsOn(int nPtsOn) {
-		this.nPtsOn = nPtsOn;
+	public void setpPtsOn(float pPtsOn) {
+		this.pPtsOn = pPtsOn;
 	}
 
-	public int getnPtsOff() {
-		return nPtsOff;
+	public float getpPtsOff() {
+		return pPtsOff;
 	}
 
-	public void setnPtsOff(int nPtsOff) {
-		this.nPtsOff = nPtsOff;
+	public void setpPtsOff(float pPtsOff) {
+		this.pPtsOff = pPtsOff;
 	}
 
 	public int getnEdges() {
@@ -124,6 +149,14 @@ public class ResultRoute {
 
 	public void setnEdgesWOPts(int nEdgesWOPts) {
 		this.nEdgesWOPts = nEdgesWOPts;
+	}
+
+	public float getNoMatchLengthR() {
+		return noMatchLengthR;
+	}
+
+	public void setNoMatchLengthR(double noMatchLengthR) {	// using a double argument!
+		this.noMatchLengthR = (float)noMatchLengthR;
 	}
 
 	public float getDistPEavg() {
@@ -154,24 +187,24 @@ public class ResultRoute {
 		return matchScore;
 	}
 
-	public void setMatchScore(float matchScore) {
-		this.matchScore = matchScore;
+	public void setMatchScore(double matchScore) {
+		this.matchScore = (float)matchScore;
 	}
 
-	public float getMatchFrac() {
-		return matchFrac;
+	public float getMatchLengthR() {
+		return matchLengthR;
 	}
 
-	public void setMatchFrac(float matchFrac) {
-		this.matchFrac = matchFrac;
+	public void setMatchLengthR(double matchLengthR) {
+		this.matchLengthR = (float)matchLengthR;
 	}
 
-	public float getTrackLengthFrac() {
-		return trackLengthFrac;
+	public float getTrackLengthR() {
+		return trackLengthR;
 	}
 
-	public void setTrackLengthFrac(float trackLengthFrac) {
-		this.trackLengthFrac = trackLengthFrac;
+	public void setTrackLengthR(float trackLengthFracR) {
+		this.trackLengthR = trackLengthFracR;
 	}
 
 	public short getnLeftTurns() {
@@ -198,27 +231,69 @@ public class ResultRoute {
 		this.nTrafficLights = nTrafficLights;
 	}
 
-	public float[] getEnvAttr() {
+	/*public float[] getEnvAttr() {
 		return envAttr;
 	}
-
 	public void setEnvAttr(float[] envAttr) {
 		this.envAttr = envAttr;
 	}
-
 	public float[] getCykAttr() {
 		return cykAttr;
 	}
-
 	public void setCykAttr(float[] cykAttr) {
 		this.cykAttr = cykAttr;
-	}
+	}*/
+	
+	// this is extremely inelegant, but I don't know a better solution...
+	public float getEnvAttr00() { return envAttr00; }
+	public void setEnvAttr00(float envAttr) { this.envAttr00 = envAttr; }
+	public void setEnvAttr00(double envAttr) { this.envAttr00 = (float)envAttr; }
+	public float getEnvAttr01() { return envAttr01; }
+	public void setEnvAttr01(float envAttr) { this.envAttr01 = envAttr; }
+	public void setEnvAttr01(double envAttr) { this.envAttr01 = (float)envAttr; }
+	public float getEnvAttr02() { return envAttr02; }
+	public void setEnvAttr02(float envAttr) { this.envAttr02 = envAttr; }
+	public void setEnvAttr02(double envAttr) { this.envAttr02 = (float)envAttr; }
+	public float getEnvAttr03() { return envAttr03; }
+	public void setEnvAttr03(float envAttr) { this.envAttr03 = envAttr; }
+	public void setEnvAttr03(double envAttr) { this.envAttr03 = (float)envAttr; }
+	public float getEnvAttr04() { return envAttr04; }
+	public void setEnvAttr04(float envAttr) { this.envAttr04 = envAttr; }
+	public void setEnvAttr04(double envAttr) { this.envAttr04 = (float)envAttr; }
+	public float getEnvAttr05() { return envAttr05; }
+	public void setEnvAttr05(float envAttr) { this.envAttr05 = envAttr; }
+	public void setEnvAttr05(double envAttr) { this.envAttr05 = (float)envAttr; }
+	public float getEnvAttr06() { return envAttr06; }
+	public void setEnvAttr06(float envAttr) { this.envAttr06 = envAttr; }
+	public void setEnvAttr06(double envAttr) { this.envAttr06 = (float)envAttr; }
+	public float getEnvAttr07() { return envAttr07; }
+	public void setEnvAttr07(float envAttr) { this.envAttr07 = envAttr; }
+	public void setEnvAttr07(double envAttr) { this.envAttr07 = (float)envAttr; }
+	public float getEnvAttr08() { return envAttr08; }
+	public void setEnvAttr08(float envAttr) { this.envAttr08 = envAttr; }
+	public void setEnvAttr08(double envAttr) { this.envAttr08 = (float)envAttr; }
+	
+	public float getCykAttr00() { return cykAttr00; }
+	public void setCykAttr00(float cykAttr) { this.cykAttr00 = cykAttr; }
+	public void setCykAttr00(double cykAttr) { this.cykAttr00 = (float)cykAttr; }
+	public float getCykAttr01() { return cykAttr01; }
+	public void setCykAttr01(float cykAttr) { this.cykAttr01 = cykAttr; }
+	public void setCykAttr01(double cykAttr) { this.cykAttr01 = (float)cykAttr; }
+	public float getCykAttr02() { return cykAttr02; }
+	public void setCykAttr02(float cykAttr) { this.cykAttr02 = cykAttr; }
+	public void setCykAttr02(double cykAttr) { this.cykAttr02 = (float)cykAttr; }
+	public float getCykAttr03() { return cykAttr03; }
+	public void setCykAttr03(float cykAttr) { this.cykAttr03 = cykAttr; }
+	public void setCykAttr03(double cykAttr) { this.cykAttr03 = (float)cykAttr; }
+	public float getCykAttr04() { return cykAttr04; }
+	public void setCykAttr04(float cykAttr) { this.cykAttr04 = cykAttr; }
+	public void setCykAttr04(double cykAttr) { this.cykAttr04 = (float)cykAttr; }
 
 	public float getGroenM() {
 		return groenM;
 	}
 
-	public void setGroenM(float groenM) {
-		this.groenM = groenM;
+	public void setGroenM(double groenM) {
+		this.groenM = (float)groenM;
 	}
 }

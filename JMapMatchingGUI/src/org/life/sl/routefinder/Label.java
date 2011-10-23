@@ -91,10 +91,10 @@ public class Label implements Comparable<Label> {
 	private double angle_tot = 0.;	///> sum of all angle changes
 	private short nLeftTurns = 0, nRightTurns = 0;
 	
-	private short nTrafficLights = 0;
-	private float[] envAttr;	///> numbers of edges with various environmental attributes [0,1...8]
-	private float[] cykAttr;	///> numbers of edges with various cycleway attributes [0...4]
-	private double groenM = 0.;
+	private short nTrafficLights = 0;	///> number of traffic lights encountered on the route
+	private float[] envAttr;		///> total length of edges with various environmental attributes [0,1...8]
+	private float[] cykAttr;		///> total length of edges with various cycleway attributes [0...4]
+	private double groenM = 0.;		///> total length of green environment along the route (sum of edge.groenM)
 	
 	private List<Node> nodeList = null;
 	private List<DirectedEdge> edgeList = null;
@@ -268,8 +268,8 @@ public class Label implements Comparable<Label> {
 		if (parent != null) {
 			//System.out.println((int)(parent.getScore(eStat) * parent.getLength()) + " - " + eStat.getCount(backEdge.getEdge()));
 			lastScoreCount = eStat.getCount(backEdge.getEdge());
-			lastScore = lastScoreCount / lastEdgeLength;
 			scoreCount = parent.getScoreCount(eStat) + lastScoreCount;
+			lastScore = (double)lastScoreCount / lastEdgeLength;
 			//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
 			if (length > 0.) score = scoreCount / length;
 			
@@ -283,9 +283,10 @@ public class Label implements Comparable<Label> {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> userdata = (HashMap<String, Object>) backEdge.getEdge().getData();	// the user data object of the Edge
 			envAttr = parent.envAttr.clone();	// clone!!
-			envAttr[(Short)userdata.get("et")]++;
+			envAttr[(Short)userdata.get("et")] += lastEdgeLength;
 			cykAttr = parent.cykAttr.clone();	// clone!!
-			cykAttr[(Short)userdata.get("ct")]++;
+			cykAttr[(Short)userdata.get("ct")] += lastEdgeLength;
+			groenM = parent.getGroenM() + (Double)userdata.get("gm");
 		} else {
 			// initialize attributes arrays:
 			envAttr = new float[9];

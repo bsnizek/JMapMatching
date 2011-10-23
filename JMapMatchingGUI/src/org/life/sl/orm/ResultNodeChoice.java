@@ -25,6 +25,7 @@ public class ResultNodeChoice {
 	private int id;
 	private int routeID;
 	private int sourceRouteID;
+	private int respondentID;
 	private int i;	///> index - sequence in route
 	private int edgeID;
 	private int nodeID;
@@ -41,9 +42,10 @@ public class ResultNodeChoice {
 	 * @param routeID database ID of the corresponding matched route (resultRoute) 
 	 * @param sourceRouteID database ID of the corresponding GPS track
 	 */
-	public ResultNodeChoice(int routeID, int sourceRouteID) {
+	public ResultNodeChoice(int routeID, int sourceRouteID, int respondentID) {
 		this.routeID = routeID;
 		this.sourceRouteID = sourceRouteID;
+		this.setRespondentID(respondentID);
 	}
 
 	/**
@@ -106,6 +108,14 @@ public class ResultNodeChoice {
 
 	public void setSourceRouteID(int sourceRouteID) {
 		this.sourceRouteID = sourceRouteID;
+	}
+
+	public int getRespondentID() {
+		return respondentID;
+	}
+
+	public void setRespondentID(int respondentID) {
+		this.respondentID = respondentID;
 	}
 
 	public int getEdgeID() {

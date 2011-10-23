@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.geotools.feature.SchemaException;
@@ -39,6 +38,8 @@ import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMEdge;
 import org.life.sl.orm.OSMNode;
+import org.life.sl.orm.Respondent;
+import org.life.sl.orm.ResultMetaData;
 import org.life.sl.orm.ResultRoute;
 import org.life.sl.orm.ResultNodeChoice;
 import org.life.sl.orm.SourcePoint;
@@ -79,6 +80,8 @@ public class JMapMatcher {
 	
 	private static int kGPSTrackID = 12158;		///> database ID of GPS track to match
 	
+	public final double kCoordEps = 1.e-6;		///> tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+
 	// even bigger network and route:
 //	private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
 //	private static String kGPSPointFileName = "testdata/exmp1/example_gsp_1.shp";
@@ -90,7 +93,7 @@ public class JMapMatcher {
 //	private static String kGPSPointFileName = "testdata/GPS_Points_1.shp";
 	
 	private PathSegmentGraph graph = null;	///> data basis (graph)
-	private ArrayList<Point> gpsPoints;		///> the path to match (GPS points)
+	private GPSTrack gpsPoints;		///> the path to match (GPS points)
 	private RFParams rfParams = null;		///> parameters for the route finding algorithm
 	private JMMConfig cfg = new JMMConfig(kCfgFileName);	///> parameters for the MapMatching controller
 	
@@ -139,41 +142,21 @@ public class JMapMatcher {
 	public void loadGPSPoints(String fileName) throws IOException {
 		File pointFile = new File(fileName);	// load data
 		PointFileReader pfr = new PointFileReader(pointFile);	// initialize data from file
-		gpsPoints = pfr.getPoints();	// the collection of GPS data points
+		gpsPoints = new GPSTrack(pfr.getPoints());	// the collection of GPS data points
 	}
 	
 	/**
 	 * starts the map matching using GPS data from the database
 	 * @param source_id source_id of the sourcepoints (GPS route)
 	 */
-	public void match(int source_id)  {
-		if (loadGPSPointsFromDatabase(source_id)) {	// check if the track contains points
-			sourcerouteID = source_id;				// store in class variable, for later use
+	public void match(int sourceroute_id)  {
+		gpsPoints = new GPSTrack(sourceroute_id);
+		if (gpsPoints.size() > 0) {	// check if the track contains points
+			sourcerouteID = sourceroute_id;				// store in class variable, for later use
 			match();								// start the matching process with the loaded track
 		} else {
-			System.err.println("GPS track " + source_id + " contains no points!");
+			System.err.println("GPS track " + sourceroute_id + " contains no points!");
 		}
-	}
-	
-	/**
-	 * loads GPS data from the database, given the source_id of the sourcepoints
-	 * @param sourceroute_id source_id of the sourcepoints (GPS route)
-	 * @return true if the track contains >0 points, false if it is empty
-	 */
-	private boolean loadGPSPointsFromDatabase(int sourceroute_id) {
-		gpsPoints = new ArrayList<Point>();
-		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
-		session.beginTransaction();
-		Query result = session.createQuery("from SourcePoint WHERE sourcerouteid=" + sourceroute_id);
-		@SuppressWarnings("unchecked")
-		Iterator<SourcePoint> iter = result.iterate();
-		while (iter.hasNext()) {	// create list from query results
-			SourcePoint sp = (SourcePoint) iter.next();
-			Point o = sp.getGeometry();
-			gpsPoints.add(o);
-		}
-		session.close();
-		return (gpsPoints.size() > 0);
 	}
 
 	/**
@@ -185,8 +168,8 @@ public class JMapMatcher {
 		if (graph == null) {	// create a new graph enveloping the GPS track
 			graph = loadGraphFromDB(gpsPoints);
 		}
-		Node fromNode = graph.findClosestNode(gpsPoints.get(0).getCoordinate());	// first node (Origin)
-		Node toNode   = graph.findClosestNode(gpsPoints.get(gpsPoints.size()-1).getCoordinate());	// last node in GPS route (Destination) 
+		Node fromNode = graph.findClosestNode(gpsPoints.getCoordinate(0));	// first node (Origin)
+		Node toNode   = graph.findClosestNode(gpsPoints.getCoordinate(-1));	// last node in GPS route (Destination) 
 		// log coordinates:
 		logger.info("Origin:      " + fromNode.getCoordinate());
 		logger.info("Destination: " + toNode.getCoordinate());
@@ -201,7 +184,7 @@ public class JMapMatcher {
 		EdgeStatistics eStat = new EdgeStatistics(rf, gpsPoints);
 		double t_2 = timer.getRunTime(true);
 
-		ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, calcGPSPathLength());	///> list containing all routes that were found (still unsorted)
+		ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsPoints.getTrackLength());	///> list containing all routes that were found (still unsorted)
 
 		double t_1 = timer.getRunTime(true, "++ Routefinding finished");
 		double t_3 = 0;
@@ -214,7 +197,7 @@ public class JMapMatcher {
 			t_2 += timer.getRunTime(true, "++ Edge statistics created");
 			Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
 	
-			int nOK = saveData(labels, rf.getNumLabels(), fromNode, toNode);
+			int nOK = saveData(labels, fromNode, toNode);
 			
 			t_3 = timer.getRunTime(true, "++ " + nOK + " routes stored");
 			logger.info("++ findRoutes: " + t_1 + "s");
@@ -223,19 +206,53 @@ public class JMapMatcher {
 		logger.info("++ Total time: " + (t_1 + t_2 + t_3) + "s");
 	}
 	
-	private int saveData(ArrayList<Label> labels, long nLabels, Node fromNode, Node toNode) {
+	/**
+	 * save the results of the map matching, either to shapefiles (deprecated) or to a database (via Hibernate) 
+	 * @param labels list of result routes (all labels)
+	 * @param fromNode start node of the routes (origin)
+	 * @param toNode end node of the routes (destination)
+	 * @return the number of results that have been saved 
+	 */
+	private int saveData(ArrayList<Label> labels, Node fromNode, Node toNode) {
 		Iterator<Label> it = labels.iterator();
 		
-		// clear database table:
+		String outFileName = "";
+		int respondentID = 0;
+		
 		if (cfg.bWriteToDatabase) {
+			// clear existing results from relevant database tables:
 			Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+			try {
+				session.beginTransaction();
+				session.createQuery("delete from ResultMetaData where sourcerouteid=" + sourcerouteID).executeUpdate();
+				session.createQuery("delete from ResultRoute where sourcerouteid=" + sourcerouteID).executeUpdate();
+				session.createQuery("delete from ResultNodeChoice where sourcerouteid=" + sourcerouteID).executeUpdate();
+				session.getTransaction().commit();
+			} catch (Exception e) {
+				logger.error("Error while deleting from database tables: maybe the tables have not been created yet - " + e.toString());
+			}
+		
+			// write metadata (1 record per matched GPS track):
+			ResultMetaData metaData = new ResultMetaData();
+			metaData.setSourceRouteID(sourcerouteID);
+	
+			Respondent resp = Respondent.getForSourceRouteID(sourcerouteID);
+			respondentID = resp.getId();
+			metaData.setRespondentID(respondentID);
+	
+			metaData.setnAlternatives(labels.size());
+			metaData.setAvgDistPt((float)gpsPoints.getAvgDist());
+			metaData.setMaxDistPt((float)gpsPoints.getMaxDist());
+			metaData.setMinDistPt((float)gpsPoints.getMinDist());
+			metaData.setnPoints(gpsPoints.size());
+			metaData.setTrackLength((float)gpsPoints.getTrackLength());
+			session = HibernateUtil.getSessionFactory().getCurrentSession();
 			session.beginTransaction();
-			session.createQuery("delete from ResultRoute where sourcerouteid=" + sourcerouteID).executeUpdate();
-			session.createQuery("delete from ResultNodeChoice where sourcerouteid=" + sourcerouteID).executeUpdate();
+			session.save(metaData);
 			session.getTransaction().commit();
 		}	
-		
-		String outFileName = "";
+
+		// write data for matched routes (1 record per matched route):
 		int nNonChoice = 0;
 		int nOut = 0, nOK = 0;
 		boolean first = true;
@@ -243,7 +260,7 @@ public class JMapMatcher {
 			Label curLabel = it.next();
 			
 			if (cfg.bWriteToDatabase) {
-				if (writeLabelToDatabase(curLabel, first, nLabels, fromNode, toNode)) {
+				if (writeLabelToDatabase(curLabel, first, respondentID, fromNode, toNode)) {
 					//System.out.println("route stored in database");
 					nOK++;
 				} else {
@@ -273,7 +290,7 @@ public class JMapMatcher {
 		return nOK;
 	}
 	
-	private boolean writeLabelToDatabase(Label label, boolean isChoice, long nLabels, Node fromNode, Node toNode) {
+	private boolean writeLabelToDatabase(Label label, boolean isChoice, int respondentID, Node fromNode, Node toNode) {
 		boolean ok = false;
 		
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
@@ -283,39 +300,61 @@ public class JMapMatcher {
 		// set up entry for route table:
 		ResultRoute route = new ResultRoute();
 		// set route parameters:
-		route.setLength((float)label.getLength());
+		double lld = label.getLength();
+		float llf = (float)lld;
+		route.setLength(llf);
 		route.setSelected(isChoice);
-		route.setSourcerouteid(sourcerouteID);
+		route.setSourceRouteID(sourcerouteID);
+		route.setRespondentID(respondentID);
 		
 		// get node list to create the lineString representing the route:
 		Coordinate[] coordinates = label.getCoordinates();
 		ok = (coordinates.length > 0);	// true if there were any points in the route
-		
+		System.out.println(label.getScoreCount());
 		if (ok) try {
 			LineString lineString = fact.createLineString(coordinates);
 			route.setGeometry(lineString);
-			route.setnAlternatives(nLabels);
-			route.setnPtsOn(label.getScoreCount());
-			route.setnPtsOff(gpsPoints.size() - label.getScoreCount());
+			route.setTrackLengthR((float)(lld / gpsPoints.getTrackLength()));
+
+			float pPointsOn = (float)( (double)label.getScoreCount() / (double)gpsPoints.size() );	// fraction of points on edges 
+			route.setpPtsOn(pPointsOn);
+			route.setpPtsOff(1.f - pPointsOn);
 			route.setnEdges(dEdges.size());
 			route.setnEdgesWOPts(label.getnEdgesWOPoints());
+			route.setMatchLengthR(1. - label.getNoMatchLength() / lld);	// matched length / total length
+			route.setNoMatchLengthR(label.getNoMatchLength() / lld);	// non-matched length / total length
+			route.setMatchScore(label.getScore() * lld);	// the final match score is multiplied by label.length, so that we have:
+				// matchScore = sum_over_all_edges ( edge_points / (edge_length / track_length) )
 			//route.setdistPEavg...
-			route.setMatchScore((float)label.getScore());
-			route.setMatchFrac((float)(1. - label.getNoMatchLength() / label.getLength()));
-			route.setTrackLengthFrac((float)(label.getLength() / calcGPSPathLength()));
 			
 			route.setnLeftTurns((short)label.getLeftTurns());
 			route.setnRightTurns((short)label.getRightTurns());
 			route.setnTrafficLights((short)label.getnTrafficLights());
-			route.setEnvAttr(label.getEnvAttr());
-			route.setCykAttr(label.getCykAttr());
-			route.setGroenM((float)label.getGroenM());
+			float[] envAttr = label.getEnvAttr();
+			route.setEnvAttr00(envAttr[0]/lld);
+			route.setEnvAttr01(envAttr[1]/lld);
+			route.setEnvAttr02(envAttr[2]/lld);
+			route.setEnvAttr03(envAttr[3]/lld);
+			route.setEnvAttr04(envAttr[4]/lld);
+			route.setEnvAttr05(envAttr[5]/lld);
+			route.setEnvAttr06(envAttr[6]/lld);
+			route.setEnvAttr07(envAttr[7]/lld);
+			route.setEnvAttr08(envAttr[8]/lld);
+			//route.setEnvAttr(label.getEnvAttr());
+			float[] cykAttr = label.getCykAttr();
+			route.setCykAttr00(cykAttr[0]/lld);
+			route.setCykAttr01(cykAttr[1]/lld);
+			route.setCykAttr02(cykAttr[2]/lld);
+			route.setCykAttr03(cykAttr[3]/lld);
+			route.setCykAttr04(cykAttr[4]/lld);
+			//route.setCykAttr(label.getCykAttr());
+			route.setGroenM(label.getGroenM() / lld);
 			
 			session.save(route);
 			
 			// create output for the choice experiment:
 			if (cfg.bWriteChoices && isChoice) {	// (this is required only for the chosen route)
-				ResultNodeChoice choice = new ResultNodeChoice(route.getId(), sourcerouteID);
+				ResultNodeChoice choice = new ResultNodeChoice(route.getId(), sourcerouteID, respondentID);
 				
 				double dist = 0.;
 				int i = 0;	// counter
@@ -342,7 +381,7 @@ public class JMapMatcher {
 					while (it.hasNext()) {
 						OSMNode on = it.next();
 						Coordinate onc = on.getGeometry().getCoordinate();
-						if (Math.abs(c_n.x - onc.x) < 1.e-6 && Math.abs(c_n.x - onc.x) < 1.e-6) {
+						if (Math.abs(c_n.x - onc.x) < kCoordEps && Math.abs(c_n.x - onc.x) < kCoordEps) {
 							nodeID = on.getId();
 							break;
 						}								
@@ -389,21 +428,21 @@ public class JMapMatcher {
 		return new PathSegmentGraph(track, (float)initConstraints().getDouble(RFParams.Type.NetworkBufferSize));
 	}
 	
-	/**
-	 * calculate the Euclidian path length as sum of the Euclidian distances between subsequent measurement points
-	 * @return the path length along the GPS points
-	 */
-	public double calcGPSPathLength() {
-		double l = 0;
-		Point p0 = null;
-		for (Point p : gpsPoints) {
-			if (p0 != null) {
-				l += p.distance(p0);
-			}
-			p0 = p;
-		}
-		return l;
-	}
+//	/**
+//	 * calculate the Euclidian path length as sum of the Euclidian distances between subsequent measurement points
+//	 * @return the path length along the GPS points
+//	 */
+//	public double calcGPSPathLength() {
+//		double l = 0;
+//		Point p0 = null;
+//		for (Point p : gpsPoints) {
+//			if (p0 != null) {
+//				l += p.distance(p0);
+//			}
+//			p0 = p;
+//		}
+//		return l;
+//	}
 
 	private RFParams initConstraints() {
 		// initialize constraint fields:
