@@ -78,7 +78,7 @@ public class LineMergeGraphH4cked extends PlanarGraph {
 	 */
 	/**
 	 * @param lineString
-	 * @return
+	 * @return Edge created from the lineString
 	 */
 	public Edge addEdge(LineString lineString) {
 		if (lineString.isEmpty()) { return null; }

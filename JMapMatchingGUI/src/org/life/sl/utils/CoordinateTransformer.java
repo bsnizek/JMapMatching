@@ -36,8 +36,6 @@ import com.vividsolutions.jts.geom.Geometry;
 
 /**
  * @author Bernhard Snizek
- * @updated 2009-06-03 - adapted to geotools 2.5.5
- * @date    2008-10-08
  */
 public class CoordinateTransformer {
 	

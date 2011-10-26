@@ -8,6 +8,13 @@ import org.apache.log4j.Logger;
 import org.ini4j.Ini;
 import org.ini4j.InvalidFileFormatException;
 
+/**
+ * Container for configuration data for the JMapMatching program, 
+ * including functionality to read from ini-file 
+ * @author Bernhard Barkow
+ * @see org.life.sl.routefinder.RFParams
+ * @see <a href="https://github.com/bsnizek/JMapMatching/wiki/JMapMatcherIniFile">JMapMatcherIniFile in the Wiki</a>
+ */
 public class JMMConfig {
 	public int nRoutesToWrite = 10;
 	public boolean bWriteChoices = true;

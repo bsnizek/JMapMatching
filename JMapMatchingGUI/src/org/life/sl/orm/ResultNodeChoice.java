@@ -31,6 +31,7 @@ public class ResultNodeChoice {
 	private int nodeID;
 	private boolean selected;
 	private float dist;
+	private float angle;
 	private float angleToDest;
 	private short envType;
 	private short cykType;
@@ -92,6 +93,14 @@ public class ResultNodeChoice {
 
 	public void setDist(float dist) {
 		this.dist = dist;
+	}
+
+	public float getAngle() {
+		return angle;
+	}
+
+	public void setAngle(float angle) {
+		this.angle = angle;
 	}
 
 	public int getRouteID() {

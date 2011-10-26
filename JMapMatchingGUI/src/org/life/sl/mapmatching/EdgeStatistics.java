@@ -21,11 +21,13 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.life.sl.routefinder.RouteFinder;
 
 import com.vividsolutions.jts.geom.Point;
+import com.vividsolutions.jts.operation.linemerge.LineMergeEdge;
 import com.vividsolutions.jts.planargraph.Edge;
 
 /**
@@ -35,7 +37,10 @@ import com.vividsolutions.jts.planargraph.Edge;
  */
 public class EdgeStatistics {
 
+	double distPEAvg, distPE5, distPE95;	///> average distance between points an associated edges, plus 5% qantiles
+	
 	HashMap<Edge, Integer> edgePoints = new HashMap<Edge, Integer>();	///> container counting the number of points associated with each edge
+	private double pointEdgeDist[] = null;
 	
 	/**
 	 * default constructor
@@ -59,13 +64,40 @@ public class EdgeStatistics {
 	 * @param gpsPoints array of GPS points for which the statistics is created (measure how well the points fit to edges)
 	 */
 	public void init(RouteFinder rf, ArrayList<Point> gpsPoints) {
+		pointEdgeDist = new double[gpsPoints.size()];
 		rf.setEdgeStatistics(this);
 		// first, clear the statistics:
 		edgePoints.clear();
 		// then, loop over all GPS points:
+		int i = 0;
 		for (Point p : gpsPoints) {
-			addPoint(rf.getNearestEdge(p));	// add the point to the associated edge (the edge nearest to each GPS data point)
+			Edge e = rf.getNearestEdge(p);
+			addPoint(e);	// add the point to the associated edge (the edge nearest to each GPS data point)
+			if (e!=null) pointEdgeDist[i++] = p.distance(((LineMergeEdge)e).getLine().getBoundary());	// distance between point and nearest edge
 		}
+		initPEDistStat();
+	}
+	
+	public void initPEDistStat() {
+		Arrays.sort(pointEdgeDist);
+		distPEAvg = 0;
+		for (double d : pointEdgeDist) {
+			distPEAvg += d;
+		}
+		double l = (double)pointEdgeDist.length;
+		distPEAvg /= l;
+		distPE5 = pointEdgeDist[(int)Math.round(l*0.05)];
+		distPE95 = pointEdgeDist[(int)Math.round(l*0.95)];
+	}
+	
+	public double getDistPEAvg() {
+		return distPEAvg;
+	}
+	public double getDistPE5() {
+		return distPE5;
+	}
+	public double getDistPE95() {
+		return distPE95;
 	}
 	
 	/**

@@ -32,6 +32,9 @@
 		<property type="float" name="avgDistPt"></property>
 		<property type="float" name="minDistPt"></property>
 		<property type="float" name="maxDistPt"></property>
+		<property type="float" name="distPEavg"></property>
+		<property type="float" name="distPEavg5"></property>
+		<property type="float" name="distPEavg95"></property>
 		<property type="int" name="nPoints"></property>
 		<property type="long" name="nAlternatives"></property>
 

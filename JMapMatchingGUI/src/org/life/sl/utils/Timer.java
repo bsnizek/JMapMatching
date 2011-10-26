@@ -22,9 +22,18 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 
 import org.apache.log4j.Logger;
 
+/**
+ * Utility class for timing purposes.
+ * Use {@link #Timer(double int0, double int1)} or {@link #init()} to start the timer, 
+ * {@link #getRunTime(boolean)} to return the consumed time,
+ * and {@link #showProgress(double)} to show a progress indicator.
+ * The progress indicator works at 2 levels specified by {@link #progressInterval}
+ * @author Bernhard Barkow
+ *
+ */
 public class Timer {
-	private double t_start, t_tot;						///> start and current time, in seconds
-	private double[] progressInterval = { 2.5f, 10.f };	///> progress indicator is only updated after this interval, not faster
+	private double t_start, t_tot;						///< start and current time, in seconds
+	private double[] progressInterval = { 2.5f, 10.f };	///< progress indicator is only updated after this interval, not faster
 	private double[] t_tot_last = { 0f, 0f };
 	
 	public Timer() {
@@ -43,7 +52,7 @@ public class Timer {
 	}
 	
 	/**
-	 * initialize the timer
+	 * Initializes the timer
 	 */
 	public double init() {
 		t_start = getTime();
@@ -51,7 +60,7 @@ public class Timer {
 	}
 
 	/**
-	 * initialize the timer and the progress indicator update intervals
+	 * Initializes the timer and the progress indicator update intervals
 	 * @param int0 the "faster" interval, for the simple indicator
 	 * @param int1 the "longer" interval, for the percentage indicator
 	 */
@@ -61,7 +70,7 @@ public class Timer {
 	}
 	
 	/**
-	 * set the progress indicator update intervals
+	 * Sets the progress indicator update intervals
 	 * @param int0 the "faster" interval, for the simple indicator
 	 * @param int1 the "longer" interval, for the percentage indicator
 	 */
@@ -71,7 +80,7 @@ public class Timer {
 	}
 	
 	/**
-	 * calculate the time passed since t_start
+	 * Calculates the time passed since t_start
 	 * @param reset if true, t_start is reset to the current time (i.e., a new interval is started)
 	 * @return the time interval in seconds passed since t_start
 	 */
@@ -82,7 +91,7 @@ public class Timer {
 	}
 	
 	/**
-	 * calculate the time passed since t_start and write out a corresponding message
+	 * Calculates the time passed since t_start and write out a corresponding message
 	 * @param reset if true, t_start is reset to the current time (i.e., a new interval is started)
 	 * @param msg an additional message to show on the console
 	 * @return the time interval in seconds passed since t_start
@@ -95,7 +104,7 @@ public class Timer {
 	}
 
 	/**
-	 * show a progress indicator, eventually with a percentage
+	 * Shows a progress indicator, eventually with a percentage
 	 * @param p if > 0, the progress is written as percentage
 	 */
 	public void showProgress(double p) {

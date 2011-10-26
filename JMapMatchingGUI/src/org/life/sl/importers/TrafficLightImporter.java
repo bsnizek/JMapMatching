@@ -52,10 +52,6 @@ import com.vividsolutions.jts.geom.Point;
 
 public class TrafficLightImporter {
 
-	/**
-	 * @param args
-	 */
-
 	public TrafficLightImporter() {
 
 		//		http://download.bbbike.org/osm/bbbike/Copenhagen/

@@ -23,7 +23,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 import com.vividsolutions.jts.geom.LineString;
 /**
  * ORM class for Edges created from OpenStreetMap data
- * @see https://github.com/bsnizek/JMapMatching/wiki/LookupTableCodes
+ * @see <a href="https://github.com/bsnizek/JMapMatching/wiki/LookupTableCodes">LookupTableCodes in the Wiki</a>
  */
 public class OSMEdge {
 
@@ -35,15 +35,15 @@ public class OSMEdge {
 	private String roadname;		///< road name associated with this edge 
 
 	// edge type attributes:
-	private Short highwaytype;		///< highway type parameter - @see highwaytype table
-	private Short cyclewaytype;		///< cycleway type parameter - @see cyclewaytype table
-	private Short foottype;			///< footpath type parameter - @see highwaytype table
-	private Short bicycletype;		///< bicycle type parameter - @see bicycletype table
-	private Short segregatedtype;	///< if road is segregated or not - @see segregatedtype table
+	private Short highwaytype;		///< highway type parameter - see highwaytype table
+	private Short cyclewaytype;		///< cycleway type parameter - see cyclewaytype table
+	private Short foottype;			///< footpath type parameter - see highwaytype table
+	private Short bicycletype;		///< bicycle type parameter - see bicycletype table
+	private Short segregatedtype;	///< if road is segregated or not - see segregatedtype table
 
 	// HSP specific attributes:
-	private Short envtype;	///< type of environment surrounding the edge - @see envType table
-	private Short cyktype;	///< type of bicycle facility - @see cykType table
+	private Short envtype;	///< type of environment surrounding the edge - see envType table
+	private Short cyktype;	///< type of bicycle facility - see cykType table
 	private float groenpct;	///< percentage of the edge running through a green environment; GroenM = shape_length * GroenPct
 	private float groenm;	///< length [m] of the edge running thorough a green environment; GroenM = shape_length * GroenPct
 

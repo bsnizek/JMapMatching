@@ -62,32 +62,32 @@ import com.vividsolutions.jts.planargraph.Node;
  */
 public class RouteFinder {
 	private static enum LabelTraversal {
-		None,			///> no special sorting
-		Shuffle,		///> shuffle labels before advancing in the iteration
-		BestFirst,		///> traverse label in reverse natural order (highest score first) - this should find the globally best route first
-		WorstFirst,		///> traverse label in natural order (highest score last)
-		BestLastEdge,	///> traverse label in reverse natural order, considering only the last edge
+		None,			///< no special sorting
+		Shuffle,		///< shuffle labels before advancing in the iteration
+		BestFirst,		///< traverse label in reverse natural order (highest score first) - this should find the globally best route first
+		WorstFirst,		///< traverse label in natural order (highest score last)
+		BestLastEdge,	///< traverse label in reverse natural order, considering only the last edge
 	}
 
-	private static boolean bShowProgress = true;	///> show a progress indicator while finding routes?
+	private static boolean bShowProgress = true;	///< show a progress indicator while finding routes?
 
 	private LabelTraversal itLabelOrder = LabelTraversal.BestFirst;
-	private float kNearestEdgeDistance = 100.f;	// the larger the slower
+	private float kNearestEdgeDistance = 50.f;	// the larger, the slower
 	
 	// Initialization:
 	private RFParams rfParams;// = new Constraints();
 	
-	private Node startNode = null;	///> route start node (Origin)	
-	private Node endNode = null;	///> route end node (Destination)
-	private PathSegmentGraph network = null;	///> graph to search (all routes are in this network)
+	private Node startNode = null;	///< route start node (Origin)	
+	private Node endNode = null;	///< route end node (Destination)
+	private PathSegmentGraph network = null;	///< graph to search (all routes are in this network)
 	
 	// articulation points identified in graph
 //	private Collection<Node> articulationPoints = new ArrayList<Node>();
 	// bridges identified in graph
 //	private Collection<Edge> bridges = new ArrayList<Edge>();
 
-	private long numLabels = 0;			///> number of labels (states) generated when running algorithm
-	private long numLabels_rejected = 0;	///> number of labels (states) that have been rejected due to constraints
+	private long numLabels = 0;			///< number of labels (states) generated when running algorithm
+	private long numLabels_rejected = 0;	///< number of labels (states) that have been rejected due to constraints
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
 	
@@ -121,15 +121,15 @@ public class RouteFinder {
 	private void initDefaults() {
 		rfParams = new RFParams();
 
-		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 1000);	///> maximum number of routes to find (or 0 for infinite)
+		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 1000);	///< maximum number of routes to find (or 0 for infinite)
 		rfParams.setInt(RFParams.Type.BridgeOverlap, 1);
-		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);		///> how often each edge may be used
+		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);		///< how often each edge may be used
 //		constraints.setInt(Constraints.Type.ArticulationPointOverlap, 2);
-		rfParams.setInt(RFParams.Type.NodeOverlap, 1);		///> how often each single node may be crossed
-		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);		///> how much the route may deviate from the shortest possible
-		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///> minimum route length
-		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///> maximum route length (quasi no limit here)
-		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///> buffer size in meters (!)
+		rfParams.setInt(RFParams.Type.NodeOverlap, 1);		///< how often each single node may be crossed
+		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);		///< how much the route may deviate from the shortest possible
+		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///< minimum route length
+		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
+		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
 	}
 	
 	/**
@@ -271,7 +271,7 @@ public class RouteFinder {
 	 * create the expansion from a label, i.e. the list of routes leaving from the current node (next generation labels);
 	 * ignore expansion along the backEdge! (BB)
 	 * @param parentLabel the label where from to expand
-	 * @return
+	 * @return an ArrayList containing the valid labels found for the next generation 
 	 */
 	private ArrayList<Label> expandLabel(Label parentLabel) {
 		ArrayList<Label> expansion = new ArrayList<Label>();

@@ -36,13 +36,11 @@ import org.hibernate.Session;
 //import org.geotools.util.logging.Logging;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
-import org.life.sl.orm.OSMEdge;
 import org.life.sl.orm.OSMNode;
 import org.life.sl.orm.Respondent;
 import org.life.sl.orm.ResultMetaData;
 import org.life.sl.orm.ResultRoute;
 import org.life.sl.orm.ResultNodeChoice;
-import org.life.sl.orm.SourcePoint;
 import org.life.sl.orm.SourceRoute;
 import org.life.sl.readers.shapefile.PointFileReader;
 import org.life.sl.routefinder.RFParams;
@@ -60,8 +58,9 @@ import com.vividsolutions.jts.planargraph.Node;
 // JVM argument for max. heap size (required for large networks): -Xmx2048m
 
 /**
- * The main map matching algorithm
- * @author bsnizek
+ * Main controller for the map matching algorithm
+ * @author Bernhard Snizek
+ * @author Bernhard Barkow
  */
 public class JMapMatcher {
 	public enum gpsLoader {
@@ -76,11 +75,11 @@ public class JMapMatcher {
 	//static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
 	private static gpsLoader kGPSLoader    = gpsLoader.BULK_PGSQLDATABASE;
 	private static gpsLoader kGraphLoader  = gpsLoader.SHAPEFILE;
-	private static boolean kUseMinimalNetwork = true;	///> true: restrict network to an area enveloping the track
+	private static boolean kUseMinimalNetwork = true;	///< true: restrict network to an area enveloping the track
 	
-	private static int kGPSTrackID = 12158;		///> database ID of GPS track to match
+	private static int kGPSTrackID = 12158;		///< database ID of GPS track to match
 	
-	public final double kCoordEps = 1.e-6;		///> tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+	public final double kCoordEps = 1.e-6;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
 
 	// even bigger network and route:
 //	private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
@@ -92,10 +91,10 @@ public class JMapMatcher {
 //	private static String kGraphDataFileName = "testdata/Sparse_bigger0.shp";
 //	private static String kGPSPointFileName = "testdata/GPS_Points_1.shp";
 	
-	private PathSegmentGraph graph = null;	///> data basis (graph)
-	private GPSTrack gpsPoints;		///> the path to match (GPS points)
-	private RFParams rfParams = null;		///> parameters for the route finding algorithm
-	private JMMConfig cfg = new JMMConfig(kCfgFileName);	///> parameters for the MapMatching controller
+	private PathSegmentGraph graph = null;	///< data basis (graph)
+	private GPSTrack gpsPoints;		///< the path to match (GPS points)
+	private RFParams rfParams = null;		///< parameters for the route finding algorithm
+	private JMMConfig cfg = new JMMConfig(kCfgFileName);	///< parameters for the MapMatching controller
 	
 	private int sourcerouteID = 0;
 	
@@ -104,7 +103,7 @@ public class JMapMatcher {
 	static Logger logger = Logger.getLogger("JMapMatcher");
 
 	/**
-	 * default constructor: initialization with an empty graph (graph must then be be created later on)
+	 * Default constructor: initialization with an empty graph (graph must then be be created later on)
 	 */
 	public JMapMatcher() {
 		this.graph = null;
@@ -119,14 +118,14 @@ public class JMapMatcher {
 	}
 
 	/**
-	 * delete the currently loaded graph (by setting it to null)
+	 * Deletes the currently loaded graph in order to free memory and start matching a new track (by setting it to null)
 	 */
 	public void clearGraph() {
 		this. graph = null;
 	}
 	
 	/**
-	 * loads GPS data from a file, then invokes the actual matching
+	 * Loads GPS data from a file, then invokes the actual matching
 	 * @throws IOException
 	 */
 	public void match(String fileName) throws IOException {
@@ -135,7 +134,7 @@ public class JMapMatcher {
 	}	
 	
 	/**
-	 * load GPS data (points) from a file
+	 * Loads GPS data (points) from a file
 	 * @param fileName shapefile containing the GPS data points 
 	 * @throws IOException
 	 */
@@ -146,8 +145,8 @@ public class JMapMatcher {
 	}
 	
 	/**
-	 * starts the map matching using GPS data from the database
-	 * @param source_id source_id of the sourcepoints (GPS route)
+	 * Starts the map matching using GPS data from the database
+	 * @param sourceroute_id database ID of the sourcepoints (GPS route)
 	 */
 	public void match(int sourceroute_id)  {
 		gpsPoints = new GPSTrack(sourceroute_id);
@@ -160,7 +159,7 @@ public class JMapMatcher {
 	}
 
 	/**
-	 * controls the map matching algorithm (assumes GPS data and graph data have been loaded before);
+	 * Controls the map matching algorithm (assumes GPS data and graph data have been loaded before);
 	 * if no graph has been loaded yet, a new graph enveloping the GPS track is read from the database
 	 * @throws IOException
 	 */
@@ -180,11 +179,10 @@ public class JMapMatcher {
 		RouteFinder rf = new RouteFinder(graph, initConstraints());	// perform the actual route finding procedure on the PathSegmentGraph
 		rf.calculateNearest();	// calculate nearest edges to all data points (needed for edges statistics)
 		// Prepare the evaluation (assigning score to labels):
-		@SuppressWarnings("unused")
 		EdgeStatistics eStat = new EdgeStatistics(rf, gpsPoints);
 		double t_2 = timer.getRunTime(true);
 
-		ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsPoints.getTrackLength());	///> list containing all routes that were found (still unsorted)
+		ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsPoints.getTrackLength());	///< list containing all routes that were found (still unsorted)
 
 		double t_1 = timer.getRunTime(true, "++ Routefinding finished");
 		double t_3 = 0;
@@ -197,7 +195,7 @@ public class JMapMatcher {
 			t_2 += timer.getRunTime(true, "++ Edge statistics created");
 			Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
 	
-			int nOK = saveData(labels, fromNode, toNode);
+			int nOK = saveData(labels, fromNode, toNode, eStat);
 			
 			t_3 = timer.getRunTime(true, "++ " + nOK + " routes stored");
 			logger.info("++ findRoutes: " + t_1 + "s");
@@ -207,13 +205,14 @@ public class JMapMatcher {
 	}
 	
 	/**
-	 * save the results of the map matching, either to shapefiles (deprecated) or to a database (via Hibernate) 
+	 * Saves the results of the map matching, either to shapefiles (deprecated) or to a database (via Hibernate) 
 	 * @param labels list of result routes (all labels)
 	 * @param fromNode start node of the routes (origin)
 	 * @param toNode end node of the routes (destination)
+	 * @param eStat statistics object, required for writing track metadata
 	 * @return the number of results that have been saved 
 	 */
-	private int saveData(ArrayList<Label> labels, Node fromNode, Node toNode) {
+	private int saveData(ArrayList<Label> labels, Node fromNode, Node toNode, EdgeStatistics eStat) {
 		Iterator<Label> it = labels.iterator();
 		
 		String outFileName = "";
@@ -246,6 +245,9 @@ public class JMapMatcher {
 			metaData.setMinDistPt((float)gpsPoints.getMinDist());
 			metaData.setnPoints(gpsPoints.size());
 			metaData.setTrackLength((float)gpsPoints.getTrackLength());
+			metaData.setDistPEavg((float)eStat.getDistPEAvg());
+			metaData.setDistPEavg5((float)eStat.getDistPE5());
+			metaData.setDistPEavg95((float)eStat.getDistPE95());
 			session = HibernateUtil.getSessionFactory().getCurrentSession();
 			session.beginTransaction();
 			session.save(metaData);
@@ -290,6 +292,15 @@ public class JMapMatcher {
 		return nOK;
 	}
 	
+	/**
+	 * Writes the data of one label to the database (route data, node choice data)
+	 * @param label
+	 * @param isChoice true if the label is the selected one
+	 * @param respondentID ID of the respondent
+	 * @param fromNode origin O
+	 * @param toNode destination D
+	 * @return true if no error occurred during writing the data
+	 */
 	private boolean writeLabelToDatabase(Label label, boolean isChoice, int respondentID, Node fromNode, Node toNode) {
 		boolean ok = false;
 		
@@ -310,7 +321,6 @@ public class JMapMatcher {
 		// get node list to create the lineString representing the route:
 		Coordinate[] coordinates = label.getCoordinates();
 		ok = (coordinates.length > 0);	// true if there were any points in the route
-		System.out.println(label.getScoreCount());
 		if (ok) try {
 			LineString lineString = fact.createLineString(coordinates);
 			route.setGeometry(lineString);
@@ -325,10 +335,13 @@ public class JMapMatcher {
 			route.setNoMatchLengthR(label.getNoMatchLength() / lld);	// non-matched length / total length
 			route.setMatchScore(label.getScore() * lld);	// the final match score is multiplied by label.length, so that we have:
 				// matchScore = sum_over_all_edges ( edge_points / (edge_length / track_length) )
-			//route.setdistPEavg...
 			
-			route.setnLeftTurns((short)label.getLeftTurns());
-			route.setnRightTurns((short)label.getRightTurns());
+			route.setnLeftTurnsF((short)label.getLeftTurnsF());
+			route.setnRightTurnsF((short)label.getRightTurnsF());
+			route.setnLeftTurnsB((short)label.getLeftTurnsB());
+			route.setnRightTurnsB((short)label.getRightTurnsB());
+			route.setStraightness((float)label.getStraightness());
+			
 			route.setnTrafficLights((short)label.getnTrafficLights());
 			float[] envAttr = label.getEnvAttr();
 			route.setEnvAttr00(envAttr[0]/lld);
@@ -397,7 +410,7 @@ public class JMapMatcher {
 					@SuppressWarnings("unchecked")
 					List<DirectedEdge> outEdges = node.getOutEdges().getEdges();
 					for (DirectedEdge oe : outEdges) {
-						if (lastEdge != null && oe != lastEdge) {	// don't use the backEdge!
+						if (oe != lastEdge) {	// don't use the backEdge!	// if (lastEdge != null && 
 							@SuppressWarnings("unchecked")
 							HashMap<String, Object> ed2 = (HashMap<String, Object>) oe.getEdge().getData();
 							choice.setSelected(oe == e);
@@ -405,6 +418,7 @@ public class JMapMatcher {
 							choice.setEnvType((Short)ed2.get("et"));
 							choice.setCykType((Short)ed2.get("ct"));
 							choice.setAngleToDest((float)(Math.toDegrees(oe.getAngle() - angle_direct)));	// store value in degrees
+							choice.setAngle(lastEdge != null ? (float)Math.toDegrees(oe.getAngle() - lastEdge.getAngle()) : 0);	// angle between edges at node
 	
 							session.save(choice.clone());	// save 1 choice/nonchoice for each outEdge!
 						}
@@ -427,37 +441,21 @@ public class JMapMatcher {
 	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
 		return new PathSegmentGraph(track, (float)initConstraints().getDouble(RFParams.Type.NetworkBufferSize));
 	}
-	
-//	/**
-//	 * calculate the Euclidian path length as sum of the Euclidian distances between subsequent measurement points
-//	 * @return the path length along the GPS points
-//	 */
-//	public double calcGPSPathLength() {
-//		double l = 0;
-//		Point p0 = null;
-//		for (Point p : gpsPoints) {
-//			if (p0 != null) {
-//				l += p.distance(p0);
-//			}
-//			p0 = p;
-//		}
-//		return l;
-//	}
 
 	private RFParams initConstraints() {
 		// initialize constraint fields:
 		rfParams = new RFParams();
 
 		// initialize with hardwired default values:
-		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 2000);	///> maximum number of routes to find (or 0 for infinite)
+		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 2000);	///< maximum number of routes to find (or 0 for infinite)
 		rfParams.setInt(RFParams.Type.BridgeOverlap, 1);
-		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);		///> how often each edge may be used
+		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);				///< how often each edge may be used
 		//rfParams.setInt(RFParams.Type.ArticulationPointOverlap, 2);
-		rfParams.setInt(RFParams.Type.NodeOverlap, 1);		///> how often each single node may be crossed
-		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);		///> how much the route may deviate from the shortest possible
-		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///> minimum route length
-		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///> maximum route length (quasi no limit here)
-		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///> buffer size in meters (!)
+		rfParams.setInt(RFParams.Type.NodeOverlap, 1);				///< how often each single node may be crossed
+		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);		///< how much the route may deviate from the shortest possible
+		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///< minimum route length
+		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
+		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
 		
 		// read config file, eventually overwriting existing values:
 		int r = rfParams.readFromFile(kCfgFileName);

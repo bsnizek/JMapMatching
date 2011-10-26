@@ -29,17 +29,24 @@ import org.apache.log4j.Logger;
 import org.ini4j.Ini;
 import org.ini4j.InvalidFileFormatException;
 
+/**
+ * Container for the configuration parameters of the routefinding algorithm;
+ * includes methods for reading the parameters from an ini-file. 
+ * @author Bernhard Barkow
+ * @see org.life.sl.mapmatching.JMMConfig
+ * @see <a href="https://github.com/bsnizek/JMapMatching/wiki/JMapMatcherIniFile">JMapMatcherIniFile in the Wiki</a>
+ */
 public class RFParams {
 	public enum Type {
-		NodeOverlap,	///> maximum number of overlaps in a node for a valid route
-		ArticulationPointOverlap,	///> Maximum number of overlaps in an articulation point for a valid route
-		EdgeOverlap,	///> maximum number of overlaps in an edge for a valid route
-		BridgeOverlap,	///> maximum number of overlaps in a bridge for a valid route
-		MinimumLength,	///> minimum length of a valid route; length is defined as the sum of weights over edges in the route 
-		MaximumLength,	///> maximum length of a valid route; length is defined as the sum of weights over edges in the route 
-		MaximumNumberOfRoutes,	///> if this number of routes have been found, the algorithm should terminate
-		DistanceFactor,	///> this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
-		NetworkBufferSize,	///> size of the buffer around the track, when selecting a network section, in meters(!)
+		NodeOverlap,	///< maximum number of overlaps in a node for a valid route
+		ArticulationPointOverlap,	///< Maximum number of overlaps in an articulation point for a valid route
+		EdgeOverlap,	///< maximum number of overlaps in an edge for a valid route
+		BridgeOverlap,	///< maximum number of overlaps in a bridge for a valid route
+		MinimumLength,	///< minimum length of a valid route; length is defined as the sum of weights over edges in the route 
+		MaximumLength,	///< maximum length of a valid route; length is defined as the sum of weights over edges in the route 
+		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
+		DistanceFactor,			///< this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
+		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
 	}
 
 	// collection of integer constraints, i.e. overlap constraints
@@ -48,7 +55,7 @@ public class RFParams {
 	private HashMap<Type, Double> c_double = null;
 
 	/** 
-	 * default constructor
+	 * Default constructor
 	 */
 	public RFParams() {
 		// allocate HashMaps:
@@ -57,7 +64,7 @@ public class RFParams {
 	}
 
 	/**
-	 * constructor with initialization from integer and double HashMaps
+	 * Constructor with initialization from integer and double HashMaps
 	 * @param ic HashMap containing integer constraints (or null)
 	 * @param dc HashMap containing double constraints (or null)
 	 */
@@ -67,7 +74,7 @@ public class RFParams {
 	}
 
 	/**
-	 * add a bunch of constraints from HashMap arguments
+	 * Adds a bunch of constraints from HashMap arguments
 	 * @param ic HashMap containing integer constraints (or null)
 	 * @param dc HashMap containing double constraints (or null)
 	 */
@@ -81,7 +88,7 @@ public class RFParams {
 	}
 
 	/**
-	 * Set an integer constraint in the class-wide constraint object
+	 * Sets an integer constraint in the class-wide constraint object
 	 * @param type	the constraint key
 	 * @param value	the value for this constraint
 	 */
@@ -90,7 +97,7 @@ public class RFParams {
 	}
 
 	/**
-	 * Set a double (float) constraint in the class-wide constraint object
+	 * Sets a double (float) constraint in the class-wide constraint object
 	 * @param type	the constraint key
 	 * @param value	the value for this constraint
 	 */
@@ -99,7 +106,7 @@ public class RFParams {
 	}
 
 	/**
-	 * Set a constraint value; variant: integer value
+	 * Sets a constraint value; variant: integer value
 	 * @param type	the constraint key
 	 * @param value	the value for this constraint
 	 */
@@ -108,7 +115,7 @@ public class RFParams {
 	}
 
 	/**
-	 * Set a constraint value; variant: double value
+	 * Sets a constraint value; variant: double value
 	 * @param type	the constraint key
 	 * @param value	the value for this constraint
 	 */
@@ -117,7 +124,7 @@ public class RFParams {
 	}
 
 	/**
-	 * Get the value of an integer constraint
+	 * Gets the value of an integer constraint
 	 * @param type the constraint key
 	 * @return The value of the constraint.
 	 */
@@ -126,7 +133,7 @@ public class RFParams {
 	}
 
 	/**
-	 * Get the value of a double (float) constraint
+	 * Gets the value of a double (float) constraint
 	 * @param type the constraint key
 	 * @return The value of the constraint.
 	 */
@@ -136,7 +143,7 @@ public class RFParams {
 	}
 	
 	/**
-	 * read parameters from a given ini-File (Win-Ini format)
+	 * Reads parameters from a given ini-File (Win-Ini format)
 	 * @param iniFileName name of the configuration file 
 	 * @return number of parameters read from the file; -1 if the file could not be opened
 	 */
@@ -166,11 +173,11 @@ public class RFParams {
 	}
 	
 	/**
-	 * from a given Map, read an integer value and store it in the Integer Hashmap
+	 * Reads an integer value from a given Map and stores it in the Integer Hashmap
 	 * @param iniMap the map containing keys and values
 	 * @param mapKey key to look for in the map
 	 * @param parKey parameter key (enum) to store the value
-	 * @return
+	 * @return true if the map contained the key (and thus the value could be stored)
 	 */
 	private boolean map2Int(Map<String, String> iniMap, String mapKey, Type parKey) {
 		boolean ok = iniMap.containsKey(mapKey); 
@@ -178,12 +185,12 @@ public class RFParams {
 		return ok;
 	}
 	/**
-	 * from a given Map, read a floating point value and store it in the Double Hashmap
-	 * @see map2Int
+	 * Reads a floating point value from a given Map and stores it in the Double Hashmap
 	 * @param iniMap the map containing keys and values
 	 * @param mapKey key to look for in the map
 	 * @param parKey parameter key (enum) to store the value
-	 * @return
+	 * @return true if the map contained the key (and thus the value could be stored)
+	 * @see #map2Int
 	 */
 	private boolean map2Double(Map<String, String> iniMap, String mapKey, Type parKey) {
 		boolean ok = iniMap.containsKey(mapKey); 

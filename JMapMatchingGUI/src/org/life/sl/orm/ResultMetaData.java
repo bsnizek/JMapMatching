@@ -1,5 +1,10 @@
 package org.life.sl.orm;
 
+/**
+ * ORM for track metadata (1 record per track)
+ * @author Bernhard Barkow
+ *
+ */
 public class ResultMetaData {
 
 	private int id;
@@ -9,6 +14,7 @@ public class ResultMetaData {
 	private float avgDistPt;	///> statistics: average distance between GPS points
 	private float minDistPt;	///> minimum distance between GPS points
 	private float maxDistPt;	///> maximum distance between GPS points (longest gap)
+	private float distPEavg, distPEavg5, distPEavg95;	///> distance between points and associated edges: average and 5% quantiles
 	private int nPoints;		///> number of points in the GPS track
 	private long nAlternatives;	///> number of alternatives that were evaluated
 	
@@ -18,6 +24,7 @@ public class ResultMetaData {
 	public void setId(int id) {
 		this.id = id;
 	}
+	
 	public int getSourceRouteID() {
 		return sourceRouteID;
 	}
@@ -30,6 +37,7 @@ public class ResultMetaData {
 	public void setRespondentID(int respondentID) {
 		this.respondentID = respondentID;
 	}
+	
 	public float getTrackLength() {
 		return trackLength;
 	}
@@ -42,6 +50,7 @@ public class ResultMetaData {
 	public void setnAlternatives(long nAlternatives) {
 		this.nAlternatives = nAlternatives;
 	}
+	
 	public float getAvgDistPt() {
 		return avgDistPt;
 	}
@@ -60,6 +69,25 @@ public class ResultMetaData {
 	public void setMaxDistPt(float maxDistPt) {
 		this.maxDistPt = maxDistPt;
 	}
+	public float getDistPEavg() {
+		return distPEavg;
+	}
+	public void setDistPEavg(float distPEavg) {
+		this.distPEavg = distPEavg;
+	}
+	public float getDistPEavg5() {
+		return distPEavg5;
+	}
+	public void setDistPEavg5(float distPEavg5) {
+		this.distPEavg5 = distPEavg5;
+	}
+	public float getDistPEavg95() {
+		return distPEavg95;
+	}
+	public void setDistPEavg95(float distPEavg95) {
+		this.distPEavg95 = distPEavg95;
+	}
+
 	public int getnPoints() {
 		return nPoints;
 	}

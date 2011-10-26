@@ -11,19 +11,21 @@ import org.life.sl.orm.SourcePoint;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Point;
 
+/**
+ * Class storing the GPS data of a measured track.
+ * Subclass of an ArrayList with additional functionality regarding the track.
+ * @author bb
+ *
+ */
 public class GPSTrack extends ArrayList<Point> {
 
-	private static final long serialVersionUID = 7848737559208241849L;	///> serial version ID required by descendance from ArrayList
+	private static final long serialVersionUID = 7848737559208241849L;	///< serial version ID required due to descendance from ArrayList (?)
 
 	private double trackLength;
 	private double avgDist = 0;
 	private double minDist = 0;
 	private double maxDist = 0;
-	private boolean isDirty = true;	///> indicates if data has been modified since last statistics calculation
-	
-	public GPSTrack() {
-		super();
-	}
+	private boolean isDirty = true;	///< indicates if data has been modified since last statistics calculation
 	
 	/**
 	 * Create a GPSTrack from an ArrayList of Points (e.g., when reading from a shapefile)

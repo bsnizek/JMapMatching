@@ -59,7 +59,7 @@ import com.vividsolutions.jts.planargraph.Node;
  */
 public class Label implements Comparable<Label> {
 
-	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///> limits determining when a change in angle is counted as a left/right turn, in radians
+	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(90), kTurnLimit2 = Math.toRadians(135);	///> limits determining when a change in angle is counted as a left/right (and front/back) turn, in radians
 	
 	/**
 	 * Comparator comparing only the last edge of two labels
@@ -89,7 +89,8 @@ public class Label implements Comparable<Label> {
 	private double angle = 0.;		///> angle relative to the global x-y coordinate system
 	private double angle_rel = 0.;	///> angle change relative to previous edge
 	private double angle_tot = 0.;	///> sum of all angle changes
-	private short nLeftTurns = 0, nRightTurns = 0;
+	private short nLeftTurnsF = 0, nLeftTurnsB = 0;
+	private short nRightTurnsF = 0, nRightTurnsB = 0;
 	
 	private short nTrafficLights = 0;	///> number of traffic lights encountered on the route
 	private float[] envAttr;		///> total length of edges with various environmental attributes [0,1...8]
@@ -119,10 +120,21 @@ public class Label implements Comparable<Label> {
 			angle = backEdge.getAngle();	// absolute angle of backEdge
 			angle_rel = angle - parent.getAngle();
 			angle_tot = parent.getTotalAngle() + Math.abs(angle_rel);
+
 			// is it a turn?
-			boolean bTurn = (Math.abs(angle_rel) > kTurnLimit0 && Math.abs(angle_rel) < kTurnLimit1); 
-			nLeftTurns = (short)(parent.getLeftTurns() + (bTurn && angle_rel > 0 ? 1 : 0));
-			nRightTurns = (short)(parent.getLeftTurns() + (bTurn && angle_rel < 0 ? 1 : 0));
+			nLeftTurnsF = (short)parent.getLeftTurnsF();
+			nLeftTurnsB = (short)parent.getLeftTurnsB();
+			nRightTurnsF = (short)parent.getRightTurnsF();
+			nRightTurnsB = (short)parent.getRightTurnsB();
+			if (Math.abs(angle_rel) > kTurnLimit0) {
+				if (Math.abs(angle_rel) <= kTurnLimit1) {	// [kTurnLimit0, kTurnLimit1]: forward turn (straight on)
+					if (angle_rel > 0) nLeftTurnsF++;
+					if (angle_rel < 0) nRightTurnsF++;
+				} else if (Math.abs(angle_rel) > kTurnLimit2) {	// [kTurnLimit1, kTurnLimit2]: backward turn (U-turn)
+					if (angle_rel > 0) nLeftTurnsB++;
+					if (angle_rel < 0) nRightTurnsB++;
+				}
+			}
 		}
 	}
 
@@ -224,18 +236,20 @@ public class Label implements Comparable<Label> {
 	/**
 	 * @return total angle divided by length, should be a measurement of straightness
 	 */
-	public double straightness() {
+	public double getStraightness() {
 		return angle_tot / length;
 	}
 
 	/**
 	 * @return number of left turns performed along the route so far
 	 */
-	public short getLeftTurns() { return nLeftTurns; }
+	public short getLeftTurnsF() { return nLeftTurnsF; }
+	public short getLeftTurnsB() { return nLeftTurnsB; }
 	/**
 	 * @return number of right turns performed along the route so far
 	 */
-	public short getRightTurns() { return nRightTurns; }
+	public short getRightTurnsF() { return nRightTurnsF; }
+	public short getRightTurnsB() { return nRightTurnsB; }
 	/**
 	 * @return number of traffic lights crossed along the route so far
 	 */

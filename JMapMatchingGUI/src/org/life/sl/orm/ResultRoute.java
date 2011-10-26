@@ -22,6 +22,11 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 
 import com.vividsolutions.jts.geom.LineString;
 
+/**
+ * ORM for result route data (1 record per route)
+ * @author Bernhard Barkow
+ *
+ */
 public class ResultRoute {
 	
 	private int id;
@@ -38,10 +43,14 @@ public class ResultRoute {
 	private int nEdgesWOPts;
 	private float matchLengthR;
 	private float noMatchLengthR;
-	private float distPEavg, distPEavg5, distPEavg95;
 	private float matchScore;
-	private short nLeftTurns;
-	private short nRightTurns;
+
+	private short nLeftTurnsF;
+	private short nLeftTurnsB;
+	private short nRightTurnsF;
+	private short nRightTurnsB;
+	private float straightness;
+	
 	private short nTrafficLights;
 	//private float[] envAttr;
 	//private float[] cykAttr;
@@ -159,30 +168,6 @@ public class ResultRoute {
 		this.noMatchLengthR = (float)noMatchLengthR;
 	}
 
-	public float getDistPEavg() {
-		return distPEavg;
-	}
-
-	public void setDistPEavg(float distPEavg) {
-		this.distPEavg = distPEavg;
-	}
-
-	public float getDistPEavg5() {
-		return distPEavg5;
-	}
-
-	public void setDistPEavg5(float distPEavg5) {
-		this.distPEavg5 = distPEavg5;
-	}
-
-	public float getDistPEavg95() {
-		return distPEavg95;
-	}
-
-	public void setDistPEavg95(float distPEavg95) {
-		this.distPEavg95 = distPEavg95;
-	}
-
 	public float getMatchScore() {
 		return matchScore;
 	}
@@ -207,20 +192,41 @@ public class ResultRoute {
 		this.trackLengthR = trackLengthFracR;
 	}
 
-	public short getnLeftTurns() {
-		return nLeftTurns;
+	public void setGroenM(double groenM) {
+		this.groenM = (float)groenM;
 	}
 
-	public void setnLeftTurns(short nLeftTurns) {
-		this.nLeftTurns = nLeftTurns;
+	public short getnLeftTurnsF() {
+		return nLeftTurnsF;
+	}
+	public void setnLeftTurnsF(short nLeftTurnsF) {
+		this.nLeftTurnsF = nLeftTurnsF;
+	}
+	public short getnLeftTurnsB() {
+		return nLeftTurnsB;
+	}
+	public void setnLeftTurnsB(short nLeftTurnsB) {
+		this.nLeftTurnsB = nLeftTurnsB;
+	}
+	public short getnRightTurnsF() {
+		return nRightTurnsF;
+	}
+	public void setnRightTurnsF(short nRightTurnsF) {
+		this.nRightTurnsF = nRightTurnsF;
+	}
+	public short getnRightTurnsB() {
+		return nRightTurnsB;
+	}
+	public void setnRightTurnsB(short nRightTurnsB) {
+		this.nRightTurnsB = nRightTurnsB;
 	}
 
-	public short getnRightTurns() {
-		return nRightTurns;
+	public float getStraightness() {
+		return straightness;
 	}
 
-	public void setnRightTurns(short nRightTurns) {
-		this.nRightTurns = nRightTurns;
+	public void setStraightness(float straightness) {
+		this.straightness = straightness;
 	}
 
 	public short getnTrafficLights() {
@@ -291,9 +297,5 @@ public class ResultRoute {
 
 	public float getGroenM() {
 		return groenM;
-	}
-
-	public void setGroenM(double groenM) {
-		this.groenM = (float)groenM;
 	}
 }
