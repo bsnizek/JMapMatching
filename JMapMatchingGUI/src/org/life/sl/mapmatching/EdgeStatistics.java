@@ -73,7 +73,7 @@ public class EdgeStatistics {
 		for (Point p : gpsPoints) {
 			Edge e = rf.getNearestEdge(p);
 			addPoint(e);	// add the point to the associated edge (the edge nearest to each GPS data point)
-			if (e!=null) pointEdgeDist[i++] = p.distance(((LineMergeEdge)e).getLine().getBoundary());	// distance between point and nearest edge
+			if (e!=null) pointEdgeDist[i++] = p.distance(((LineMergeEdge)e).getLine());	// distance between point and nearest edge
 		}
 		initPEDistStat();
 	}
