@@ -43,10 +43,10 @@
 		<property type="float" name="noMatchLengthR"></property>
 		<property type="float" name="matchScore"></property>
 
-		<property type="short" name="nLeftTurnsF"></property>
-		<property type="short" name="nLeftTurnsB"></property>
-		<property type="short" name="nRightTurnsF"></property>
-		<property type="short" name="nRightTurnsB"></property>
+		<property type="short" name="nLeftTurns"></property>
+		<property type="short" name="nRightTurns"></property>
+		<property type="short" name="nFrontTurns"></property>
+		<property type="short" name="nBackTurns"></property>
 		<property type="float" name="straightness"></property>
 
 		<property type="short" name="nTrafficLights"></property>

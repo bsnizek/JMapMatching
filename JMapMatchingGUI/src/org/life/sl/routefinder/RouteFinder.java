@@ -34,6 +34,7 @@ import org.apache.log4j.Logger;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.routefinder.Label;
+import org.life.sl.routefinder.RFParams.Type;
 
 //import org.life.sl.shapefilereader.ShapeFileReader;
 
@@ -66,7 +67,7 @@ public class RouteFinder {
 		Shuffle,		///< shuffle labels before advancing in the iteration
 		BestFirst,		///< traverse label in reverse natural order (highest score first) - this should find the globally best route first
 		WorstFirst,		///< traverse label in natural order (highest score last)
-		BestLastEdge,	///< traverse label in reverse natural order, considering only the last edge
+		BestLastEdge;	///< traverse label in reverse natural order, considering only the last edge
 	}
 
 	private static boolean bShowProgress = true;	///< show a progress indicator while finding routes?
@@ -130,6 +131,7 @@ public class RouteFinder {
 		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///< minimum route length
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
+		rfParams.set(RFParams.Type.LabelTraversal, LabelTraversal.BestFirst.toString());		///< way of label traversal
 	}
 	
 	/**
@@ -181,6 +183,7 @@ public class RouteFinder {
 		ArrayList<Label> result = new ArrayList<Label>();
 		Stack<Label> stack = new Stack<Label>();
 
+		this.itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal));
 		// precalculate the minimum path length, for use as a constraint in label expansion:
 		maxPathLength = gpsPathLength * rfParams.getDouble(RFParams.Type.DistanceFactor);
 		// if there was a problem, use the given maximum length constraint:

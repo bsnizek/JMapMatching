@@ -20,6 +20,7 @@ public class JMMConfig {
 	public boolean bWriteChoices = true;
 	public boolean bWriteToShapefiles = false;
 	public boolean bWriteToDatabase = true;
+	public boolean bSelectRandomRoutes = true;
 	
 	public JMMConfig() {}
 	
@@ -46,6 +47,7 @@ public class JMMConfig {
 			if (iniMap.containsKey("WriteChoices")) bWriteChoices = Boolean.parseBoolean(iniMap.get("WriteChoices"));
 			if (iniMap.containsKey("WriteToShapefiles")) bWriteToShapefiles = Boolean.parseBoolean(iniMap.get("WriteToShapefiles"));
 			if (iniMap.containsKey("WriteToDatabase")) bWriteToDatabase = Boolean.parseBoolean(iniMap.get("WriteToDatabase"));
+			if (iniMap.containsKey("SelectRandomRoutes")) bSelectRandomRoutes = Boolean.parseBoolean(iniMap.get("SelectRandomRoutes"));
 		} catch (InvalidFileFormatException e) {
 			Logger.getRootLogger().error("Invalid file format");
 		} catch (IOException e) {

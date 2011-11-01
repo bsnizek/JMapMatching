@@ -14,9 +14,10 @@ public class ResultMetaData {
 	private float avgDistPt;	///> statistics: average distance between GPS points
 	private float minDistPt;	///> minimum distance between GPS points
 	private float maxDistPt;	///> maximum distance between GPS points (longest gap)
-	private float distPEavg, distPEavg5, distPEavg95;	///> distance between points and associated edges: average and 5% quantiles
+	private float distPEavg, distPEavg5, distPEavg50, distPEavg95;	///> distance between points and associated edges: average and 5% quantiles
 	private int nPoints;		///> number of points in the GPS track
 	private long nAlternatives;	///> number of alternatives that were evaluated
+	private float maxDistanceFactor;	///< route length <= track length * maxDistanceFactor
 	
 	public int getId() {
 		return id;
@@ -51,6 +52,12 @@ public class ResultMetaData {
 		this.nAlternatives = nAlternatives;
 	}
 	
+	public float getMaxDistanceFactor() {
+		return maxDistanceFactor;
+	}
+	public void setMaxDistanceFactor(float maxDistanceFactor) {
+		this.maxDistanceFactor = maxDistanceFactor;
+	}
 	public float getAvgDistPt() {
 		return avgDistPt;
 	}
@@ -80,6 +87,12 @@ public class ResultMetaData {
 	}
 	public void setDistPEavg5(float distPEavg5) {
 		this.distPEavg5 = distPEavg5;
+	}
+	public float getDistPEavg50() {
+		return distPEavg50;
+	}
+	public void setDistPEavg50(float distPEavg50) {
+		this.distPEavg50 = distPEavg50;
 	}
 	public float getDistPEavg95() {
 		return distPEavg95;

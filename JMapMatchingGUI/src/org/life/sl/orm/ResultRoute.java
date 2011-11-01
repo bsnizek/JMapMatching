@@ -45,10 +45,10 @@ public class ResultRoute {
 	private float noMatchLengthR;
 	private float matchScore;
 
-	private short nLeftTurnsF;
-	private short nLeftTurnsB;
-	private short nRightTurnsF;
-	private short nRightTurnsB;
+	private short nLeftTurns;
+	private short nRightTurns;
+	private short nFrontTurns;
+	private short nBackTurns;
 	private float straightness;
 	
 	private short nTrafficLights;
@@ -196,29 +196,33 @@ public class ResultRoute {
 		this.groenM = (float)groenM;
 	}
 
-	public short getnLeftTurnsF() {
-		return nLeftTurnsF;
+	public short getnLeftTurns() {
+		return nLeftTurns;
 	}
-	public void setnLeftTurnsF(short nLeftTurnsF) {
-		this.nLeftTurnsF = nLeftTurnsF;
+	public void setnLeftTurns(short nLeftTurns) {
+		this.nLeftTurns = nLeftTurns;
 	}
-	public short getnLeftTurnsB() {
-		return nLeftTurnsB;
+	public short getnRightTurns() {
+		return nRightTurns;
 	}
-	public void setnLeftTurnsB(short nLeftTurnsB) {
-		this.nLeftTurnsB = nLeftTurnsB;
+	public void setnRightTurns(short nRightTurns) {
+		this.nRightTurns = nRightTurns;
 	}
-	public short getnRightTurnsF() {
-		return nRightTurnsF;
+
+	public short getnFrontTurns() {
+		return nFrontTurns;
 	}
-	public void setnRightTurnsF(short nRightTurnsF) {
-		this.nRightTurnsF = nRightTurnsF;
+
+	public void setnFrontTurns(short nFrontTurns) {
+		this.nFrontTurns = nFrontTurns;
 	}
-	public short getnRightTurnsB() {
-		return nRightTurnsB;
+
+	public short getnBackTurns() {
+		return nBackTurns;
 	}
-	public void setnRightTurnsB(short nRightTurnsB) {
-		this.nRightTurnsB = nRightTurnsB;
+
+	public void setnBackTurns(short nBackTurns) {
+		this.nBackTurns = nBackTurns;
 	}
 
 	public float getStraightness() {

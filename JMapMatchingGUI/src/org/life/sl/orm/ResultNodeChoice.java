@@ -46,7 +46,7 @@ public class ResultNodeChoice {
 	public ResultNodeChoice(int routeID, int sourceRouteID, int respondentID) {
 		this.routeID = routeID;
 		this.sourceRouteID = sourceRouteID;
-		this.setRespondentID(respondentID);
+		this.respondentID = respondentID;
 	}
 
 	/**
@@ -57,11 +57,13 @@ public class ResultNodeChoice {
 		this.id = rnc.id;
 		this.routeID = rnc.routeID;
 		this.sourceRouteID = rnc.sourceRouteID;
+		this.respondentID = rnc.respondentID;
 		this.i = rnc.i;
 		this.edgeID = rnc.edgeID;
 		this.nodeID = rnc.nodeID;
 		this.selected = rnc.selected;
 		this.dist = rnc.dist;
+		this.angle = rnc.angle;
 		this.angleToDest = rnc.angleToDest;
 		this.envType = rnc.envType;
 		this.cykType = rnc.cykType;

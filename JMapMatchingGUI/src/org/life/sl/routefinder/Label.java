@@ -43,6 +43,7 @@ import org.geotools.feature.SchemaException;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.life.sl.mapmatching.EdgeStatistics;
+import org.life.sl.utils.MathUtil;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
@@ -59,7 +60,7 @@ import com.vividsolutions.jts.planargraph.Node;
  */
 public class Label implements Comparable<Label> {
 
-	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(90), kTurnLimit2 = Math.toRadians(135);	///> limits determining when a change in angle is counted as a left/right (and front/back) turn, in radians
+	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///> limits determining when a change in angle is counted as a left/right/front/back turn, in radians
 	
 	/**
 	 * Comparator comparing only the last edge of two labels
@@ -89,8 +90,8 @@ public class Label implements Comparable<Label> {
 	private double angle = 0.;		///> angle relative to the global x-y coordinate system
 	private double angle_rel = 0.;	///> angle change relative to previous edge
 	private double angle_tot = 0.;	///> sum of all angle changes
-	private short nLeftTurnsF = 0, nLeftTurnsB = 0;
-	private short nRightTurnsF = 0, nRightTurnsB = 0;
+	private short nLeftTurns = 0, nRightTurns = 0;
+	private short nFrontTurns = 0, nBackTurns = 0;
 	
 	private short nTrafficLights = 0;	///> number of traffic lights encountered on the route
 	private float[] envAttr;		///> total length of edges with various environmental attributes [0,1...8]
@@ -117,24 +118,24 @@ public class Label implements Comparable<Label> {
 		this.treeLevel = parent.getTreeLevel() + 1;
 		
 		if (parent != null) {
-			angle = backEdge.getAngle();	// absolute angle of backEdge
-			angle_rel = angle - parent.getAngle();
-			angle_tot = parent.getTotalAngle() + Math.abs(angle_rel);
+			angle = MathUtil.mapAngle_radians(backEdge.getAngle());	// absolute angle of backEdge
+			angle_rel = MathUtil.mapAngle_radians(angle - parent.getAngle());
+			double aa = Math.abs(angle_rel);
+			angle_tot = parent.getTotalAngle() + aa;
 
 			// is it a turn?
-			nLeftTurnsF = (short)parent.getLeftTurnsF();
-			nLeftTurnsB = (short)parent.getLeftTurnsB();
-			nRightTurnsF = (short)parent.getRightTurnsF();
-			nRightTurnsB = (short)parent.getRightTurnsB();
-			if (Math.abs(angle_rel) > kTurnLimit0) {
-				if (Math.abs(angle_rel) <= kTurnLimit1) {	// [kTurnLimit0, kTurnLimit1]: forward turn (straight on)
-					if (angle_rel > 0) nLeftTurnsF++;
-					if (angle_rel < 0) nRightTurnsF++;
-				} else if (Math.abs(angle_rel) > kTurnLimit2) {	// [kTurnLimit1, kTurnLimit2]: backward turn (U-turn)
-					if (angle_rel > 0) nLeftTurnsB++;
-					if (angle_rel < 0) nRightTurnsB++;
+			nLeftTurns = (short)parent.getLeftTurns();
+			nRightTurns = (short)parent.getLeftTurns();
+			nFrontTurns = (short)parent.getFrontTurns();
+			nBackTurns = (short)parent.getBackTurns();
+			if (aa > kTurnLimit0) {
+				if (aa < kTurnLimit1) {	// [kTurnLimit0, kTurnLimit1]: left/right turn
+					if (angle_rel > 0) nLeftTurns++;
+					if (angle_rel < 0) nRightTurns++;
+				} else  {	// [kTurnLimit1, pi]: backward turn (U-turn)
+					nBackTurns++;
 				}
-			}
+			} else nFrontTurns++;	// [0, kTurnLimit0]: forward turn (straight on)
 		}
 	}
 
@@ -243,13 +244,13 @@ public class Label implements Comparable<Label> {
 	/**
 	 * @return number of left turns performed along the route so far
 	 */
-	public short getLeftTurnsF() { return nLeftTurnsF; }
-	public short getLeftTurnsB() { return nLeftTurnsB; }
+	public short getLeftTurns() { return nLeftTurns; }
 	/**
 	 * @return number of right turns performed along the route so far
 	 */
-	public short getRightTurnsF() { return nRightTurnsF; }
-	public short getRightTurnsB() { return nRightTurnsB; }
+	public short getRightTurns() { return nRightTurns; }
+	public short getFrontTurns() { return nFrontTurns; }
+	public short getBackTurns() { return nBackTurns; }
 	/**
 	 * @return number of traffic lights crossed along the route so far
 	 */

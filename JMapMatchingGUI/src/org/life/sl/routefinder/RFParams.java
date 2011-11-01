@@ -47,13 +47,18 @@ public class RFParams {
 		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
 		DistanceFactor,			///< this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
 		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
+		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
 	}
 
 	// collection of integer constraints, i.e. overlap constraints
 	private HashMap<Type, Integer> c_int = null;
 	// collection of double constraints, i.e. min/max length constraints
 	private HashMap<Type, Double> c_double = null;
+	// collection of double constraints, i.e. min/max length constraints
+	private HashMap<Type, String> c_str = null;
 
+	Map<String, String> iniMap = null;
+	
 	/** 
 	 * Default constructor
 	 */
@@ -61,6 +66,7 @@ public class RFParams {
 		// allocate HashMaps:
 		c_int = new HashMap<Type, Integer>();
 		c_double = new HashMap<Type, Double>();
+		c_str = new HashMap<Type, String>();
 	}
 
 	/**
@@ -124,6 +130,15 @@ public class RFParams {
 	}
 
 	/**
+	 * Sets a constraint value; variant: string value
+	 * @param type	the constraint key
+	 * @param value	the value for this constraint
+	 */
+	public void set(Type type, String value) {
+		c_str.put(type, value);
+	}
+
+	/**
 	 * Gets the value of an integer constraint
 	 * @param type the constraint key
 	 * @return The value of the constraint.
@@ -141,6 +156,15 @@ public class RFParams {
 		Double d = c_double.get(type);
 		return d;
 	}
+
+	/**
+	 * Gets the string value of a constraint as read from the ini file
+	 * @param type the constraint key
+	 * @return The value of the constraint.
+	 */
+	public String getString(Type type) {
+		return (String) iniMap.get(type.toString());
+	}
 	
 	/**
 	 * Reads parameters from a given ini-File (Win-Ini format)
@@ -152,7 +176,7 @@ public class RFParams {
 		int r = -1;	// default: no file found
 		try {
 			Ini ini = new Ini(new File(iniFileName));
-			Map<String, String> iniMap = ini.get("RouteFinder");
+			iniMap = ini.get("RouteFinder");
 			
 			r = 0;
 			if (map2Int(iniMap, "MaximumNumberOfRoutes", Type.MaximumNumberOfRoutes)) r++;
@@ -164,6 +188,7 @@ public class RFParams {
 			if (map2Double(iniMap, "MaximumLength", Type.MaximumLength)) r++;
 			if (map2Double(iniMap, "DistanceFactor", Type.DistanceFactor)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize", Type.NetworkBufferSize)) r++;
+			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
 		} catch (InvalidFileFormatException e) {
 			Logger.getRootLogger().error("Invalid file format");
 		} catch (IOException e) {
@@ -195,6 +220,19 @@ public class RFParams {
 	private boolean map2Double(Map<String, String> iniMap, String mapKey, Type parKey) {
 		boolean ok = iniMap.containsKey(mapKey); 
 		if (ok) setDouble(parKey, Double.parseDouble(iniMap.get(mapKey)));
+		return ok;
+	}
+	/**
+	 * Reads a floating point value from a given Map and stores it in the Double Hashmap
+	 * @param iniMap the map containing keys and values
+	 * @param mapKey key to look for in the map
+	 * @param parKey parameter key (enum) to store the value
+	 * @return true if the map contained the key (and thus the value could be stored)
+	 * @see #map2Int
+	 */
+	private boolean map2String(Map<String, String> iniMap, String mapKey, Type parKey) {
+		boolean ok = iniMap.containsKey(mapKey); 
+		if (ok) set(parKey, iniMap.get(mapKey));
 		return ok;
 	}
 }

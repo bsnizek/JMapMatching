@@ -46,6 +46,7 @@ import org.life.sl.readers.shapefile.PointFileReader;
 import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
+import org.life.sl.utils.MathUtil;
 import org.life.sl.utils.Timer;
 
 import com.vividsolutions.jts.geom.Coordinate;
@@ -164,6 +165,9 @@ public class JMapMatcher {
 	 * @throws IOException
 	 */
 	public void match() {
+		Timer timer = new Timer();
+		timer.init();	// initialize timer
+		
 		if (graph == null) {	// create a new graph enveloping the GPS track
 			graph = loadGraphFromDB(gpsPoints);
 		}
@@ -172,10 +176,8 @@ public class JMapMatcher {
 		// log coordinates:
 		logger.info("Origin:      " + fromNode.getCoordinate());
 		logger.info("Destination: " + toNode.getCoordinate());
+		double t_0 = timer.getRunTime(true, "++ graph loaded");
 
-		Timer timer = new Timer();
-		timer.init();	// initialize timer
-		
 		RouteFinder rf = new RouteFinder(graph, initConstraints());	// perform the actual route finding procedure on the PathSegmentGraph
 		rf.calculateNearest();	// calculate nearest edges to all data points (needed for edges statistics)
 		// Prepare the evaluation (assigning score to labels):
@@ -198,10 +200,11 @@ public class JMapMatcher {
 			int nOK = saveData(labels, fromNode, toNode, eStat);
 			
 			t_3 = timer.getRunTime(true, "++ " + nOK + " routes stored");
+			logger.info("++ load graph: " + t_0 + "s");
 			logger.info("++ findRoutes: " + t_1 + "s");
 			logger.info("++ saveRoutes: " + t_3 + "s");
 		}
-		logger.info("++ Total time: " + (t_1 + t_2 + t_3) + "s");
+		logger.info("++ Total time: " + (t_0 + t_1 + t_2 + t_3) + "s");
 	}
 	
 	/**
@@ -240,6 +243,7 @@ public class JMapMatcher {
 			metaData.setRespondentID(respondentID);
 	
 			metaData.setnAlternatives(labels.size());
+			metaData.setMaxDistanceFactor((float)rfParams.getDouble(RFParams.Type.DistanceFactor));
 			metaData.setAvgDistPt((float)gpsPoints.getAvgDist());
 			metaData.setMaxDistPt((float)gpsPoints.getMaxDist());
 			metaData.setMinDistPt((float)gpsPoints.getMinDist());
@@ -247,6 +251,7 @@ public class JMapMatcher {
 			metaData.setTrackLength((float)gpsPoints.getTrackLength());
 			metaData.setDistPEavg((float)eStat.getDistPEAvg());
 			metaData.setDistPEavg5((float)eStat.getDistPE5());
+			metaData.setDistPEavg50((float)eStat.getDistPE50());
 			metaData.setDistPEavg95((float)eStat.getDistPE95());
 			session = HibernateUtil.getSessionFactory().getCurrentSession();
 			session.beginTransaction();
@@ -336,13 +341,12 @@ public class JMapMatcher {
 			route.setMatchScore(label.getScore() * lld);	// the final match score is multiplied by label.length, so that we have:
 				// matchScore = sum_over_all_edges ( edge_points / (edge_length / track_length) )
 			
-			route.setnLeftTurnsF((short)label.getLeftTurnsF());
-			route.setnRightTurnsF((short)label.getRightTurnsF());
-			route.setnLeftTurnsB((short)label.getLeftTurnsB());
-			route.setnRightTurnsB((short)label.getRightTurnsB());
+			route.setnLeftTurns((short)label.getLeftTurns());
+			route.setnRightTurns((short)label.getRightTurns());
+			route.setnFrontTurns((short)label.getFrontTurns());
+			route.setnBackTurns((short)label.getBackTurns());
 			route.setStraightness((float)label.getStraightness());
 			
-			route.setnTrafficLights((short)label.getnTrafficLights());
 			float[] envAttr = label.getEnvAttr();
 			route.setEnvAttr00(envAttr[0]/lld);
 			route.setEnvAttr01(envAttr[1]/lld);
@@ -364,7 +368,10 @@ public class JMapMatcher {
 			route.setGroenM(label.getGroenM() / lld);
 			
 			session.save(route);
-			
+
+//			route.setnTrafficLights((short)getNumberOfTrafficLights(route.getId()));
+	//		session.save(route);
+
 			// create output for the choice experiment:
 			if (cfg.bWriteChoices && isChoice) {	// (this is required only for the chosen route)
 				ResultNodeChoice choice = new ResultNodeChoice(route.getId(), sourcerouteID, respondentID);
@@ -417,8 +424,8 @@ public class JMapMatcher {
 							choice.setEdgeID((Integer)ed2.get("id"));
 							choice.setEnvType((Short)ed2.get("et"));
 							choice.setCykType((Short)ed2.get("ct"));
-							choice.setAngleToDest((float)(Math.toDegrees(oe.getAngle() - angle_direct)));	// store value in degrees
-							choice.setAngle(lastEdge != null ? (float)Math.toDegrees(oe.getAngle() - lastEdge.getAngle()) : 0);	// angle between edges at node
+							choice.setAngleToDest((float)(MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - angle_direct))));	// store value in degrees
+							choice.setAngle(lastEdge != null ? (float)MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - lastEdge.getAngle())) : 0);	// angle between edges at node
 	
 							session.save(choice.clone());	// save 1 choice/nonchoice for each outEdge!
 						}
@@ -438,6 +445,14 @@ public class JMapMatcher {
 		return ok;
 	}
 	
+	public int getNumberOfTrafficLights(int routeID) {
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		String s = "select count(nodeID) from resultnodechoice inner join trafficlight on resultnodechoice.nodeID=trafficlight.nodeID where routeid="+routeID+" and selected";
+		Query res = session.createSQLQuery(s);
+		Integer n = (Integer)res.uniqueResult();
+		return (n == null ? 0 : n);
+	}
+
 	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
 		return new PathSegmentGraph(track, (float)initConstraints().getDouble(RFParams.Type.NetworkBufferSize));
 	}
@@ -501,7 +516,6 @@ public class JMapMatcher {
 			String query = "from SourceRoute";
 			if (args.length == 1) query += " WHERE id="+args[0];
 			if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
-			System.out.println(query);
 			result = session.createQuery(query);
 			@SuppressWarnings("unchecked")
 			Iterator<SourceRoute> iterator = result.iterate();
