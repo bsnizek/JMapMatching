@@ -175,6 +175,7 @@ public class RouteFinder {
 		// INITIALIZE
 		///////////////////////////////////////////////
 
+		System.gc();
 		this.startNode = startNode;
 		this.endNode = endNode;
 		this.gpsPathLength = gpsPathLength0;
@@ -233,7 +234,7 @@ public class RouteFinder {
 						//System.out.println("## " + result.size());
 						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
 						if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
-							System.out.println("Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
+							logger.info("Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
 							break stackLoop;
 						}
 					}
@@ -243,10 +244,18 @@ public class RouteFinder {
 				
 				if (bShowProgress) {	// some log output?
 					if (numLabels%50000 == 0) System.out.print(".");
-					if (numLabels%5000000 == 0) System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength) + " - " + expandingLabel.getTreeLevel() + " ## " + result.size());
+					if (numLabels%5000000 == 0) {
+						System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength) + " - " + expandingLabel.getTreeLevel() + " ## " + result.size());
+					}
+					long freeMem = Runtime.getRuntime().freeMemory();
+					if (numLabels%500000 == 0 && freeMem / (double)Runtime.getRuntime().maxMemory() < .1) {
+						System.gc();
+						System.out.println("Mem: " + freeMem/(1024*1024) + "MB / " + Runtime.getRuntime().freeMemory()/(1024*1024) + "MB");
+					}
 				}
-			} else {	// "Sackgasse" - this label is invalid
+			} else {	// "dead end" - this label is invalid
 				numDeadEnds++;
+				expandingLabel = null;
 			}
 		}
 		//if (result.isEmpty()) result.add(new Label(startNode));	// if nothing was found, return only the start node
@@ -262,7 +271,7 @@ public class RouteFinder {
 	 * @param label the label to check
 	 * @return true if the route is valid 
 	 */
-	private boolean isValidRoute(Label label) {	
+	private boolean isValidRoute(Label label) {
 		return (	
 			label.getNode() == endNode &&
 			label.getLength() >= rfParams.getDouble(RFParams.Type.MinimumLength) &&
@@ -290,7 +299,7 @@ public class RouteFinder {
 			DirectedEdge currentEdge = (DirectedEdge) obj;
 			// check if the current edge is identical to the parent node, where we just came from:
 			DirectedEdge pe = parentLabel.getBackEdge();
-			if (pe != null && currentEdge.getEdge() == pe.getEdge()) continue;	// going back the same edge where we come from is forbidden!
+			if (pe != null && currentEdge.getEdge() == pe.getEdge()) continue;	// going back the same edge where we come from is prohibited!
 
 			double lastEdgeLength = ((LineMergeEdge)currentEdge.getEdge()).getLine().getLength();	// length of new last edge
 			double length = parentLabel.getLength() + lastEdgeLength;	// new total length

@@ -73,10 +73,9 @@ public class JMapMatcher {
 	private static String kCfgFileName = "JMM.cfg";
 	private static String kOutputDir = "results/";
 	// input data:
-	//static gpsLoader GpsLoader  = gpsLoader.PGSQLDATABASE;
 	private static gpsLoader kGPSLoader    = gpsLoader.BULK_PGSQLDATABASE;
 	private static gpsLoader kGraphLoader  = gpsLoader.SHAPEFILE;
-	private static boolean kUseMinimalNetwork = true;	///< true: restrict network to an area enveloping the track
+	private static boolean kUseReducedNetwork = true;	///< true: restrict network to an area enveloping the track
 	
 	private static int kGPSTrackID = 12158;		///< database ID of GPS track to match
 	
@@ -493,7 +492,7 @@ public class JMapMatcher {
 		PathSegmentGraph g = null;
 		// Let us load the graph ...
 		if (kGraphLoader == gpsLoader.PGSQLDATABASE) {
-			if (!kUseMinimalNetwork) g = new PathSegmentGraph(1);	//... or delay the loading if kUseMinimalNetwork==true
+			if (!kUseReducedNetwork) g = new PathSegmentGraph(1);	//... or delay the loading if kUseReducedNetwork==true
 		} else if (kGraphLoader == gpsLoader.SHAPEFILE) {
 			g = new PathSegmentGraph(kGraphDataFileName);	// get network from a file
 		}

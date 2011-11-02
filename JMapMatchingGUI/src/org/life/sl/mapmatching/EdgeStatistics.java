@@ -39,7 +39,7 @@ public class EdgeStatistics {
 
 	double distPEAvg, distPE5, distPE50, distPE95;	///> average distance between points an associated edges, plus 5% qantiles
 	
-	HashMap<Edge, Integer> edgePoints = new HashMap<Edge, Integer>();	///> container counting the number of points associated with each edge
+	HashMap<Edge, Short> edgePoints = new HashMap<Edge, Short>();	///> container counting the number of points associated with each edge
 	private double pointEdgeDist[] = null;
 	
 	/**
@@ -109,7 +109,7 @@ public class EdgeStatistics {
 	 * @param e the edge to add
 	 */
 	public void addEdge(Edge e) {
-		edgePoints.put(e, 0);
+		edgePoints.put(e, (short)0);
 	}
 	
 	/**
@@ -119,8 +119,8 @@ public class EdgeStatistics {
 	 */
 	public void addPoint(Edge e) {
 		if (e != null) {
-			if (!edgePoints.containsKey(e)) edgePoints.put(e, 1);
-			else edgePoints.put(e, edgePoints.get(e) + 1);
+			if (!edgePoints.containsKey(e)) edgePoints.put(e, (short)1);
+			else edgePoints.put(e, (short)(edgePoints.get(e) + 1));
 		}
 	}
 	
@@ -128,7 +128,7 @@ public class EdgeStatistics {
 	 * @param e the edge whose number of associated points is requested
 	 * @return the edge/point-count (the number of points associated with an edge); if the edge does not yet exist in the statistics, 0 is returned
 	 */
-	public int getCount(Edge e) {
+	public short getCount(Edge e) {
 		return (edgePoints.containsKey(e) ? edgePoints.get(e) : 0 );
 	}
 }

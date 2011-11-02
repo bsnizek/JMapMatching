@@ -77,12 +77,12 @@ public class Label implements Comparable<Label> {
 	private Label parent;			///> The parent of the Label
 	private Node node;				///> The node associated with this Label
 	private DirectedEdge backEdge;	///> The GeoEdge leading back to the node associated with the parent Label
-	private int treeLevel = 0;		///> counter for the Label's level (depth) in the search tree
+	private short treeLevel = 0;		///> counter for the Label's level (depth) in the search tree
 	private double score = -1.;		///> the score of the label (evaluated according to edge statistics)
-	private int scoreCount = -1;	///> the unweighted score of the label (nearest points-count)
+	private short scoreCount = -1;	///> the unweighted score of the label (nearest points-count)
 	private double lastScore = 0.;	///> the same but considering only the last edge	
-	private int lastScoreCount = 0;
-	private int nEdgesWOPoints = 0;	///> number of edges on this route not containing any points of the GPS track
+	private short lastScoreCount = 0;
+	private short nEdgesWOPoints = 0;	///> number of edges on this route not containing any points of the GPS track
 	private double noMatchLength = 0;	///> (absolute) length of the route not matched to GPS points
 	
 	private double length = 0.;		///> if the label represents a route, this is the length of the route (sum of all backEdges)
@@ -115,7 +115,7 @@ public class Label implements Comparable<Label> {
 		this.backEdge = backEdge;
 		this.lastEdgeLength = lastEdgeLength;
 		this.length = length;
-		this.treeLevel = parent.getTreeLevel() + 1;
+		this.treeLevel = (short) (parent.getTreeLevel() + 1);
 		
 		if (parent != null) {
 			angle = MathUtil.mapAngle_radians(backEdge.getAngle());	// absolute angle of backEdge
@@ -224,7 +224,7 @@ public class Label implements Comparable<Label> {
 	/**
 	 * @return the Label's level (depth) in the search tree
 	 */
-	public int getTreeLevel() { return treeLevel; }
+	public short getTreeLevel() { return treeLevel; }
 	
 	/**
 	 * @return the angle change relative to the previous edge
@@ -277,13 +277,13 @@ public class Label implements Comparable<Label> {
 //			s += eStat.getCount(e.getEdge());
 //		}
 //		score = s/this.getLength();
-// the new version, doing it recursively:
+// the new version, doing this recursively:
 		score = 0.;
 		scoreCount = 0;
 		if (parent != null) {
 			//System.out.println((int)(parent.getScore(eStat) * parent.getLength()) + " - " + eStat.getCount(backEdge.getEdge()));
 			lastScoreCount = eStat.getCount(backEdge.getEdge());
-			scoreCount = parent.getScoreCount(eStat) + lastScoreCount;
+			scoreCount = (short) (parent.getScoreCount(eStat) + lastScoreCount);
 			lastScore = (double)lastScoreCount / lastEdgeLength;
 			//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
 			if (length > 0.) score = scoreCount / length;
@@ -329,21 +329,21 @@ public class Label implements Comparable<Label> {
 	 * @return the unweighted score of this label (nearest points-count), freshly calculated from the edge statistics, if necessary
 	 * @param eStat edge statistics
 	 */
-	public int getScoreCount(EdgeStatistics eStat) {
+	public short getScoreCount(EdgeStatistics eStat) {
 		if (scoreCount < 0) calcScore(eStat);
 		return scoreCount;
 	}
-	public int getScoreCount() {
+	public short getScoreCount() {
 		return scoreCount;
 	}
 	public double getLastScore() {
 		return lastScore;
 	}
-	public int getLastScoreCount() {
+	public short getLastScoreCount() {
 		return lastScoreCount;
 	}
 
-	public int getnEdgesWOPoints() {
+	public short getnEdgesWOPoints() {
 		return nEdgesWOPoints;
 	}
 
