@@ -19,6 +19,11 @@ public class ResultMetaData {
 	private long nAlternatives;	///> number of alternatives that were evaluated
 	private float maxDistanceFactor;	///< route length <= track length * maxDistanceFactor
 	
+	public ResultMetaData(int sourceRouteID, int respondentID) {
+		this.sourceRouteID = sourceRouteID;
+		this.respondentID = respondentID;
+	}
+	
 	public int getId() {
 		return id;
 	}

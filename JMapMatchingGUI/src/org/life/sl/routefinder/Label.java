@@ -43,7 +43,6 @@ import org.geotools.feature.SchemaException;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.life.sl.mapmatching.EdgeStatistics;
-import org.life.sl.utils.MathUtil;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
@@ -59,8 +58,6 @@ import com.vividsolutions.jts.planargraph.Node;
  *
  */
 public class Label implements Comparable<Label> {
-
-	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///> limits determining when a change in angle is counted as a left/right/front/back turn, in radians
 	
 	/**
 	 * Comparator comparing only the last edge of two labels
@@ -77,26 +74,12 @@ public class Label implements Comparable<Label> {
 	private Label parent;			///> The parent of the Label
 	private Node node;				///> The node associated with this Label
 	private DirectedEdge backEdge;	///> The GeoEdge leading back to the node associated with the parent Label
-	private short treeLevel = 0;		///> counter for the Label's level (depth) in the search tree
+	private double length = 0.;		///> if the label represents a route, this is the length of the route (sum of all backEdges)
+	private double lastEdgeLength = 0.;	///> length of last backEdge
 	private double score = -1.;		///> the score of the label (evaluated according to edge statistics)
 	private short scoreCount = -1;	///> the unweighted score of the label (nearest points-count)
 	private double lastScore = 0.;	///> the same but considering only the last edge	
 	private short lastScoreCount = 0;
-	private short nEdgesWOPoints = 0;	///> number of edges on this route not containing any points of the GPS track
-	private double noMatchLength = 0;	///> (absolute) length of the route not matched to GPS points
-	
-	private double length = 0.;		///> if the label represents a route, this is the length of the route (sum of all backEdges)
-	private double lastEdgeLength = 0.;	///> length of last backEdge
-	private double angle = 0.;		///> angle relative to the global x-y coordinate system
-	private double angle_rel = 0.;	///> angle change relative to previous edge
-	private double angle_tot = 0.;	///> sum of all angle changes
-	private short nLeftTurns = 0, nRightTurns = 0;
-	private short nFrontTurns = 0, nBackTurns = 0;
-	
-	private short nTrafficLights = 0;	///> number of traffic lights encountered on the route
-	private float[] envAttr;		///> total length of edges with various environmental attributes [0,1...8]
-	private float[] cykAttr;		///> total length of edges with various cycleway attributes [0...4]
-	private double groenM = 0.;		///> total length of green environment along the route (sum of edge.groenM)
 	
 	private List<Node> nodeList = null;
 	private List<DirectedEdge> edgeList = null;
@@ -115,28 +98,6 @@ public class Label implements Comparable<Label> {
 		this.backEdge = backEdge;
 		this.lastEdgeLength = lastEdgeLength;
 		this.length = length;
-		this.treeLevel = (short) (parent.getTreeLevel() + 1);
-		
-		if (parent != null) {
-			angle = MathUtil.mapAngle_radians(backEdge.getAngle());	// absolute angle of backEdge
-			angle_rel = MathUtil.mapAngle_radians(angle - parent.getAngle());
-			double aa = Math.abs(angle_rel);
-			angle_tot = parent.getTotalAngle() + aa;
-
-			// is it a turn?
-			nLeftTurns = (short)parent.getLeftTurns();
-			nRightTurns = (short)parent.getLeftTurns();
-			nFrontTurns = (short)parent.getFrontTurns();
-			nBackTurns = (short)parent.getBackTurns();
-			if (aa > kTurnLimit0) {
-				if (aa < kTurnLimit1) {	// [kTurnLimit0, kTurnLimit1]: left/right turn
-					if (angle_rel > 0) nLeftTurns++;
-					if (angle_rel < 0) nRightTurns++;
-				} else  {	// [kTurnLimit1, pi]: backward turn (U-turn)
-					nBackTurns++;
-				}
-			} else nFrontTurns++;	// [0, kTurnLimit0]: forward turn (straight on)
-		}
 	}
 
 	/**
@@ -222,46 +183,13 @@ public class Label implements Comparable<Label> {
 	}
 	
 	/**
-	 * @return the Label's level (depth) in the search tree
+	 * Convenience function: returns distance from the current to another node 
+	 * @param node1 the other node
+	 * @return Cartesian distance between current node and node1 
 	 */
-	public short getTreeLevel() { return treeLevel; }
-	
-	/**
-	 * @return the angle change relative to the previous edge
-	 */
-	public double getAngle() { return angle; }
-	/**
-	 * @return the total angle changes at all nodes along the route
-	 */
-	public double getTotalAngle() { return angle_tot; }
-	/**
-	 * @return total angle divided by length, should be a measurement of straightness
-	 */
-	public double getStraightness() {
-		return angle_tot / length;
+	public double getDistanceTo(Node node1) {
+		return node.getCoordinate().distance(node1.getCoordinate());
 	}
-
-	/**
-	 * @return number of left turns performed along the route so far
-	 */
-	public short getLeftTurns() { return nLeftTurns; }
-	/**
-	 * @return number of right turns performed along the route so far
-	 */
-	public short getRightTurns() { return nRightTurns; }
-	public short getFrontTurns() { return nFrontTurns; }
-	public short getBackTurns() { return nBackTurns; }
-	/**
-	 * @return number of traffic lights crossed along the route so far
-	 */
-	public short getnTrafficLights() { return nTrafficLights; }
-	/**
-	 * @return parameter for green environment
-	 */
-	public double getGroenM() { return groenM; }
-
-	public float[] getEnvAttr() { return envAttr; }
-	public float[] getCykAttr() { return cykAttr; }
 
 	/**
 	 * calculate the weighted and unweighted score of this label from the edge statistics;
@@ -270,44 +198,15 @@ public class Label implements Comparable<Label> {
 	 * @param eStat edge statistics
 	 */
 	public void calcScore(EdgeStatistics eStat) {
-// the old version, calculating the score explicitely
-//		double s = 0;
-//		List<DirectedEdge> edges = this.getRouteAsEdges();	
-//		for (DirectedEdge e : edges) {
-//			s += eStat.getCount(e.getEdge());
-//		}
-//		score = s/this.getLength();
-// the new version, doing this recursively:
+		// calculating the score recursively:
 		score = 0.;
 		scoreCount = 0;
 		if (parent != null) {
-			//System.out.println((int)(parent.getScore(eStat) * parent.getLength()) + " - " + eStat.getCount(backEdge.getEdge()));
 			lastScoreCount = eStat.getCount(backEdge.getEdge());
 			scoreCount = (short) (parent.getScoreCount(eStat) + lastScoreCount);
 			lastScore = (double)lastScoreCount / lastEdgeLength;
 			//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
 			if (length > 0.) score = scoreCount / length;
-			
-			nEdgesWOPoints = parent.getnEdgesWOPoints();
-			noMatchLength = parent.getNoMatchLength();
-			if (lastScoreCount == 0) {
-				nEdgesWOPoints++;
-				noMatchLength += lastEdgeLength;
-			}
-			
-			@SuppressWarnings("unchecked")
-			HashMap<String, Object> userdata = (HashMap<String, Object>) backEdge.getEdge().getData();	// the user data object of the Edge
-			envAttr = parent.envAttr.clone();	// clone!!
-			envAttr[(Short)userdata.get("et")] += lastEdgeLength;
-			cykAttr = parent.cykAttr.clone();	// clone!!
-			cykAttr[(Short)userdata.get("ct")] += lastEdgeLength;
-			groenM = parent.getGroenM() + (Double)userdata.get("gm");
-		} else {
-			// initialize attributes arrays:
-			envAttr = new float[9];
-			for (int i = 0; i < envAttr.length; i++) envAttr[i] = 0;
-			cykAttr = new float[5];
-			for (int i = 0; i < cykAttr.length; i++) cykAttr[i] = 0;
 		}
 	}
 	
@@ -342,13 +241,9 @@ public class Label implements Comparable<Label> {
 	public short getLastScoreCount() {
 		return lastScoreCount;
 	}
-
-	public short getnEdgesWOPoints() {
-		return nEdgesWOPoints;
-	}
-
-	public double getNoMatchLength() {
-		return noMatchLength;
+	
+	public double getLastEdgeLength() {
+		return this.lastEdgeLength;
 	}
 
 	/**
@@ -419,6 +314,22 @@ public class Label implements Comparable<Label> {
 		}
 		return nodeList;
 	}
+
+	/**
+	 * Create a list of all the Nodes along this route, starting with the origin;
+	 * for efficiency, this list is only compiled once and cached in nodeList.
+	 * @return a list of all the Nodes of this label starting with the origin 
+	 */
+	public List<Label> getLabels() {
+		ArrayList<Label> lblList = new ArrayList<Label>();
+		Label label = this;
+		while(label.getParent() != null) {
+			lblList.add(label);
+			label = label.getParent();
+		}
+		Collections.reverse(lblList);	// now, the first label is first in the list
+		return lblList;
+	}
 	
 	/**
 	 * @return an array of Coordinates of all nodes (sorted from start to end)
@@ -431,21 +342,6 @@ public class Label implements Comparable<Label> {
 			coordinates[i++] = curNode.getCoordinate();
 		}
 		return coordinates;
-	}
-
-	/**
-	 * @return an array of edge lengths (from first to last edge)
-	 */
-	public double[] getEdgeLengths() {
-		double[] lengths = new double[treeLevel];
-		int i = treeLevel;
-		Label label = this;
-		while(label.getParent() != null && i > 0) {	// topmost label: has no length
-			i--;
-			lengths[i] = label.lastEdgeLength;
-			label = label.getParent();
-		}
-		return lengths;
 	}
 
 	/**

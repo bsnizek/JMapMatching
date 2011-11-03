@@ -33,7 +33,7 @@
 		<property name="respondentID"></property>
 		<property type="boolean" name="selected"></property>
 		<property type="float" name="length"></property>
-		<property type="float" name="trackLengthR"></property>
+		<property type="float" name="lengthR"></property>
 
 		<property type="int" name="nEdges"></property>
 		<property type="int" name="nEdgesWOPts"></property>
@@ -47,7 +47,7 @@
 		<property type="short" name="nRightTurns"></property>
 		<property type="short" name="nFrontTurns"></property>
 		<property type="short" name="nBackTurns"></property>
-		<property type="float" name="straightness"></property>
+		<property type="float" name="curviness"></property>
 
 		<property type="short" name="nTrafficLights"></property>
 		<property name="envAttr00"></property>

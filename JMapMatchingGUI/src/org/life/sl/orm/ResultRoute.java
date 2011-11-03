@@ -20,7 +20,17 @@ You should have received a copy of the GNU General Public License along with
 this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+import java.util.HashMap;
+import java.util.List;
+
+import org.life.sl.mapmatching.EdgeStatistics;
+import org.life.sl.mapmatching.GPSTrack;
+import org.life.sl.routefinder.Label;
+import org.life.sl.utils.MathUtil;
+
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.planargraph.DirectedEdge;
+import com.vividsolutions.jts.planargraph.Node;
 
 /**
  * ORM for result route data (1 record per route)
@@ -28,32 +38,35 @@ import com.vividsolutions.jts.geom.LineString;
  *
  */
 public class ResultRoute {
+
+	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///< limits determining when a change in angle is counted as a left/right/front/back turn, in radians
 	
 	private int id;
 	private LineString geometry;
 	private boolean selected;
 	private float length;
-	private float trackLengthR;
+	private float trackLength;
+	private float lengthR;
 	private int sourceRouteID;
 	private int respondentID;
 	private long nAlternatives;
 	private float pPtsOn;
 	private float pPtsOff;
 	private int nEdges;
-	private int nEdgesWOPts;
+	private int nEdgesWOPts;		///< number of edges on this route not containing any points of the GPS track
 	private float matchLengthR;
-	private float noMatchLengthR;
+	private float noMatchLengthR;	///< (relative) length of the route not matched to GPS points
 	private float matchScore;
 
 	private short nLeftTurns;
 	private short nRightTurns;
 	private short nFrontTurns;
 	private short nBackTurns;
-	private float straightness;
+	private float curviness;
 	
 	private short nTrafficLights;
-	//private float[] envAttr;
-	//private float[] cykAttr;
+	private float[] envAttr;
+	private float[] cykAttr;
 	private float envAttr00;
 	private float envAttr01;
 	private float envAttr02;
@@ -71,7 +84,129 @@ public class ResultRoute {
 
 	private float groenM;
 	
+	private float[] angle_rel;		///< angle relative to the global x-y coordinate system
+	private float[] edgeLengths;
 	
+	private Label label;			///< the corresponding label from the map matching algorithm
+	GPSTrack gpsPoints;
+
+	public ResultRoute(int sourceRouteID, int respondentID, boolean isChoice, Label label, GPSTrack gpsPoints) {
+		this.sourceRouteID = sourceRouteID;
+		this.respondentID = respondentID;
+		this.selected = isChoice;
+		this.label = label;
+		this.gpsPoints = gpsPoints;
+		this.trackLength = (float)gpsPoints.getTrackLength();
+		calcData();
+	}
+	
+	public void calcData() {
+		int i;
+		List<Label> labels = label.getLabels();
+		int nNodes = labels.size();
+		nEdges = nNodes - 1;
+		length = (float)label.getLength();
+		lengthR = length / trackLength;
+		
+		// initialize values:
+		int scoreCount = 0;
+		double noMatchLength = 0.;
+		double angle_tot = 0;
+		nEdgesWOPts = 0;
+		groenM = 0.f;
+		// turns, angles:
+		double angle = 0, lastAngle = 0;
+		angle_rel = new float[nNodes];
+		nLeftTurns = 0;
+		nRightTurns = 0;
+		nFrontTurns = 0;
+		nBackTurns = 0;
+		edgeLengths = new float[nNodes];
+		// initialize attributes arrays:
+		envAttr = new float[9];
+		for (i = 0; i < envAttr.length; i++) envAttr[i] = 0;
+		cykAttr = new float[5];
+		for (i = 0; i < cykAttr.length; i++) cykAttr[i] = 0;
+		DirectedEdge backEdge;
+
+		i = 0;
+		Label lastlbl = null;
+		for (Label lbl : labels) {
+			int lastScoreCount = lbl.getLastScoreCount();
+			scoreCount += lastScoreCount;
+			
+			double lel = lbl.getLastEdgeLength();
+			edgeLengths[i] = (float)lel;
+			if (lastScoreCount == 0) {
+				nEdgesWOPts++;
+				noMatchLength += lel;
+			}
+			
+			backEdge = lbl.getBackEdge();
+			
+			if (lastlbl != null) {
+				angle = MathUtil.mapAngle_radians(backEdge.getAngle());	// absolute angle of backEdge
+				angle_rel[i] = (float)MathUtil.mapAngle_radians(angle - lastAngle);
+				double aa = Math.abs(angle_rel[i]);
+				angle_tot += aa;
+
+				// is it a turn?
+				if (aa > kTurnLimit0) {
+					if (aa < kTurnLimit1) {	// [kTurnLimit0, kTurnLimit1]: left/right turn
+						if (angle_rel[i] > 0) nLeftTurns++;
+						if (angle_rel[i] < 0) nRightTurns++;
+					} else  {	// [kTurnLimit1, pi]: backward turn (U-turn)
+						nBackTurns++;
+					}
+				} else nFrontTurns++;	// [0, kTurnLimit0]: forward turn (straight on)
+	
+				@SuppressWarnings("unchecked")
+				HashMap<String, Object> userdata = (HashMap<String, Object>) backEdge.getEdge().getData();	// the user data object of the Edge
+				envAttr[(Short)userdata.get("et")] += lel;
+				cykAttr[(Short)userdata.get("ct")] += lel;
+				groenM += ((Double)userdata.get("gm")).floatValue();
+			} else {
+				angle_rel[i] = 0.f;
+				edgeLengths[i] = 0.f;
+			}
+			
+			lastlbl = lbl;
+			lastAngle = angle;
+			i++;
+		}
+		matchScore = scoreCount / length;
+		noMatchLengthR = (float)(noMatchLength / trackLength);
+		matchLengthR = 1.f - noMatchLengthR;
+		curviness = (float)(angle_tot / length * 1000.);	// angle / km
+		
+		// make environmental parameters relative:
+		for (i = 0; i < envAttr.length; i++) envAttr[i] /= length;
+		for (i = 0; i < cykAttr.length; i++) cykAttr[i] /= length;
+		transferEnvParams();
+		groenM /= length;
+
+		pPtsOn = (float)( (double)scoreCount / (double)gpsPoints.size() );	// fraction of points on edges 
+		pPtsOff = (1.f - pPtsOn);
+	}
+	
+	public void transferEnvParams() {
+		setEnvAttr00(envAttr[0]);
+		setEnvAttr01(envAttr[1]);
+		setEnvAttr02(envAttr[2]);
+		setEnvAttr03(envAttr[3]);
+		setEnvAttr04(envAttr[4]);
+		setEnvAttr05(envAttr[5]);
+		setEnvAttr06(envAttr[6]);
+		setEnvAttr07(envAttr[7]);
+		setEnvAttr08(envAttr[8]);
+
+		setCykAttr00(cykAttr[0]);
+		setCykAttr01(cykAttr[1]);
+		setCykAttr02(cykAttr[2]);
+		setCykAttr03(cykAttr[3]);
+		setCykAttr04(cykAttr[4]);
+	}
+
 	public boolean isSelected() {
 		return selected;
 	}
@@ -86,6 +221,10 @@ public class ResultRoute {
 
 	public void setLength(float length) {
 		this.length = length;
+	}
+	
+	public float[] getEdgeLengths() {
+		return edgeLengths;
 	}
 
 	public int getSourceRouteID() {
@@ -184,12 +323,12 @@ public class ResultRoute {
 		this.matchLengthR = (float)matchLengthR;
 	}
 
-	public float getTrackLengthR() {
-		return trackLengthR;
+	public float getLengthR() {
+		return lengthR;
 	}
 
-	public void setTrackLengthR(float trackLengthFracR) {
-		this.trackLengthR = trackLengthFracR;
+	public void setLengthR(float lengthR) {
+		this.lengthR = lengthR;
 	}
 
 	public void setGroenM(double groenM) {
@@ -225,12 +364,12 @@ public class ResultRoute {
 		this.nBackTurns = nBackTurns;
 	}
 
-	public float getStraightness() {
-		return straightness;
+	public float getCurviness() {
+		return curviness;
 	}
 
-	public void setStraightness(float straightness) {
-		this.straightness = straightness;
+	public void setCurviness(float curviness) {
+		this.curviness = curviness;
 	}
 
 	public short getnTrafficLights() {
@@ -240,19 +379,6 @@ public class ResultRoute {
 	public void setnTrafficLights(short nTrafficLights) {
 		this.nTrafficLights = nTrafficLights;
 	}
-
-	/*public float[] getEnvAttr() {
-		return envAttr;
-	}
-	public void setEnvAttr(float[] envAttr) {
-		this.envAttr = envAttr;
-	}
-	public float[] getCykAttr() {
-		return cykAttr;
-	}
-	public void setCykAttr(float[] cykAttr) {
-		this.cykAttr = cykAttr;
-	}*/
 	
 	// this is extremely inelegant, but I don't know a better solution...
 	public float getEnvAttr00() { return envAttr00; }

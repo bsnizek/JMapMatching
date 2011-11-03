@@ -190,9 +190,6 @@ public class JMapMatcher {
 		
 		if (!labels.isEmpty()) {
 			// loop over all result routes, store them together with their score: 
-			/*for (Label l : labels) {
-				l.calcScore(eStat);
-			}*/
 			t_2 += timer.getRunTime(true, "++ Edge statistics created");
 			Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
 	
@@ -233,29 +230,8 @@ public class JMapMatcher {
 				logger.error("Error while deleting from database tables: maybe the tables have not been created yet - " + e.toString());
 			}
 		
-			// write metadata (1 record per matched GPS track):
-			ResultMetaData metaData = new ResultMetaData();
-			metaData.setSourceRouteID(sourcerouteID);
-	
 			Respondent resp = Respondent.getForSourceRouteID(sourcerouteID);
 			respondentID = resp.getId();
-			metaData.setRespondentID(respondentID);
-	
-			metaData.setnAlternatives(labels.size());
-			metaData.setMaxDistanceFactor((float)rfParams.getDouble(RFParams.Type.DistanceFactor));
-			metaData.setAvgDistPt((float)gpsPoints.getAvgDist());
-			metaData.setMaxDistPt((float)gpsPoints.getMaxDist());
-			metaData.setMinDistPt((float)gpsPoints.getMinDist());
-			metaData.setnPoints(gpsPoints.size());
-			metaData.setTrackLength((float)gpsPoints.getTrackLength());
-			metaData.setDistPEavg((float)eStat.getDistPEAvg());
-			metaData.setDistPEavg5((float)eStat.getDistPE5());
-			metaData.setDistPEavg50((float)eStat.getDistPE50());
-			metaData.setDistPEavg95((float)eStat.getDistPE95());
-			session = HibernateUtil.getSessionFactory().getCurrentSession();
-			session.beginTransaction();
-			session.save(metaData);
-			session.getTransaction().commit();
 		}	
 
 		// write data for matched routes (1 record per matched route):
@@ -293,6 +269,27 @@ public class JMapMatcher {
 			
 			first = false;	// remaining routes are non-choices
 		}
+
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		// write metadata (1 record per matched GPS track):
+		ResultMetaData metaData = new ResultMetaData(sourcerouteID, respondentID);
+
+		metaData.setnAlternatives(labels.size());
+		metaData.setMaxDistanceFactor((float)rfParams.getDouble(RFParams.Type.DistanceFactor));
+		metaData.setAvgDistPt((float)gpsPoints.getAvgDist());
+		metaData.setMaxDistPt((float)gpsPoints.getMaxDist());
+		metaData.setMinDistPt((float)gpsPoints.getMinDist());
+		metaData.setnPoints(gpsPoints.size());
+		metaData.setTrackLength((float)gpsPoints.getTrackLength());
+		metaData.setDistPEavg((float)eStat.getDistPEAvg());
+		metaData.setDistPEavg5((float)eStat.getDistPE5());
+		metaData.setDistPEavg50((float)eStat.getDistPE50());
+		metaData.setDistPEavg95((float)eStat.getDistPE95());
+		session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+		session.save(metaData);
+		session.getTransaction().commit();
+
 		return nOK;
 	}
 	
@@ -311,60 +308,15 @@ public class JMapMatcher {
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		
-		List<DirectedEdge> dEdges = label.getRouteAsEdges();
 		// set up entry for route table:
-		ResultRoute route = new ResultRoute();
-		// set route parameters:
-		double lld = label.getLength();
-		float llf = (float)lld;
-		route.setLength(llf);
-		route.setSelected(isChoice);
-		route.setSourceRouteID(sourcerouteID);
-		route.setRespondentID(respondentID);
-		
+		ResultRoute route = new ResultRoute(sourcerouteID, respondentID, isChoice, label, gpsPoints);
+		// set remaining route parameters:
 		// get node list to create the lineString representing the route:
 		Coordinate[] coordinates = label.getCoordinates();
 		ok = (coordinates.length > 0);	// true if there were any points in the route
 		if (ok) try {
 			LineString lineString = fact.createLineString(coordinates);
 			route.setGeometry(lineString);
-			route.setTrackLengthR((float)(lld / gpsPoints.getTrackLength()));
-
-			float pPointsOn = (float)( (double)label.getScoreCount() / (double)gpsPoints.size() );	// fraction of points on edges 
-			route.setpPtsOn(pPointsOn);
-			route.setpPtsOff(1.f - pPointsOn);
-			route.setnEdges(dEdges.size());
-			route.setnEdgesWOPts(label.getnEdgesWOPoints());
-			route.setMatchLengthR(1. - label.getNoMatchLength() / lld);	// matched length / total length
-			route.setNoMatchLengthR(label.getNoMatchLength() / lld);	// non-matched length / total length
-			route.setMatchScore(label.getScore() * lld);	// the final match score is multiplied by label.length, so that we have:
-				// matchScore = sum_over_all_edges ( edge_points / (edge_length / track_length) )
-			
-			route.setnLeftTurns((short)label.getLeftTurns());
-			route.setnRightTurns((short)label.getRightTurns());
-			route.setnFrontTurns((short)label.getFrontTurns());
-			route.setnBackTurns((short)label.getBackTurns());
-			route.setStraightness((float)label.getStraightness());
-			
-			float[] envAttr = label.getEnvAttr();
-			route.setEnvAttr00(envAttr[0]/lld);
-			route.setEnvAttr01(envAttr[1]/lld);
-			route.setEnvAttr02(envAttr[2]/lld);
-			route.setEnvAttr03(envAttr[3]/lld);
-			route.setEnvAttr04(envAttr[4]/lld);
-			route.setEnvAttr05(envAttr[5]/lld);
-			route.setEnvAttr06(envAttr[6]/lld);
-			route.setEnvAttr07(envAttr[7]/lld);
-			route.setEnvAttr08(envAttr[8]/lld);
-			//route.setEnvAttr(label.getEnvAttr());
-			float[] cykAttr = label.getCykAttr();
-			route.setCykAttr00(cykAttr[0]/lld);
-			route.setCykAttr01(cykAttr[1]/lld);
-			route.setCykAttr02(cykAttr[2]/lld);
-			route.setCykAttr03(cykAttr[3]/lld);
-			route.setCykAttr04(cykAttr[4]/lld);
-			//route.setCykAttr(label.getCykAttr());
-			route.setGroenM(label.getGroenM() / lld);
 			
 			session.save(route);
 
@@ -377,7 +329,7 @@ public class JMapMatcher {
 				
 				double dist = 0.;
 				int i = 0;	// counter
-				double[] edgeLengths = label.getEdgeLengths();
+				float[] edgeLengths = route.getEdgeLengths();
 				DirectedEdge lastEdge = null;
 				List<DirectedEdge> edges = label.getRouteAsEdges();
 				for (DirectedEdge e : edges) {		// for each node along the route:

@@ -245,7 +245,7 @@ public class RouteFinder {
 				if (bShowProgress) {	// some log output?
 					if (numLabels%50000 == 0) System.out.print(".");
 					if (numLabels%5000000 == 0) {
-						System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength) + " - " + expandingLabel.getTreeLevel() + " ## " + result.size());
+						System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength) + " ## " + result.size());
 					}
 					long freeMem = Runtime.getRuntime().freeMemory();
 					if (numLabels%500000 == 0 && freeMem / (double)Runtime.getRuntime().maxMemory() < .1) {
@@ -333,8 +333,7 @@ public class RouteFinder {
 			if (maxPathLength > 0.) {	// only if we have a valid path length
 				// 2. Length + Euclidian distance to endNode greater than referencePathLength? (can't reach endNode)
 				// (Using the Euclidian distance is a quick worst-case check; using the shortest path is exact, but slower.)
-				double distanceToEndNode = newLabel.getNode().getCoordinate().distance(endNode.getCoordinate());
-				if (checkPathLength(length + distanceToEndNode, maxPathLength, "eucl.")) continue;
+				if (checkPathLength(length + newLabel.getDistanceTo(endNode), maxPathLength, "eucl.")) continue;
 	
 				/*// 3. try with the shortest realistic path: AStar
 				// TODO: get this value from database, after it has been precalculated and stored in a table
