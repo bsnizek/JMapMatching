@@ -90,6 +90,9 @@ public class GPSShapeFileImporter {
 		}
 
 		try {
+			int cntr = 0;
+			int cntr2 =0;
+			int numberPoints = collection.size();
 			while (iterator.hasNext()) {
 				
 				SimpleFeature feature = iterator.next();
@@ -131,6 +134,14 @@ public class GPSShapeFileImporter {
 				sp.setGeometry((Point) geometry.reverse());
 				sp.setSourcerouteid(route_id);
 				session.save(sp);
+				System.out.print(".");
+				if (cntr > 100) {
+					System.out.println((cntr2/numberPoints*1.00)*100.00 + "% finished");
+					cntr = 0;
+					session.getTransaction().commit();
+				}
+				cntr2++;
+				cntr++;
 
 			}
 		}
@@ -149,7 +160,7 @@ public class GPSShapeFileImporter {
 	}
 	
 	public static void main(String[] args) throws IllegalDataException, IOException {
-		String filename = "testdata/exmp1/example_gsp.shp";
+		String filename = "C:/Users/hsp/git/JMapMatching/JMapMatchingGUI/testdata/CopenhagenGPS/BiCycleTrips.shp";
 		@SuppressWarnings("unused")
 		GPSShapeFileImporter gfi = new GPSShapeFileImporter(new File(filename));
 		System.out.println("Shapefile imported !");
