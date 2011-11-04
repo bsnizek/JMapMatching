@@ -135,10 +135,11 @@ public class GPSShapeFileImporter {
 				sp.setSourcerouteid(route_id);
 				session.save(sp);
 				System.out.print(".");
-				if (cntr > 100) {
-					System.out.println((cntr2/numberPoints*1.00)*100.00 + "% finished");
+				if (cntr > 300) {
+					System.out.println((cntr2/numberPoints*1.00)*100.00 + "% finished (" + cntr2 + "/" + numberPoints + ")");
 					cntr = 0;
 					session.getTransaction().commit();
+					setUp();
 				}
 				cntr2++;
 				cntr++;
@@ -149,7 +150,7 @@ public class GPSShapeFileImporter {
 			if( iterator != null ){
 				// YOU MUST CLOSE THE ITERATOR!
 				iterator.close();
-				session.getTransaction().commit();
+				session.close();
 			}
 		}
 	}
