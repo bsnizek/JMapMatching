@@ -20,14 +20,19 @@ You should have received a copy of the GNU General Public License along with
 this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+import java.math.BigInteger;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
+import org.hibernate.Query;
+import org.hibernate.Session;
 import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.mapmatching.GPSTrack;
 import org.life.sl.routefinder.Label;
 import org.life.sl.utils.MathUtil;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Node;
@@ -40,6 +45,7 @@ import com.vividsolutions.jts.planargraph.Node;
 public class ResultRoute {
 
 	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///< limits determining when a change in angle is counted as a left/right/front/back turn, in radians
+	public final double kCoordEps = 1.e-6;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
 	
 	private int id;
 	private LineString geometry;
@@ -86,7 +92,7 @@ public class ResultRoute {
 	
 	private float[] angle_rel;		///< angle relative to the global x-y coordinate system
 	private float[] edgeLengths;
-	
+	private int[] nodeIDs;			///< list of OSMNode IDs
 	private Label label;			///< the corresponding label from the map matching algorithm
 	GPSTrack gpsPoints;
 
@@ -187,6 +193,7 @@ public class ResultRoute {
 
 		pPtsOn = (float)( (double)scoreCount / (double)gpsPoints.size() );	// fraction of points on edges 
 		pPtsOff = (1.f - pPtsOn);
+		getNumberOfTrafficLights();
 	}
 	
 	public void transferEnvParams() {
@@ -205,6 +212,52 @@ public class ResultRoute {
 		setCykAttr02(cykAttr[2]);
 		setCykAttr03(cykAttr[3]);
 		setCykAttr04(cykAttr[4]);
+	}
+
+	public int getNumberOfTrafficLights() {
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		List<Node> nodes = label.getNodes();
+		nodeIDs = new int[nodes.size()];
+		List<DirectedEdge> edges = label.getRouteAsEdges();
+		int n = 0;
+		for (DirectedEdge e : edges) {		// for each node along the route:
+			@SuppressWarnings("unchecked")
+			HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
+			Integer edgeID = (Integer)ed.get("id");
+
+			Node node = e.getFromNode();	// node at beginning of edge
+			Coordinate c_n = node.getCoordinate();
+
+			// get node ID from database:
+			int nodeID = 0;
+			String s = " from OSMEdge where id=" + edgeID;
+			//s = "from OSMNode where id in ( (select fromnode"+s+"), (select tonode"+s+") )";	// this sometimes yields only 1 record instead of 2!?!
+			s = "from OSMNode where (id = (select fromnode"+s+") or id = (select tonode"+s+"))";
+			Query nodeRes = session.createQuery(s);
+			// TODO: make this more efficient using a PostGIS spatial query with indexing?
+			// match coordinates:
+			@SuppressWarnings("unchecked")
+			Iterator<OSMNode> it = nodeRes.iterate();
+			while (it.hasNext()) {
+				OSMNode on = it.next();
+				Coordinate onc = on.getGeometry().getCoordinate();
+				if (Math.abs(c_n.x - onc.x) < kCoordEps && Math.abs(c_n.x - onc.x) < kCoordEps) {
+					nodeID = on.getId();
+					break;
+				}								
+			}	// now, nodeID is either 0 or the database ID of the corresponding node
+			nodeIDs[n++] = nodeID;
+		}
+		
+		String s1 = String.valueOf(nodeIDs[0]);
+		for (int i = 0; i < n; i++) {
+			s1 += "," + nodeIDs[i];
+		}
+		String s = "select count(\"nodeID\") from trafficlight where \"nodeID\" in ("+s1+")";
+		Query res = session.createSQLQuery(s);
+		BigInteger ntl = (BigInteger)res.uniqueResult();
+		this.nTrafficLights = ntl.shortValue();
+		return (ntl == null ? 0 : this.nTrafficLights);
 	}
 
 	public boolean isSelected() {

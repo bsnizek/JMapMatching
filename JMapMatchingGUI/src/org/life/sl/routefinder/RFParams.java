@@ -48,6 +48,7 @@ public class RFParams {
 		DistanceFactor,			///< this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
 		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
 		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
+		ShowProgressDetail,		///< how much detail regarding the progress is shown ("progress bar"): 0, 1, 2
 	}
 
 	// collection of integer constraints, i.e. overlap constraints
@@ -189,6 +190,7 @@ public class RFParams {
 			if (map2Double(iniMap, "DistanceFactor", Type.DistanceFactor)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize", Type.NetworkBufferSize)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
+			if (map2Int(iniMap, "ShowProgressDetail", Type.ShowProgressDetail)) r++;
 		} catch (InvalidFileFormatException e) {
 			Logger.getRootLogger().error("Invalid file format");
 		} catch (IOException e) {

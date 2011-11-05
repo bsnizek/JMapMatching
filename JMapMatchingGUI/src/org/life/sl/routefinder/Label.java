@@ -65,10 +65,10 @@ public class Label implements Comparable<Label> {
 	 *
 	 */
 	public static class LastEdgeComparator implements Comparator<Label> {
-		public int compare(Label arg0, Label arg1) {
-			// we could add a test if the labels are in the same tree level?
-			return arg0.compareTo_LE(arg1);
-		}	
+		public int compare(Label arg0, Label arg1) { return arg0.compareTo_LE(arg1); }	
+	}
+	public static class LastEdgeComparatorRev implements Comparator<Label> {
+		public int compare(Label arg0, Label arg1) { return -arg0.compareTo_LE(arg1); }	
 	}
 	
 	private Label parent;			///> The parent of the Label
@@ -106,7 +106,6 @@ public class Label implements Comparable<Label> {
 	 * @param node The node associated with this Label.
 	 */
 	public Label(Node node) {
-		//		System.out.println("Label(-) " + node.getCoordinate());
 		this.parent = null;
 		this.node = node;
 		this.backEdge = null;
@@ -144,9 +143,9 @@ public class Label implements Comparable<Label> {
 	 */
 	public int compareTo_LE(Label arg0) {
 		int r = 0;
-		double ov = arg0.getLastScore();
-		if (this.lastScore > ov) r = 1;
-		else if (this.lastScore < ov) r = -1;
+		int ov = arg0.getLastScoreCount();
+		if (this.lastScoreCount > ov) r = 1;
+		else if (this.lastScoreCount < ov) r = -1;
 		else r = compareTo(arg0);	// if both are equal, sort them according to their total score
 		return r;
 	}
@@ -198,7 +197,7 @@ public class Label implements Comparable<Label> {
 	 * @param eStat edge statistics
 	 */
 	public void calcScore(EdgeStatistics eStat) {
-		// calculating the score recursively:
+		// calculate the score recursively:
 		score = 0.;
 		scoreCount = 0;
 		if (parent != null) {
@@ -306,7 +305,7 @@ public class Label implements Comparable<Label> {
 		if (nodeList == null || nodeList.size() == 0) {
 			nodeList = new ArrayList<Node>();
 			Label label = this;
-			while(label.getParent() != null) {
+			while(label != null) {
 				nodeList.add(label.getNode());
 				label = label.getParent();
 			}
@@ -323,7 +322,7 @@ public class Label implements Comparable<Label> {
 	public List<Label> getLabels() {
 		ArrayList<Label> lblList = new ArrayList<Label>();
 		Label label = this;
-		while(label.getParent() != null) {
+		while(label != null) {
 			lblList.add(label);
 			label = label.getParent();
 		}

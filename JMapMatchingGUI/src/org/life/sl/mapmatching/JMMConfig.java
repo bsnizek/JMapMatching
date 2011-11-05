@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
+import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.ini4j.Ini;
 import org.ini4j.InvalidFileFormatException;
@@ -16,11 +17,15 @@ import org.ini4j.InvalidFileFormatException;
  * @see <a href="https://github.com/bsnizek/JMapMatching/wiki/JMapMatcherIniFile">JMapMatcherIniFile in the Wiki</a>
  */
 public class JMMConfig {
+	// configuration parameters and default values:
 	public int nRoutesToWrite = 10;
 	public boolean bWriteChoices = true;
 	public boolean bWriteToShapefiles = false;
 	public boolean bWriteToDatabase = true;
 	public boolean bRandomSelect = true;
+	public int iWriteNBest = 10;
+	public int iWriteNWorst = 1;
+	public Level logLevel = Level.INFO;
 	
 	public JMMConfig() {}
 	
@@ -44,10 +49,13 @@ public class JMMConfig {
 			Map<String, String> iniMap = ini.get("Output");
 			
 			if (iniMap.containsKey("RoutesToWrite")) nRoutesToWrite = Integer.parseInt(iniMap.get("RoutesToWrite"));
+			if (iniMap.containsKey("RandomSelect")) bRandomSelect = Boolean.parseBoolean(iniMap.get("RandomSelect"));
+			if (iniMap.containsKey("WriteNBest")) iWriteNBest = Integer.parseInt(iniMap.get("WriteNBest"));
+			if (iniMap.containsKey("WriteNWorst")) iWriteNWorst = Integer.parseInt(iniMap.get("WriteNWorst"));
 			if (iniMap.containsKey("WriteChoices")) bWriteChoices = Boolean.parseBoolean(iniMap.get("WriteChoices"));
 			if (iniMap.containsKey("WriteToShapefiles")) bWriteToShapefiles = Boolean.parseBoolean(iniMap.get("WriteToShapefiles"));
 			if (iniMap.containsKey("WriteToDatabase")) bWriteToDatabase = Boolean.parseBoolean(iniMap.get("WriteToDatabase"));
-			if (iniMap.containsKey("RandomSelect")) bRandomSelect = Boolean.parseBoolean(iniMap.get("RandomSelect"));
+			if (iniMap.containsKey("LogLevel")) logLevel = Level.toLevel(iniMap.get("LogLevel"));
 		} catch (InvalidFileFormatException e) {
 			Logger.getRootLogger().error("Invalid file format");
 		} catch (IOException e) {
