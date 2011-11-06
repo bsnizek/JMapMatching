@@ -215,6 +215,7 @@ public class ResultRoute {
 
 	public int getNumberOfTrafficLights() {
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
 		List<Node> nodes = label.getNodes();
 		nodeIDs = new int[nodes.size()];
 		List<DirectedEdge> edges = label.getRouteAsEdges();

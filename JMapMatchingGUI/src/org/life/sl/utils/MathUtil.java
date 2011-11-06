@@ -1,9 +1,5 @@
 package org.life.sl.utils;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.planargraph.Node;
-
 /**
  * Some mathematical utility functions
  * @author bb

@@ -45,6 +45,7 @@ import org.life.sl.readers.shapefile.PointFileReader;
 import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
+import org.life.sl.utils.BestNAverageStat;
 import org.life.sl.utils.MathUtil;
 import org.life.sl.utils.Timer;
 
@@ -290,9 +291,26 @@ public class JMapMatcher {
 		metaData.setnPoints(gpsPoints.size());
 		metaData.setTrackLength((float)gpsPoints.getTrackLength());
 		metaData.setDistPEavg((float)eStat.getDistPEAvg());
-		metaData.setDistPEavg5((float)eStat.getDistPE5());
+		metaData.setDistPEavg05((float)eStat.getDistPE05());
 		metaData.setDistPEavg50((float)eStat.getDistPE50());
 		metaData.setDistPEavg95((float)eStat.getDistPE95());
+		// add scores for the best routes:
+		int[] nBest = { 1, 5, 10, 25, 50, 100 };
+		BestNAverageStat matchScoreAvgs = new BestNAverageStat(nBest);
+		BestNAverageStat matchLengthAvgs = new BestNAverageStat(nBest);
+		BestNAverageStat noMatchEdgeAvgs = new BestNAverageStat(nBest);
+		for (int i=0; i < 100; i++) {
+			//matchScoreAvgs.add(labels.get(i).getScore());
+			ResultRoute route = new ResultRoute(sourcerouteID, respondentID, i==0, labels.get(i), gpsPoints);
+			matchScoreAvgs.add(route.getMatchScore());
+			matchLengthAvgs.add(route.getMatchLengthR());
+			noMatchEdgeAvgs.add((double)(route.getnEdgesWOPts()));
+		}
+		metaData.setScoreAvgs(matchScoreAvgs.getAverages());
+		metaData.setMatchLengthAvgs(matchLengthAvgs.getAverages());
+		metaData.setNoMatchEdgeAvgs(noMatchEdgeAvgs.getAverages());
+		
+		
 		session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		session.save(metaData);

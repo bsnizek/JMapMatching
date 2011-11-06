@@ -34,8 +34,6 @@ import org.apache.log4j.Logger;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.routefinder.Label;
-import org.life.sl.routefinder.RFParams.Type;
-import org.life.sl.utils.MathUtil;
 
 //import org.life.sl.shapefilereader.ShapeFileReader;
 
@@ -46,9 +44,7 @@ import com.infomatiq.jsi.SpatialIndex;
 
 import com.infomatiq.jsi.test.SpatialIndexFactory;
 
-import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
 import com.vividsolutions.jts.operation.linemerge.LineMergeEdge;
