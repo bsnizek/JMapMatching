@@ -27,7 +27,6 @@ import java.util.List;
 
 import org.hibernate.Query;
 import org.hibernate.Session;
-import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.mapmatching.GPSTrack;
 import org.life.sl.routefinder.Label;
 import org.life.sl.utils.MathUtil;
@@ -216,6 +215,7 @@ public class ResultRoute {
 
 	public int getNumberOfTrafficLights() {
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
 		List<Node> nodes = label.getNodes();
 		nodeIDs = new int[nodes.size()];
 		List<DirectedEdge> edges = label.getRouteAsEdges();

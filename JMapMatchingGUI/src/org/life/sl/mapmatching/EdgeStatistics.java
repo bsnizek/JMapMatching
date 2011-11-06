@@ -37,7 +37,7 @@ import com.vividsolutions.jts.planargraph.Edge;
  */
 public class EdgeStatistics {
 
-	double distPEAvg, distPE5, distPE50, distPE95;	///> average distance between points an associated edges, plus 5% qantiles
+	double distPEAvg, distPE05, distPE50, distPE95;	///> average distance between points an associated edges, plus 5% qantiles
 	
 	HashMap<Edge, Short> edgePoints = new HashMap<Edge, Short>();	///> container counting the number of points associated with each edge
 	private double pointEdgeDist[] = null;
@@ -86,7 +86,7 @@ public class EdgeStatistics {
 		}
 		double l = (double)pointEdgeDist.length;
 		distPEAvg /= l;
-		distPE5 = pointEdgeDist[(int)Math.round(l*0.05)];
+		distPE05 = pointEdgeDist[(int)Math.round(l*0.05)];
 		distPE50 = pointEdgeDist[(int)Math.round(l*0.5)];
 		distPE95 = pointEdgeDist[(int)Math.round(l*0.95)];
 	}
@@ -94,8 +94,8 @@ public class EdgeStatistics {
 	public double getDistPEAvg() {
 		return distPEAvg;
 	}
-	public double getDistPE5() {
-		return distPE5;
+	public double getDistPE05() {
+		return distPE05;
 	}
 	public double getDistPE50() {
 		return distPE50;

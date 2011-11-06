@@ -33,12 +33,31 @@
 		<property type="float" name="minDistPt"></property>
 		<property type="float" name="maxDistPt"></property>
 		<property type="float" name="distPEavg"></property>
-		<property type="float" name="distPEavg5"></property>
+		<property type="float" name="distPEavg05"></property>
 		<property type="float" name="distPEavg50"></property>
 		<property type="float" name="distPEavg95"></property>
 		<property type="int" name="nPoints"></property>
 		<property type="long" name="nAlternatives"></property>
 		<property type="float" name="maxDistanceFactor"></property>
+
+		<property type="float" name="matchScore1"></property>
+		<property type="float" name="scoreAvg05"></property>
+		<property type="float" name="scoreAvg10"></property>
+		<property type="float" name="scoreAvg25"></property>
+		<property type="float" name="scoreAvg50"></property>
+		<property type="float" name="scoreAvg100"></property>
+		<property type="float" name="matchLength1"></property>
+		<property type="float" name="matchLenAvg05"></property>
+		<property type="float" name="matchLenAvg10"></property>
+		<property type="float" name="matchLenAvg25"></property>
+		<property type="float" name="matchLenAvg50"></property>
+		<property type="float" name="matchLenAvg100"></property>
+		<property type="float" name="noMatchEdges1"></property>
+		<property type="float" name="noMatchEdgeAvg05"></property>
+		<property type="float" name="noMatchEdgeAvg10"></property>
+		<property type="float" name="noMatchEdgeAvg25"></property>
+		<property type="float" name="noMatchEdgeAvg50"></property>
+		<property type="float" name="noMatchEdgeAvg100"></property>
 
 	</class>
 

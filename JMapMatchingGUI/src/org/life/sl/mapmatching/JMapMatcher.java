@@ -28,7 +28,6 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
-import org.apache.log4j.Level;
 import org.apache.log4j.Logger;
 import org.geotools.feature.SchemaException;
 import org.hibernate.Query;
@@ -46,6 +45,7 @@ import org.life.sl.readers.shapefile.PointFileReader;
 import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
+import org.life.sl.utils.BestNAverageStat;
 import org.life.sl.utils.MathUtil;
 import org.life.sl.utils.Timer;
 
@@ -72,25 +72,18 @@ public class JMapMatcher {
 
 	private static String kCfgFileName = "JMM.cfg";
 	private static String kOutputDir = "results/";
+	public final double kCoordEps = 1.e-6;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+
 	// input data:
 	private static gpsLoader kGPSLoader    = gpsLoader.BULK_PGSQLDATABASE;
 	private static gpsLoader kGraphLoader  = gpsLoader.SHAPEFILE;
 	private static boolean kUseReducedNetwork = true;	///< true: restrict network to an area enveloping the track
 	
-	private static int kGPSTrackID = 12158;		///< database ID of GPS track to match
-	
-	public final double kCoordEps = 1.e-6;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
-
-	// even bigger network and route:
-//	private static String kGraphDataFileName = "testdata/OSM_CPH/osm_line_cph_ver4.shp";
-//	private static String kGPSPointFileName = "testdata/exmp1/example_gsp_1.shp";
-	// bigger network and route:
 	private static String kGraphDataFileName = "testdata/SparseNetwork.shp";
 	private static String kGPSPointFileName = "testdata/GPS_Points.shp";
-	// smaller network and route:
-//	private static String kGraphDataFileName = "testdata/Sparse_bigger0.shp";
-//	private static String kGPSPointFileName = "testdata/GPS_Points_1.shp";
 	
+	private static int kGPSTrackID = 12158;		///< database ID of GPS track to match	
+
 	private PathSegmentGraph graph = null;	///< data basis (graph)
 	private GPSTrack gpsPoints;		///< the path to match (GPS points)
 	private RFParams rfParams = null;		///< parameters for the route finding algorithm
@@ -99,8 +92,7 @@ public class JMapMatcher {
 	private int sourcerouteID = 0;
 	
 	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
-
-	static Logger logger = Logger.getLogger("JMapMatcher");
+	private static Logger logger = Logger.getLogger("JMapMatcher");
 
 	/**
 	 * Default constructor: initialization with an empty graph (graph must then be be created later on)
@@ -116,22 +108,6 @@ public class JMapMatcher {
 	public JMapMatcher(PathSegmentGraph g) {
 		this.graph = g;
 	}
-
-	/**
-	 * Deletes the currently loaded graph in order to free memory and start matching a new track (by setting it to null)
-	 */
-	public void clearGraph() {
-		this. graph = null;
-	}
-	
-	/**
-	 * Loads GPS data from a file, then invokes the actual matching
-	 * @throws IOException
-	 */
-	public void match(String fileName) throws IOException {
-		loadGPSPoints(fileName);
-		match();
-	}	
 	
 	/**
 	 * Loads GPS data (points) from a file
@@ -143,7 +119,32 @@ public class JMapMatcher {
 		PointFileReader pfr = new PointFileReader(pointFile);	// initialize data from file
 		gpsPoints = new GPSTrack(pfr.getPoints());	// the collection of GPS data points
 	}
+
+	/**
+	 * Deletes the currently loaded graph in order to free memory and start matching a new track (by setting it to null)
+	 */
+	public void clearGraph() {
+		this. graph = null;
+	}
+
+	/**
+	 * Loads a PathSegmentGraph containing the network to use (track + buffer)
+	 * @param track the GPS data
+	 * @return
+	 */
+	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
+		return new PathSegmentGraph(track, (float)initConstraints().getDouble(RFParams.Type.NetworkBufferSize));
+	}
 	
+	/**
+	 * Loads GPS data from a file, then invokes the actual matching
+	 * @throws IOException
+	 */
+	public void match(String fileName) throws IOException {
+		loadGPSPoints(fileName);
+		match();
+	}	
+
 	/**
 	 * Starts the map matching using GPS data from the database
 	 * @param sourceroute_id database ID of the sourcepoints (GPS route)
@@ -225,7 +226,7 @@ public class JMapMatcher {
 				session.createQuery("delete from ResultNodeChoice where sourcerouteid=" + sourcerouteID).executeUpdate();
 				session.getTransaction().commit();
 			} catch (Exception e) {
-				logger.error("Error while deleting from database tables: maybe the tables have not been created yet - " + e.toString());
+				logger.error("Error while deleting from database tables: maybe the tables have not been created yet? " + e.toString());
 			}
 		
 			Respondent resp = Respondent.getForSourceRouteID(sourcerouteID);
@@ -234,9 +235,8 @@ public class JMapMatcher {
 
 		// write data for matched routes (1 record per matched route):
 		int nNonChoice = 0;
-		int nOut = 0, nOK = 0;
+		int nOK = 0;
 		boolean first = true;
-		Iterator<Label> it = labels.iterator();
 		int nLabels = labels.size();
 		int nRoutes = Math.min(cfg.nRoutesToWrite, nLabels);
 		ArrayList<Integer> selRoutes = new ArrayList<Integer>(nRoutes); 
@@ -251,14 +251,8 @@ public class JMapMatcher {
 			}
 			Label curLabel = labels.get(j);
 			
-		/*}
-		
-		while (it.hasNext() && nOut++ < cfg.nRoutesToWrite) {	// use only the kMaximumNumberOfRoutes best routes
-			Label curLabel = it.next();*/
-			
 			if (cfg.bWriteToDatabase) {
 				if (writeLabelToDatabase(curLabel, first, respondentID, fromNode, toNode)) {
-					//System.out.println("route stored in database");
 					nOK++;
 				} else {
 					logger.error("ERROR storing route!!");
@@ -297,9 +291,26 @@ public class JMapMatcher {
 		metaData.setnPoints(gpsPoints.size());
 		metaData.setTrackLength((float)gpsPoints.getTrackLength());
 		metaData.setDistPEavg((float)eStat.getDistPEAvg());
-		metaData.setDistPEavg5((float)eStat.getDistPE5());
+		metaData.setDistPEavg05((float)eStat.getDistPE05());
 		metaData.setDistPEavg50((float)eStat.getDistPE50());
 		metaData.setDistPEavg95((float)eStat.getDistPE95());
+		// add scores for the best routes:
+		int[] nBest = { 1, 5, 10, 25, 50, 100 };
+		BestNAverageStat matchScoreAvgs = new BestNAverageStat(nBest);
+		BestNAverageStat matchLengthAvgs = new BestNAverageStat(nBest);
+		BestNAverageStat noMatchEdgeAvgs = new BestNAverageStat(nBest);
+		for (int i=0; i < 100; i++) {
+			//matchScoreAvgs.add(labels.get(i).getScore());
+			ResultRoute route = new ResultRoute(sourcerouteID, respondentID, i==0, labels.get(i), gpsPoints);
+			matchScoreAvgs.add(route.getMatchScore());
+			matchLengthAvgs.add(route.getMatchLengthR());
+			noMatchEdgeAvgs.add((double)(route.getnEdgesWOPts()));
+		}
+		metaData.setScoreAvgs(matchScoreAvgs.getAverages());
+		metaData.setMatchLengthAvgs(matchLengthAvgs.getAverages());
+		metaData.setNoMatchEdgeAvgs(noMatchEdgeAvgs.getAverages());
+		
+		
 		session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		session.save(metaData);
@@ -407,19 +418,11 @@ public class JMapMatcher {
 
 		return ok;
 	}
-	
-	public int getNumberOfTrafficLights(int routeID) {
-		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
-		String s = "select count(nodeID) from resultnodechoice inner join trafficlight on resultnodechoice.nodeID=trafficlight.nodeID where routeid="+routeID+" and selected";
-		Query res = session.createSQLQuery(s);
-		Integer n = (Integer)res.uniqueResult();
-		return (n == null ? 0 : n);
-	}
 
-	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
-		return new PathSegmentGraph(track, (float)initConstraints().getDouble(RFParams.Type.NetworkBufferSize));
-	}
-
+	/**
+	 * Setup of default configuration parameters for the routefinding algorithm
+	 * @return
+	 */
 	private RFParams initConstraints() {
 		// initialize constraint fields:
 		rfParams = new RFParams();
@@ -479,6 +482,7 @@ public class JMapMatcher {
 			
 			Query result;
 			String query = "from SourceRoute";
+			if (args.length == 0 &&  cfg.sourcerouteID >= 0) query += " WHERE id="+cfg.sourcerouteID;
 			if (args.length == 1) query += " WHERE id="+args[0];
 			if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
 			result = session.createQuery(query);
