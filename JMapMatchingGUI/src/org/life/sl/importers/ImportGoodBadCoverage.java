@@ -37,6 +37,7 @@ import org.hibernate.Query;
 import org.hibernate.Session;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.Respondent;
+import org.life.sl.orm.ResultRoute;
 import org.life.sl.orm.SourcePoint;
 import org.life.sl.orm.SourceRoute;
 import org.opengis.feature.simple.SimpleFeature;
@@ -94,6 +95,8 @@ public class ImportGoodBadCoverage {
 			}
 		}
 
+		int counter = 0;
+		
 		try {
 			while (iterator.hasNext()) {
 				System.out.print("=");
@@ -107,9 +110,16 @@ public class ImportGoodBadCoverage {
  				
  				int lngth = cs.length;
  				
- 				int length = 10;
+ 				int length = 50;
  				
  				double shootOver = 0;
+ 				
+ 				SourceRoute sr = new SourceRoute();
+ 				long srid = (Long) feature.getAttribute("rspdid");
+ 				sr.setRespondentid((int) srid);
+ 				sr.setId(counter);
+ 				counter++;
+ 				session.save(sr);
  				
  				for (int i=1; i<lngth; i++) {
  					System.out.print(".");
@@ -131,6 +141,7 @@ public class ImportGoodBadCoverage {
  						SourcePoint sp = new SourcePoint();
  						Point pnt = fact.createPoint(new Coordinate(newX,newY));
  						sp.setGeometry(pnt);
+ 						sp.setSourcerouteid((int) srid);
  						session.save(sp);
  						l = l + step;
  					}
@@ -141,8 +152,10 @@ public class ImportGoodBadCoverage {
  					setUp();
  					
  				}
-			}
+ 				System.out.println(" ");
 
+			}
+			
 		}
 		finally {
 			if( iterator != null ){
@@ -161,7 +174,7 @@ public class ImportGoodBadCoverage {
 	}
 	
 	public static void main(String[] args) throws IllegalDataException, IOException {
-		String filename = "/Users/besn/git/JMapMatching/JMapMatchingGUI/testdata/paper1/5844.shp";
+		String filename = "/Users/besn/git/JMapMatching/JMapMatchingGUI/testdata/paper1/poly1.shp";
 		@SuppressWarnings("unused")
 		ImportGoodBadCoverage gfi = new ImportGoodBadCoverage(new File(filename));
 		System.out.println("Shapefile imported !");
