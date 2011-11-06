@@ -167,6 +167,7 @@ public class RouteFinder {
 	 * @return A list of the routes found (represented by a list of Labels) 
 	 */
 	public ArrayList<Label> findRoutes(Node startNode, Node endNode, double gpsPathLength0) {
+		//*** INITIALIZATION ***//
 
 		// check that startNode and endNode belong to same graph
 		if (network.findClosestNode(startNode.getCoordinate()) == null ||
@@ -175,18 +176,11 @@ public class RouteFinder {
 			return new ArrayList<Label>();
 		}
 
-		///////////////////////////////////////////////
-		// INITIALIZE
-		///////////////////////////////////////////////
-
-		System.gc();
 		this.startNode = startNode;
 		this.endNode = endNode;
 		this.gpsPathLength = gpsPathLength0;
 		numLabels = 0;
 		int numDeadEnds = 0;
-		ArrayList<Label> result = new ArrayList<Label>();
-		Stack<Label> stack = new Stack<Label>();
 
 		this.itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal));
 		this.iShowProgressDetail = rfParams.getInt(RFParams.Type.ShowProgressDetail);
@@ -199,23 +193,18 @@ public class RouteFinder {
 			maxPathLength = 0.;
 		}
 		logger.info("Euclidian GPS Path length = " + gpsPathLength + ", path length limit = " + maxPathLength);
-
-		//logger.info("Network size (nodes): " + network.getNodes().size());
 		logger.info("Network size (edges): " + network.getSize_Edges());
 
-		///////////////////////////////////////////////
-		// START ALGORITHM
-		///////////////////////////////////////////////
-
+		System.gc();	// can't hurt...
+		ArrayList<Label> result = new ArrayList<Label>();
+		Stack<Label> stack = new Stack<Label>();
+		//*** START OF ALGORITHM ***//
 		stack.push(new Label(startNode));	// push start node to stack
 
-		//////////////////////////////////////////////
-		// ALGORITHM MAIN LOOP
-		//////////////////////////////////////////////
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator();
 		Label.LastEdgeComparatorRev lastEdgeCompRev = new Label.LastEdgeComparatorRev();
 		stackLoop:
-		while (!stack.empty()) {
+		while (!stack.empty()) {	// algorithm's main loop
 			// create label expansion (next generation):
 			Label expandingLabel = stack.pop();	// get last label from stack and expand it:
 			ArrayList<Label> expansion = expandLabel(expandingLabel);	// calculate the expansion of the label (continuation from last node along all available edges)
@@ -224,20 +213,17 @@ public class RouteFinder {
 				// Attention: sorting the labels affects two parts:
 				// 1. the expansion array, which is processed linearly
 				// 2. the stack, which is effectively processed in reverse order!
-				else if (itLabelOrder == LabelTraversal.BestFirst) Collections.sort(expansion, lastEdgeComp);			// order labels in ascending order (lowest score is treated first), so that the highest score ends up on top of the stack
-				else if (itLabelOrder == LabelTraversal.WorstFirst) Collections.sort(expansion, lastEdgeCompRev);//Collections.reverseOrder());	// order labels in descending order (highest score first), so the best label ends up at the bottom of the stack
+				else if (itLabelOrder == LabelTraversal.BestFirst) Collections.sort(expansion, lastEdgeComp);		// order labels in ascending order (lowest score is treated first), so that the highest score ends up on top of the stack
+				else if (itLabelOrder == LabelTraversal.WorstFirst) Collections.sort(expansion, lastEdgeCompRev);	// order labels in descending order (highest score first), so the best label ends up at the bottom of the stack
+					// Update: since the labels are identical up to the parent node, we compare only the last Edge
 				else if (itLabelOrder == LabelTraversal.BestLastEdge) Collections.sort(expansion, lastEdgeComp);
-				//System.out.println(expansion.get(0).getScore(edgeStatistics)*1000. + "\t" + expandingLabel.getScore()*1000. + "\t" + expansion.size() + "\t" + treeLevel);
-				//System.out.println(expandingLabel.getTreeLevel());
 		
 				// test the newly created labels:
 				for (Label currentLabel : expansion) {	// loop over all next-generation labels
-					//System.out.println(currentLabel.getLastScore());
 					numLabels++;
 					// is label a new valid route?
 					if (isValidRoute(currentLabel))	{	// valid route means: it ends in the destination node and fulfills the length constraints
 						result.add(currentLabel);		// add the valid route to list of routes
-						//System.out.println("## " + result.size());
 						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
 						if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
 							logger.info("Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
@@ -246,7 +232,6 @@ public class RouteFinder {
 					}
 					else stack.push(currentLabel);		// destination is not reached yet: store the label on stack for the next iteration
 				}
-				//System.out.println("--");
 				
 				if (iShowProgressDetail > 0) {	// some log output?
 					if (iShowProgressDetail > 1 && numLabels%50000 == 0) System.out.print(".");
@@ -268,7 +253,6 @@ public class RouteFinder {
 				expandingLabel = null;
 			}
 		}
-		//if (result.isEmpty()) result.add(new Label(startNode));	// if nothing was found, return only the start node
 		// some statistics on the computation:
 		System.out.printf("\nlabels analyzed:\t%14d\nvalid routes:\t\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",
 				numLabels, result.size(), numDeadEnds, (100.*numDeadEnds/numLabels), numLabels_rejected, (100.*numLabels_rejected/numLabels), 
@@ -298,9 +282,9 @@ public class RouteFinder {
 	private ArrayList<Label> expandLabel(Label parentLabel) {
 		ArrayList<Label> expansion = new ArrayList<Label>();
 		Label newLabel;
-		if ((int)(parentLabel.getNode().getCoordinate().x/10) == 72354) {
-			System.out.println("I'm here!");
-		}
+//		if ((int)(parentLabel.getNode().getCoordinate().x/10) == 72354) {
+//			System.out.println("I'm here!");
+//		}
 
 		/////////////////////////////////////
 		// MAKE LABELS FROM NEIGHBORS

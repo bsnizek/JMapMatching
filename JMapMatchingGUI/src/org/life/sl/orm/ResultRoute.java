@@ -27,7 +27,6 @@ import java.util.List;
 
 import org.hibernate.Query;
 import org.hibernate.Session;
-import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.mapmatching.GPSTrack;
 import org.life.sl.routefinder.Label;
 import org.life.sl.utils.MathUtil;

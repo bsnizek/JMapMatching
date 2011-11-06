@@ -43,6 +43,7 @@ import org.geotools.feature.SchemaException;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.life.sl.mapmatching.EdgeStatistics;
+import org.life.sl.utils.MathUtil;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
@@ -78,7 +79,7 @@ public class Label implements Comparable<Label> {
 	private double lastEdgeLength = 0.;	///> length of last backEdge
 	private double score = -1.;		///> the score of the label (evaluated according to edge statistics)
 	private short scoreCount = -1;	///> the unweighted score of the label (nearest points-count)
-	private double lastScore = 0.;	///> the same but considering only the last edge	
+	//private double lastScore = 0.;	///> the same but considering only the last edge	
 	private short lastScoreCount = 0;
 	
 	private List<Node> nodeList = null;
@@ -122,7 +123,7 @@ public class Label implements Comparable<Label> {
 	}
 
 	/**
-	 * comparison method
+	 * Comparison method
 	 * @param arg0 the other object to compare this to
 	 * @return 1 if this object is larger than the other, -1 if smaller, 0 if equal
 	 */
@@ -137,7 +138,8 @@ public class Label implements Comparable<Label> {
 		return r;
 	}
 	/**
-	 * comparison method using only the last edge
+	 * Comparison method using only the last edge;
+	 * in addition to the score, the direction relative to the last edge is evaluated if necessary
 	 * @param arg0 the other object to compare this to
 	 * @return 1 if this object is larger than the other, -1 if smaller, 0 if equal
 	 */
@@ -146,7 +148,23 @@ public class Label implements Comparable<Label> {
 		int ov = arg0.getLastScoreCount();
 		if (this.lastScoreCount > ov) r = 1;
 		else if (this.lastScoreCount < ov) r = -1;
-		else r = compareTo(arg0);	// if both are equal, sort them according to their total score
+		else {
+			r = compareTo(arg0);	// default fallback: if both are equal, sort them according to their total score
+			if (ov==0) {	// both edges have no points associated: compare directions
+				if (parent != null && parent.backEdge != null) {
+					/* Some notes:
+					 * - both edges should have the same parent!
+					 * - at the root node (parent=null), this comparison should not be invoked anyway
+					 * - at the first node, we don't have a reference direction yet;
+					     but if we are at the first node after root and don't have GPS points, we have a problem anyway */
+//					double a = parent.backEdge.getSym().getAngle() - Math.PI;
+//					if (Math.abs(MathUtil.mapAngle_radians(this.backEdge.getAngle() - a)) 
+//							< Math.abs(MathUtil.mapAngle_radians(arg0.backEdge.getAngle() - a))) r = 1;
+					if (Math.abs(this.getAngleDiff()) < Math.abs(arg0.getAngleDiff())) r = 1;
+					else r = -1;	// (smaller deviation is better)
+				}
+			}
+		}
 		return r;
 	}
 
@@ -189,6 +207,16 @@ public class Label implements Comparable<Label> {
 	public double getDistanceTo(Node node1) {
 		return node.getCoordinate().distance(node1.getCoordinate());
 	}
+	
+	/**
+	 * Computes the angular difference between the two previous edges
+	 * @return
+	 */
+	public double getAngleDiff() {
+		if (parent != null && parent.backEdge != null) {
+			return MathUtil.mapAngle_radians(backEdge.getAngle() - (parent.backEdge.getSym().getAngle() - Math.PI));
+		} else return 0;	// at the first node, we don't have a reference direction yet
+	}
 
 	/**
 	 * calculate the weighted and unweighted score of this label from the edge statistics;
@@ -203,7 +231,7 @@ public class Label implements Comparable<Label> {
 		if (parent != null) {
 			lastScoreCount = eStat.getCount(backEdge.getEdge());
 			scoreCount = (short) (parent.getScoreCount(eStat) + lastScoreCount);
-			lastScore = (double)lastScoreCount / lastEdgeLength;
+//			lastScore = (double)lastScoreCount / lastEdgeLength;
 			//score = Math.round(parent.getScore(eStat) * parent.getLength()) + eStat.getCount(backEdge.getEdge());	// backEdge should be the last edge in the label
 			if (length > 0.) score = scoreCount / length;
 		}
@@ -234,9 +262,9 @@ public class Label implements Comparable<Label> {
 	public short getScoreCount() {
 		return scoreCount;
 	}
-	public double getLastScore() {
-		return lastScore;
-	}
+//	public double getLastScore() {
+//		return lastScore;
+//	}
 	public short getLastScoreCount() {
 		return lastScoreCount;
 	}
