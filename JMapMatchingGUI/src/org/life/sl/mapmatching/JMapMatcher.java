@@ -94,7 +94,7 @@ public class JMapMatcher {
 	private PathSegmentGraph graph = null;	///< data basis (graph)
 	private GPSTrack gpsPoints;		///< the path to match (GPS points)
 	private RFParams rfParams = null;		///< parameters for the route finding algorithm
-	private JMMConfig cfg = new JMMConfig(kCfgFileName);	///< parameters for the MapMatching controller
+	private static JMMConfig cfg = new JMMConfig(kCfgFileName);	///< parameters for the MapMatching controller
 	
 	private int sourcerouteID = 0;
 	
@@ -212,8 +212,6 @@ public class JMapMatcher {
 	 * @return the number of results that have been saved 
 	 */
 	private int saveData(ArrayList<Label> labels, Node fromNode, Node toNode, EdgeStatistics eStat) {
-		Iterator<Label> it = labels.iterator();
-		
 		String outFileName = "";
 		int respondentID = 0;
 		
@@ -238,8 +236,25 @@ public class JMapMatcher {
 		int nNonChoice = 0;
 		int nOut = 0, nOK = 0;
 		boolean first = true;
+		Iterator<Label> it = labels.iterator();
+		int nLabels = labels.size();
+		int nRoutes = Math.min(cfg.nRoutesToWrite, nLabels);
+		ArrayList<Integer> selRoutes = new ArrayList<Integer>(nRoutes); 
+		int j;
+		for (int i = 0; i < nRoutes; i++) {
+			if (i < cfg.iWriteNBest || i >= nRoutes - cfg.iWriteNWorst || nRoutes == nLabels) {	// write those without randomization
+				j = i;
+			} else {	// select random route
+				do {
+					j = (int)(Math.random() * nLabels + .5);
+				} while (selRoutes.contains(j));
+			}
+			Label curLabel = labels.get(j);
+			
+		/*}
+		
 		while (it.hasNext() && nOut++ < cfg.nRoutesToWrite) {	// use only the kMaximumNumberOfRoutes best routes
-			Label curLabel = it.next();
+			Label curLabel = it.next();*/
 			
 			if (cfg.bWriteToDatabase) {
 				if (writeLabelToDatabase(curLabel, first, respondentID, fromNode, toNode)) {
@@ -319,9 +334,6 @@ public class JMapMatcher {
 			route.setGeometry(lineString);
 			
 			session.save(route);
-
-//			route.setnTrafficLights((short)getNumberOfTrafficLights(route.getId()));
-	//		session.save(route);
 
 			// create output for the choice experiment:
 			if (cfg.bWriteChoices && isChoice) {	// (this is required only for the chosen route)
@@ -439,7 +451,9 @@ public class JMapMatcher {
 	public static void main(String... args) throws IOException {
 		//Logger logger = Logger.getRootLogger();
 		//BasicConfigurator.configure();	// set up logging
-		logger.setLevel(Level.INFO);
+		logger.setLevel(cfg.logLevel);
+		Logger.getRootLogger().setLevel(cfg.logLevel);
+		//logger.setLevel(Level.INFO);
 		
 		PathSegmentGraph g = null;
 		// Let us load the graph ...

@@ -35,6 +35,7 @@ import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RFParams.Type;
+import org.life.sl.utils.MathUtil;
 
 //import org.life.sl.shapefilereader.ShapeFileReader;
 
@@ -45,7 +46,9 @@ import com.infomatiq.jsi.SpatialIndex;
 
 import com.infomatiq.jsi.test.SpatialIndexFactory;
 
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
 import com.vividsolutions.jts.operation.linemerge.LineMergeEdge;
@@ -70,7 +73,7 @@ public class RouteFinder {
 		BestLastEdge;	///< traverse label in reverse natural order, considering only the last edge
 	}
 
-	private static boolean bShowProgress = true;	///< show a progress indicator while finding routes?
+	private int iShowProgressDetail = 2;	///< show a progress indicator while finding routes?
 
 	private LabelTraversal itLabelOrder = LabelTraversal.BestFirst;
 	private float kNearestEdgeDistance = 50.f;	// the larger, the slower
@@ -132,6 +135,7 @@ public class RouteFinder {
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
 		rfParams.set(RFParams.Type.LabelTraversal, LabelTraversal.BestFirst.toString());		///< way of label traversal
+		rfParams.setInt(RFParams.Type.ShowProgressDetail, 2);		///< how often each edge may be used
 	}
 	
 	/**
@@ -185,6 +189,7 @@ public class RouteFinder {
 		Stack<Label> stack = new Stack<Label>();
 
 		this.itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal));
+		this.iShowProgressDetail = rfParams.getInt(RFParams.Type.ShowProgressDetail);
 		// precalculate the minimum path length, for use as a constraint in label expansion:
 		maxPathLength = gpsPathLength * rfParams.getDouble(RFParams.Type.DistanceFactor);
 		// if there was a problem, use the given maximum length constraint:
@@ -207,7 +212,8 @@ public class RouteFinder {
 		//////////////////////////////////////////////
 		// ALGORITHM MAIN LOOP
 		//////////////////////////////////////////////
-
+		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator();
+		Label.LastEdgeComparatorRev lastEdgeCompRev = new Label.LastEdgeComparatorRev();
 		stackLoop:
 		while (!stack.empty()) {
 			// create label expansion (next generation):
@@ -218,9 +224,9 @@ public class RouteFinder {
 				// Attention: sorting the labels affects two parts:
 				// 1. the expansion array, which is processed linearly
 				// 2. the stack, which is effectively processed in reverse order!
-				else if (itLabelOrder == LabelTraversal.BestFirst) Collections.sort(expansion);			// order labels in ascending order (lowest score is treated first), so that the highest score ends up on top of the stack
-				else if (itLabelOrder == LabelTraversal.WorstFirst) Collections.sort(expansion, Collections.reverseOrder());	// order labels in descending order (highest score first), so the best label ends up at the bottom of the stack
-				else if (itLabelOrder == LabelTraversal.BestLastEdge) Collections.sort(expansion, new Label.LastEdgeComparator());
+				else if (itLabelOrder == LabelTraversal.BestFirst) Collections.sort(expansion, lastEdgeComp);			// order labels in ascending order (lowest score is treated first), so that the highest score ends up on top of the stack
+				else if (itLabelOrder == LabelTraversal.WorstFirst) Collections.sort(expansion, lastEdgeCompRev);//Collections.reverseOrder());	// order labels in descending order (highest score first), so the best label ends up at the bottom of the stack
+				else if (itLabelOrder == LabelTraversal.BestLastEdge) Collections.sort(expansion, lastEdgeComp);
 				//System.out.println(expansion.get(0).getScore(edgeStatistics)*1000. + "\t" + expandingLabel.getScore()*1000. + "\t" + expansion.size() + "\t" + treeLevel);
 				//System.out.println(expandingLabel.getTreeLevel());
 		
@@ -242,15 +248,19 @@ public class RouteFinder {
 				}
 				//System.out.println("--");
 				
-				if (bShowProgress) {	// some log output?
-					if (numLabels%50000 == 0) System.out.print(".");
+				if (iShowProgressDetail > 0) {	// some log output?
+					if (iShowProgressDetail > 1 && numLabels%50000 == 0) System.out.print(".");
 					if (numLabels%5000000 == 0) {
-						System.out.println(numLabels + " - " + (expandingLabel.getLength() / gpsPathLength) + " ## " + result.size());
+						String s = numLabels + " - ";
+						if (iShowProgressDetail > 1) s += (expandingLabel.getLength() / gpsPathLength) + " - ";
+						s += result.size();
+						System.out.println(s);
 					}
 					long freeMem = Runtime.getRuntime().freeMemory();
-					if (numLabels%500000 == 0 && freeMem / (double)Runtime.getRuntime().maxMemory() < .1) {
+					if (numLabels%200000 == 0 && freeMem / (double)Runtime.getRuntime().maxMemory() < .1) {
+						System.out.print("Mem: " + freeMem/(1024*1024) + "MB");
 						System.gc();
-						System.out.println("Mem: " + freeMem/(1024*1024) + "MB / " + Runtime.getRuntime().freeMemory()/(1024*1024) + "MB");
+						System.out.println(" / " + Runtime.getRuntime().freeMemory()/(1024*1024) + "MB");
 					}
 				}
 			} else {	// "dead end" - this label is invalid
@@ -260,7 +270,7 @@ public class RouteFinder {
 		}
 		//if (result.isEmpty()) result.add(new Label(startNode));	// if nothing was found, return only the start node
 		// some statistics on the computation:
-		System.out.printf("\nlabels analyzed:\t%14d\nvalid routes:\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",
+		System.out.printf("\nlabels analyzed:\t%14d\nvalid routes:\t\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",
 				numLabels, result.size(), numDeadEnds, (100.*numDeadEnds/numLabels), numLabels_rejected, (100.*numLabels_rejected/numLabels), 
 				network.getNodes().size());
 		return result;
@@ -288,6 +298,9 @@ public class RouteFinder {
 	private ArrayList<Label> expandLabel(Label parentLabel) {
 		ArrayList<Label> expansion = new ArrayList<Label>();
 		Label newLabel;
+		if ((int)(parentLabel.getNode().getCoordinate().x/10) == 72354) {
+			System.out.println("I'm here!");
+		}
 
 		/////////////////////////////////////
 		// MAKE LABELS FROM NEIGHBORS
@@ -440,10 +453,20 @@ public class RouteFinder {
 	 */
 	public Edge getNearestEdge(Point p) {
 		com.infomatiq.jsi.Point pp = new com.infomatiq.jsi.Point((float) p.getX(), (float) p.getY());
-	
-		Return r = new Return();
-		this.si.nearest(pp, r, kNearestEdgeDistance);	// TODO: decide how to choose value for furthestDistance? 10 meters is just a guess.
-		return (Edge) this.counter__edge.get(r.getResult());
+
+		ReturnArray r = new ReturnArray();
+		this.si.nearestNUnsorted(pp, r, 8, kNearestEdgeDistance);	// TODO: decide how to choose value for furthestDistance? 10 meters is just a guess.
+		double dMin = Double.MAX_VALUE, d = 0;
+		Edge e0 = null;
+		for (Integer i : r.getResult()) {
+			Edge e = (Edge) this.counter__edge.get(i);
+			d = p.distance(((LineMergeEdge)e).getLine());
+			if (d < dMin) {
+				dMin = d;
+				e0 = e;
+			}
+		}
+		return e0;
 	}
 
 }
@@ -461,6 +484,23 @@ class Return implements TIntProcedure {
     }
 	
 	int getResult() {
+		return this.result;
+	}
+}
+
+/**
+ * Result container; looks like a bit of overkill, but is required by SpatialIndex...
+ */
+class ReturnArray implements TIntProcedure {
+
+	private ArrayList<Integer> result = new ArrayList<Integer>();
+	
+	public boolean execute(int value) {
+      this.result.add(value);
+      return true;
+    }
+	
+	ArrayList<Integer> getResult() {
 		return this.result;
 	}
 }
