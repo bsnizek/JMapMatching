@@ -248,8 +248,9 @@ public class RouteFinder {
 						System.out.println(" / " + Runtime.getRuntime().freeMemory()/(1024*1024) + "MB");
 					}
 				}
+				// check for rejectedLabelsLimit-constraint:
 				if (rejectedLabelsLimit > 0 && numLabels_rejected > rejectedLabelsLimit && result.size() == 0) {
-					logger.info("Reached rejectedLabelsLimit - increase network buffer size?");
+					logger.warn("Reached rejectedLabelsLimit - increase network buffer size?");
 				}
 			} else {	// "dead end" - this label is invalid
 				numDeadEnds++;

@@ -170,7 +170,7 @@ public class JMapMatcher {
 		
 		RFParams rfParams = initConstraints();
 		boolean repeat = false;
-		do {
+		do {	// loop: will be repeated if network buffer is resized
 			if (graph == null || repeat) {	// create a new graph enveloping the GPS track
 				graph = loadGraphFromDB(gpsPoints);
 			}
@@ -205,12 +205,18 @@ public class JMapMatcher {
 				logger.info("++ findRoutes: " + t_1 + "s");
 				logger.info("++ saveRoutes: " + t_3 + "s");
 			} else {	// no labels found
-				logger.info("No labels found");
+				logger.warn("No labels found");
 				double bsf = rfParams.getDouble(RFParams.Type.NoLabelsResizeNetwork);
-				if (bsf > 1.) {
+				if (bsf > 1.) {	// try to resize the network
 					double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize) * bsf;
 					rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);
-					if (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax)) repeat = true;
+					if (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax)) {
+						repeat = true;
+						logger.info("Network buffer resized to " + bs + " - repeating task");
+					} else {	// network size limit reached
+						logger.warn("Network buffer size limit reached!");
+					}
+					// if repeat==true, the matching will now be repeated with a bigger network buffer
 				}
 			}
 			logger.info("++ Total time: " + (t_0 + t_1 + t_2 + t_3) + "s");
