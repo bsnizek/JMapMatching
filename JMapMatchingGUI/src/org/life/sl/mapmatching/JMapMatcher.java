@@ -133,7 +133,7 @@ public class JMapMatcher {
 	 * @return
 	 */
 	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
-		return new PathSegmentGraph(track, (float)initConstraints().getDouble(RFParams.Type.NetworkBufferSize));
+		return new PathSegmentGraph(track, (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize));
 	}
 	
 	/**
@@ -168,40 +168,53 @@ public class JMapMatcher {
 		Timer timer = new Timer();
 		timer.init();	// initialize timer
 		
-		if (graph == null) {	// create a new graph enveloping the GPS track
-			graph = loadGraphFromDB(gpsPoints);
-		}
-		Node fromNode = graph.findClosestNode(gpsPoints.getCoordinate(0));	// first node (Origin)
-		Node toNode   = graph.findClosestNode(gpsPoints.getCoordinate(-1));	// last node in GPS route (Destination) 
-		// log coordinates:
-		logger.info("Origin:      " + fromNode.getCoordinate());
-		logger.info("Destination: " + toNode.getCoordinate());
-		double t_0 = timer.getRunTime(true, "++ graph loaded");
+		RFParams rfParams = initConstraints();
+		boolean repeat = false;
+		do {
+			if (graph == null || repeat) {	// create a new graph enveloping the GPS track
+				graph = loadGraphFromDB(gpsPoints);
+			}
+			Node fromNode = graph.findClosestNode(gpsPoints.getCoordinate(0));	// first node (Origin)
+			Node toNode   = graph.findClosestNode(gpsPoints.getCoordinate(-1));	// last node in GPS route (Destination) 
+			// log coordinates:
+			logger.info("Origin:      " + fromNode.getCoordinate());
+			logger.info("Destination: " + toNode.getCoordinate());
+			double t_0 = timer.getRunTime(true, "++ graph loaded");
 
-		RouteFinder rf = new RouteFinder(graph, initConstraints());	// perform the actual route finding procedure on the PathSegmentGraph
-		rf.calculateNearest();	// calculate nearest edges to all data points (needed for edges statistics)
-		// Prepare the evaluation (assigning score to labels):
-		EdgeStatistics eStat = new EdgeStatistics(rf, gpsPoints);
-		double t_2 = timer.getRunTime(true);
-
-		ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsPoints.getTrackLength());	///< list containing all routes that were found (still unsorted)
-
-		double t_1 = timer.getRunTime(true, "++ Routefinding finished");
-		double t_3 = 0;
-		
-		if (!labels.isEmpty()) {
-			// loop over all result routes, store them together with their score: 
-			t_2 += timer.getRunTime(true, "++ Edge statistics created");
-			Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
+			RouteFinder rf = new RouteFinder(graph, rfParams);	// perform the actual route finding procedure on the PathSegmentGraph
+			rf.calculateNearest();	// calculate nearest edges to all data points (needed for edges statistics)
+			// Prepare the evaluation (assigning score to labels):
+			EdgeStatistics eStat = new EdgeStatistics(rf, gpsPoints);
+			double t_2 = timer.getRunTime(true);
 	
-			int nOK = saveData(labels, fromNode, toNode, eStat);
+			ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsPoints.getTrackLength());	///< list containing all routes that were found (still unsorted)
+	
+			double t_1 = timer.getRunTime(true, "++ Routefinding finished");
+			double t_3 = 0;
 			
-			t_3 = timer.getRunTime(true, "++ " + nOK + " routes stored");
-			logger.info("++ load graph: " + t_0 + "s");
-			logger.info("++ findRoutes: " + t_1 + "s");
-			logger.info("++ saveRoutes: " + t_3 + "s");
-		}
-		logger.info("++ Total time: " + (t_0 + t_1 + t_2 + t_3) + "s");
+			repeat = false;
+			if (!labels.isEmpty()) {
+				// loop over all result routes, store them together with their score: 
+				t_2 += timer.getRunTime(true, "++ Edge statistics created");
+				Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
+		
+				int nOK = saveData(labels, fromNode, toNode, eStat);
+				
+				t_3 = timer.getRunTime(true, "++ " + nOK + " routes stored");
+				logger.info("++ load graph: " + t_0 + "s");
+				logger.info("++ findRoutes: " + t_1 + "s");
+				logger.info("++ saveRoutes: " + t_3 + "s");
+			} else {	// no labels found
+				logger.info("No labels found");
+				double bsf = rfParams.getDouble(RFParams.Type.NoLabelsResizeNetwork);
+				if (bsf > 1.) {
+					double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize) * bsf;
+					rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);
+					if (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax)) repeat = true;
+				}
+			}
+			logger.info("++ Total time: " + (t_0 + t_1 + t_2 + t_3) + "s");
+		} while (repeat);
 	}
 	
 	/**
@@ -437,6 +450,7 @@ public class JMapMatcher {
 		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///< minimum route length
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
+		rfParams.setInt(RFParams.Type.RejectedLabelsLimit, 0);		///< limit for rejected labels (if no routes are found)
 		
 		// read config file, eventually overwriting existing values:
 		int r = rfParams.readFromFile(kCfgFileName);

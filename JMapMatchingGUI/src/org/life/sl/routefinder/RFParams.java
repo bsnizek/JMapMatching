@@ -46,8 +46,11 @@ public class RFParams {
 		MaximumLength,	///< maximum length of a valid route; length is defined as the sum of weights over edges in the route 
 		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
 		DistanceFactor,			///< this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
-		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
 		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
+		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
+		RejectedLabelsLimit,	///< limit for the number of unsuccessful labels (no routes, only rejected labels)
+		NoLabelsResizeNetwork,	///< factor to resize the network if no routes have been found
+		NetworkBufferSizeMax,	///< maximum network buffer size
 		ShowProgressDetail,		///< how much detail regarding the progress is shown ("progress bar"): 0, 1, 2
 	}
 
@@ -189,6 +192,9 @@ public class RFParams {
 			if (map2Double(iniMap, "MaximumLength", Type.MaximumLength)) r++;
 			if (map2Double(iniMap, "DistanceFactor", Type.DistanceFactor)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize", Type.NetworkBufferSize)) r++;
+			if (map2Int(iniMap, "RejectedLabelsIncrNet", Type.RejectedLabelsLimit)) r++;
+			if (map2Double(iniMap, "NoLabelsResizeNetwork", Type.NoLabelsResizeNetwork)) r++;
+			if (map2Double(iniMap, "NetworkBufferSizeMax", Type.NetworkBufferSizeMax)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
 			if (map2Int(iniMap, "ShowProgressDetail", Type.ShowProgressDetail)) r++;
 		} catch (InvalidFileFormatException e) {
@@ -208,7 +214,10 @@ public class RFParams {
 	 */
 	private boolean map2Int(Map<String, String> iniMap, String mapKey, Type parKey) {
 		boolean ok = iniMap.containsKey(mapKey); 
-		if (ok) setInt(parKey, Integer.parseInt(iniMap.get(mapKey)));
+		if (ok) {
+			Double d = Double.parseDouble(iniMap.get(mapKey));
+			setInt(parKey, d.intValue());
+		}
 		return ok;
 	}
 	/**

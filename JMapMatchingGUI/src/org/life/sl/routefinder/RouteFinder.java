@@ -88,6 +88,7 @@ public class RouteFinder {
 
 	private long numLabels = 0;			///< number of labels (states) generated when running algorithm
 	private long numLabels_rejected = 0;	///< number of labels (states) that have been rejected due to constraints
+	private long rejectedLabelsLimit = 0;	///< limit for number of labels (states) that have been rejected
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
 	
@@ -130,6 +131,8 @@ public class RouteFinder {
 		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///< minimum route length
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
+		rfParams.setInt(RFParams.Type.RejectedLabelsLimit, 0);		///< limit for unsuccessful labels
+		rfParams.setInt(RFParams.Type.NoLabelsResizeNetwork, 0);	///< factor to resize network buffer if no routes were found
 		rfParams.set(RFParams.Type.LabelTraversal, LabelTraversal.BestFirst.toString());		///< way of label traversal
 		rfParams.setInt(RFParams.Type.ShowProgressDetail, 2);		///< how often each edge may be used
 	}
@@ -179,6 +182,7 @@ public class RouteFinder {
 		int numDeadEnds = 0;
 
 		this.itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal));
+		this.rejectedLabelsLimit = rfParams.getInt(RFParams.Type.RejectedLabelsLimit);
 		this.iShowProgressDetail = rfParams.getInt(RFParams.Type.ShowProgressDetail);
 		// precalculate the minimum path length, for use as a constraint in label expansion:
 		maxPathLength = gpsPathLength * rfParams.getDouble(RFParams.Type.DistanceFactor);
@@ -243,6 +247,9 @@ public class RouteFinder {
 						System.gc();
 						System.out.println(" / " + Runtime.getRuntime().freeMemory()/(1024*1024) + "MB");
 					}
+				}
+				if (rejectedLabelsLimit > 0 && numLabels_rejected > rejectedLabelsLimit && result.size() == 0) {
+					logger.info("Reached rejectedLabelsLimit - increase network buffer size?");
 				}
 			} else {	// "dead end" - this label is invalid
 				numDeadEnds++;
