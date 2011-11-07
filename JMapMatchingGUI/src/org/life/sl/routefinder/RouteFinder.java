@@ -61,10 +61,11 @@ import com.vividsolutions.jts.planargraph.Node;
  * @author Bernhard Barkow
  */
 public class RouteFinder {
-	private static enum LabelTraversal {
+	public static enum LabelTraversal {
 		None,			///< no special sorting
 		Shuffle,		///< shuffle labels before advancing in the iteration
 		BestFirst,		///< traverse label in reverse natural order (highest score first) - this should find the globally best route first
+		BestFirstDR,	///< like BestFirst, but including a Dead Reckoning fallback strategy
 		WorstFirst,		///< traverse label in natural order (highest score last)
 		BestLastEdge;	///< traverse label in reverse natural order, considering only the last edge
 	}
@@ -201,8 +202,7 @@ public class RouteFinder {
 		//*** START OF ALGORITHM ***//
 		stack.push(new Label(startNode));	// push start node to stack
 
-		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator();
-		Label.LastEdgeComparatorRev lastEdgeCompRev = new Label.LastEdgeComparatorRev();
+		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
 		stackLoop:
 		while (!stack.empty()) {	// algorithm's main loop
 			// create label expansion (next generation):
@@ -213,10 +213,11 @@ public class RouteFinder {
 				// Attention: sorting the labels affects two parts:
 				// 1. the expansion array, which is processed linearly
 				// 2. the stack, which is effectively processed in reverse order!
-				else if (itLabelOrder == LabelTraversal.BestFirst) Collections.sort(expansion, lastEdgeComp);		// order labels in ascending order (lowest score is treated first), so that the highest score ends up on top of the stack
+				/*else if (itLabelOrder == LabelTraversal.BestFirst) Collections.sort(expansion, lastEdgeComp);		// order labels in ascending order (lowest score is treated first), so that the highest score ends up on top of the stack
 				else if (itLabelOrder == LabelTraversal.WorstFirst) Collections.sort(expansion, lastEdgeCompRev);	// order labels in descending order (highest score first), so the best label ends up at the bottom of the stack
 					// Update: since the labels are identical up to the parent node, we compare only the last Edge
-				else if (itLabelOrder == LabelTraversal.BestLastEdge) Collections.sort(expansion, lastEdgeComp);
+				else if (itLabelOrder == LabelTraversal.BestLastEdge) Collections.sort(expansion, lastEdgeComp);*/
+				else Collections.sort(expansion, lastEdgeComp);
 		
 				// test the newly created labels:
 				for (Label currentLabel : expansion) {	// loop over all next-generation labels
