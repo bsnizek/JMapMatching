@@ -141,7 +141,7 @@ public class ImportGoodBadCoverage {
  						SourcePoint sp = new SourcePoint();
  						Point pnt = fact.createPoint(new Coordinate(newX,newY));
  						sp.setGeometry(pnt);
- 						sp.setSourcerouteid((int) srid);
+ 						sp.setSourcerouteid((int) counter);
  						session.save(sp);
  						l = l + step;
  					}
