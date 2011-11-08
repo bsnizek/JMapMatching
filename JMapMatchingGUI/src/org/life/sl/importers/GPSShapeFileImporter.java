@@ -134,7 +134,7 @@ public class GPSShapeFileImporter {
 				session.save(sp);
 				System.out.print(".");
 				if (cntr > 300) {
-					System.out.println((cntr2/numberPoints*1.00)*100.00 + "% finished (" + cntr2 + "/" + numberPoints + ")");
+					System.out.println(((double)cntr2/(double)numberPoints)*100. + "% finished (" + cntr2 + "/" + numberPoints + ")");
 					cntr = 0;
 					session.getTransaction().commit();
 					setUp();

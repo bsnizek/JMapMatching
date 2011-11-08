@@ -87,9 +87,10 @@ public class RouteFinder {
 	// bridges identified in graph
 //	private Collection<Edge> bridges = new ArrayList<Edge>();
 
-	private long numLabels = 0;			///< number of labels (states) generated when running algorithm
+	private long numLabels = 0;				///< number of labels (states) generated when running algorithm
 	private long numLabels_rejected = 0;	///< number of labels (states) that have been rejected due to constraints
 	private long rejectedLabelsLimit = 0;	///< limit for number of labels (states) that have been rejected
+	private long numLabels_overlap = 0;		///< number of labels that have overlapping nodes 
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
 	
@@ -237,6 +238,9 @@ public class RouteFinder {
 				if (iShowProgressDetail > 0) {	// some log output?
 					if (iShowProgressDetail > 1 && numLabels%50000 == 0) System.out.print(".");
 					if (numLabels%5000000 == 0) {
+						System.out.println("dead ends: " + numDeadEnds);
+						System.out.println("overlaps:  " + numLabels_overlap);
+						System.out.println("rejected:  " + numLabels_rejected);
 						String s = numLabels + " - ";
 						if (iShowProgressDetail > 1) s += (expandingLabel.getLength() / gpsPathLength) + " - ";
 						s += result.size();
@@ -247,6 +251,11 @@ public class RouteFinder {
 						System.out.print("Mem: " + freeMem/(1024*1024) + "MB");
 						System.gc();
 						System.out.println(" / " + Runtime.getRuntime().freeMemory()/(1024*1024) + "MB");
+						// if there is really no memory left, just stop:
+						if (Runtime.getRuntime().freeMemory() < 10000000) {	// 10MB
+							logger.error("Stopping due to memory overload!");
+							break stackLoop;
+						}
 					}
 				}
 				// check for rejectedLabelsLimit-constraint:
@@ -368,13 +377,14 @@ public class RouteFinder {
 //			} else {	// node is not an articulation point, so we have to check for max. overlap:
 				if (nodeOccurrences > rfParams.getInt(RFParams.Type.NodeOverlap)) {
 					logger.trace("Constraint reached: NodeOccurrences = " + nodeOccurrences);
+					numLabels_overlap++;
 					continue;	// don't consider this label
 				}
 //			}
 
 			// no constraints broken:
 			newLabel.calcScore(edgeStatistics);	// shall we do this here and sort the list in findRoutes(), or shall we rather shuffle?
-			expansion.add(newLabel);	// store newLabel (i.e., it is a valid expansion)
+			expansion.add(newLabel);	// store new label (i.e., it is a valid expansion)
 			numLabels++;
 			numLabels_rejected--;		// inelegantly reset to previous state
 		}
