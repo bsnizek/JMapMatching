@@ -80,7 +80,7 @@ public class JMapMatcher {
 	private static gpsLoader kGraphLoader  = gpsLoader.PGSQLDATABASE;
 	private static boolean kUseReducedNetwork = true;	///< true: restrict network to an area enveloping the track
 	
-	private static String kGraphDataFileName = "testdata/SparseNetwork.shp";
+	private static String kGraphDataFileName = "tmp/04577_network.shp";
 	private static String kGPSPointFileName = "testdata/GPS_Points.shp";
 	
 	private static int kGPSTrackID = 12158;		///< database ID of GPS track to match	
@@ -135,7 +135,11 @@ public class JMapMatcher {
 	 */
 	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
 		String dumpFile = "";
-		if (cfg.bDumpNetwork) dumpFile = String.format("%s/%05d%s", cfg.sDumpNetworkDir, sourcerouteID, ".shp");	// path for network buffer dump
+		if (cfg.bDumpNetwork) {
+			File dir = new File(cfg.sDumpNetworkDir);
+			if (!dir.exists()) dir.mkdirs();
+			dumpFile = String.format("%s/%05d%s", cfg.sDumpNetworkDir, sourcerouteID, "_network.shp");	// path for network buffer dump
+		}
 		return new PathSegmentGraph(track, (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize), dumpFile);
 	}
 	
