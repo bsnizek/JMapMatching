@@ -171,8 +171,7 @@ public class TrafficLightImporter {
 	public static void main(String[] args) throws IllegalDataException, IOException, FactoryException, ParserConfigurationException, SAXException, TransformException, XMLStreamException, FactoryConfigurationError {
 
 		TrafficLightImporter tli = new TrafficLightImporter();
-		tli.read("/Users/besn/Downloads/Copenhagen2.osm");
-		// tli.read("/Users/besn/Downloads/trafficlights.osm");
+		tli.read("geodata/CopenhagenTrafficlights/Copenhagen.osm");
 
 	}
 
