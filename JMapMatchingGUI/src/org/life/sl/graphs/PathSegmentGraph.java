@@ -262,8 +262,7 @@ public class PathSegmentGraph {
 //				this.dumpBuffer(result, "results/buffer.shp");
 //				System.out.println("buffer dumped");
 //			} catch (SchemaException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
+//				Logger.getRootLogger().error("");
 //			} catch (IOException e) {
 //				// TODO Auto-generated catch block
 //				e.printStackTrace();

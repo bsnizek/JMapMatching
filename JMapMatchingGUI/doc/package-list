@@ -1,0 +1,16 @@
+com.infomatiq.jsi
+com.infomatiq.jsi.rtree
+com.infomatiq.jsi.test
+org.geotools.gpx2.gpxentities
+org.geotools.gpx2.io
+org.geotools.gpx2.utils
+org.life.sl.graphs
+org.life.sl.importers
+org.life.sl.mapmatching
+org.life.sl.mapmatching.gui
+org.life.sl.orm
+org.life.sl.readers.osm
+org.life.sl.readers.shapefile
+org.life.sl.routefinder
+org.life.sl.spatialdb
+org.life.sl.utils

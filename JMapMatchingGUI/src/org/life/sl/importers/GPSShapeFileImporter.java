@@ -161,12 +161,9 @@ public class GPSShapeFileImporter {
 	}
 	
 	public static void main(String[] args) throws IllegalDataException, IOException {
-<<<<<<< HEAD
-		String filename = "C:/Users/hsp/git/JMapMatching/JMapMatchingGUI/testdata/CopenhagenGPS/BiCycleTrips.shp";
-=======
-		//String filename = "testdata/exmp1/example_gsp.shp";
+
 		String filename = "geodata/CopenhagenGPS/BiCycleTrips.shp";
->>>>>>> b136b6c421a683e402d01af51b63acd551deb1ee
+
 		@SuppressWarnings("unused")
 		GPSShapeFileImporter gfi = new GPSShapeFileImporter(new File(filename));
 		System.out.println("Shapefile imported !");
