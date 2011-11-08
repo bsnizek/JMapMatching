@@ -118,8 +118,6 @@ public class PathSegmentGraph {
 
 	private Logger logger = Logger.getRootLogger();
 	
-	private double snapDistance = 0.1;
-
 	public HashMap<Node, HashMap<Node, Float>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
 	}
