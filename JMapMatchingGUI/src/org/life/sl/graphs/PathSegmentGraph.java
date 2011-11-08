@@ -118,8 +118,6 @@ public class PathSegmentGraph {
 
 	private Logger logger = Logger.getRootLogger();
 	
-	private double snapDistance = 0.1;
-
 	public HashMap<Node, HashMap<Node, Float>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
 	}
@@ -365,17 +363,19 @@ public class PathSegmentGraph {
 		}
 
 		Edge edge = getLineMergeGraphH4cked().addEdge(lineString);
-		if (lineString.getUserData() == null) lineString.setUserData(new HashMap<String, Object>(3));
-		@SuppressWarnings("unchecked")
-		HashMap<String, Object> userdata = (HashMap<String, Object>) lineString.getUserData();
-		// HashMap<String, Object> hm = new HashMap<String, Object>();
-		
-		userdata.put("id", id);
-		userdata.put("et", envType);
-		userdata.put("ct", cykType);
-		userdata.put("gm", groenM);	// groenM
-// 		userdata.put("geom", lineString);
-		edge.setData(userdata);
+		if (edge != null) {	// edge might not have been added because of coinciding coordinates
+			if (lineString.getUserData() == null) lineString.setUserData(new HashMap<String, Object>(3));
+			@SuppressWarnings("unchecked")
+			HashMap<String, Object> userdata = (HashMap<String, Object>) lineString.getUserData();
+			// HashMap<String, Object> hm = new HashMap<String, Object>();
+			
+			userdata.put("id", id);
+			userdata.put("et", envType);
+			userdata.put("ct", cykType);
+			userdata.put("gm", groenM);	// groenM
+	// 		userdata.put("geom", lineString);
+			edge.setData(userdata);
+		}
 	}
 
 	private void modifyEnvelope(Coordinate[] coordinates) {

@@ -85,21 +85,24 @@ public class LineMergeGraphH4cked extends PlanarGraph {
 		// TODO: remove comment maybe here : ? 
 		Coordinate[] coordinates = CoordinateArrays.removeRepeatedPoints(lineString.getCoordinates());
 //		Coordinate[] coordinates = lineString.getCoordinates();
-		Coordinate startCoordinate = coordinates[0];
-		Coordinate endCoordinate = coordinates[coordinates.length - 1];
-		Node startNode = getNode(startCoordinate);
-		Node endNode = getNode(endCoordinate);
-// 		System.out.println("Coordinates : " + coordinates);
-		DirectedEdge directedEdge0 = new LineMergeDirectedEdge(startNode, endNode,
-				coordinates[1], true);
-//				startCoordinate, true);
-		DirectedEdge directedEdge1 = new LineMergeDirectedEdge(endNode, startNode,
-				coordinates[coordinates.length - 2], false);
-//				endCoordinate, false);
-		Edge edge = new LineMergeEdge(lineString);
-		edge.setDirectedEdges(directedEdge0, directedEdge1);
-		add(edge);
-		return edge;
+		if (coordinates.length > 1) {	// coordinates might coincide due to snapping!
+			Coordinate startCoordinate = coordinates[0];
+			Coordinate endCoordinate = coordinates[coordinates.length - 1];
+			Node startNode = getNode(startCoordinate);
+			Node endNode = getNode(endCoordinate);
+	// 		System.out.println("Coordinates : " + coordinates);
+			DirectedEdge directedEdge0 = new LineMergeDirectedEdge(startNode, endNode,
+					coordinates[1], true);
+	//				startCoordinate, true);
+			DirectedEdge directedEdge1 = new LineMergeDirectedEdge(endNode, startNode,
+					coordinates[coordinates.length - 2], false);
+	//				endCoordinate, false);
+			Edge edge = new LineMergeEdge(lineString);
+			edge.setDirectedEdges(directedEdge0, directedEdge1);
+			add(edge);
+			return edge;
+		}
+		return null;
 	}
 
 	private Node getNode(Coordinate coordinate) {
