@@ -150,6 +150,7 @@ public class JMapMatcher {
 	 * @param sourceroute_id database ID of the sourcepoints (GPS route)
 	 */
 	public void match(int sourceroute_id)  {
+		System.out.println("Matching sourcerout (ID=" + sourceroute_id + ")");
 		gpsPoints = new GPSTrack(sourceroute_id);
 		if (gpsPoints.size() > 0) {	// check if the track contains points
 			sourcerouteID = sourceroute_id;				// store in class variable, for later use

@@ -80,7 +80,7 @@ public class LineStringReader extends AbstractGeometryDataReader {
         String[] typeNames = dataStore.getTypeNames();
         String typeName = typeNames[0];
 
-        System.out.println("Reading content " + typeName);
+        // System.out.println("Reading content " + typeName);
 
         FeatureSource<SimpleFeatureType, SimpleFeature> featureSource;
         FeatureCollection<SimpleFeatureType, SimpleFeature> collection;
