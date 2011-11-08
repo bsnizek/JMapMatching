@@ -94,7 +94,7 @@ public class ImportGoodBadCoverage {
 				fieldnames.add(ln);
 			}
 		}
-
+		
 		int counter = 0;
 		
 		try {
@@ -115,7 +115,8 @@ public class ImportGoodBadCoverage {
  				double shootOver = 0;
  				
  				SourceRoute sr = new SourceRoute();
- 				long srid = (Long) feature.getAttribute("rspdid");
+ 				Double d =  (Double) feature.getAttribute("rspdid");
+ 				long srid = (new Double(d)).longValue();
  				sr.setRespondentid((int) srid);
  				sr.setId(counter);
  				counter++;
