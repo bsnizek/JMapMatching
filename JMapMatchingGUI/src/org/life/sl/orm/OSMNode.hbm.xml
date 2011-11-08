@@ -36,5 +36,11 @@
         <property name="geometry" type="org.hibernatespatial.GeometryUserType" column="geom" />
        
     </class>
+    
+    <database-object> 
+    	<create>CREATE INDEX idx_osmnode_geom ON osmnode USING GIST (geom)</create> 
+        <drop></drop> 
+        <dialect-scope name="org.hibernatespatial.postgis.PostgisDialect" /> 
+   	</database-object>
 
 </hibernate-mapping>

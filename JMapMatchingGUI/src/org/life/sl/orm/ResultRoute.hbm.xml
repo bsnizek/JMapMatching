@@ -69,5 +69,11 @@
 		<property type="float" name="groenM"></property>
 
 	</class>
+	
+	<database-object> 
+    	<create>CREATE INDEX idx_resultroute_geom ON resultroute USING GIST (geom)</create> 
+        <drop></drop> 
+        <dialect-scope name="org.hibernatespatial.postgis.PostgisDialect" /> 
+   	</database-object>
 
 </hibernate-mapping>

@@ -42,5 +42,12 @@
         <!--<property name="ts" ></property>-->
 
     </class>
+    
+    <database-object> 
+    	<create>CREATE INDEX idx_sourcepoint_geom ON sourcepoint USING GIST (geom)</create> 
+        <drop></drop> 
+        <dialect-scope name="org.hibernatespatial.postgis.PostgisDialect" /> 
+   	</database-object>
+    
 
 </hibernate-mapping>

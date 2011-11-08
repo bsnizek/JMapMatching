@@ -40,6 +40,15 @@
 		<property name="groenpct" type="float"></property>
 		<property name="groenm" type="float"></property>
 
+
     </class>
+    
+    <database-object> 
+    	<create>CREATE INDEX idx_osmedge_geom ON osmedge USING GIST (geom)</create> 
+        <drop></drop> 
+        <dialect-scope name="org.hibernatespatial.postgis.PostgisDialect" /> 
+   	</database-object>
+    
+
 
 </hibernate-mapping>
