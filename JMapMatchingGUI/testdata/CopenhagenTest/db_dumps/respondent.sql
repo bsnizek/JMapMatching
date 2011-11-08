@@ -10,29 +10,28 @@
  Target Server Version : 90004
  File Encoding         : utf-8
 
- Date: 11/08/2011 18:36:15 PM
+ Date: 11/08/2011 18:36:04 PM
 */
 
 -- ----------------------------
---  Table structure for "sourceroute"
+--  Table structure for "respondent"
 -- ----------------------------
-DROP TABLE IF EXISTS "sourceroute";
-CREATE TABLE "sourceroute" (
-	"id" int4 NOT NULL,
-	"respondentid" int4
+DROP TABLE IF EXISTS "respondent";
+CREATE TABLE "respondent" (
+	"id" int4 NOT NULL
 )
 WITH (OIDS=FALSE);
-ALTER TABLE "sourceroute" OWNER TO "biker";
+ALTER TABLE "respondent" OWNER TO "biker";
 
 -- ----------------------------
---  Records of "sourceroute"
+--  Records of "respondent"
 -- ----------------------------
 BEGIN;
-INSERT INTO "sourceroute" VALUES ('0', '0');
+INSERT INTO "respondent" VALUES ('0');
 COMMIT;
 
 -- ----------------------------
---  Primary key structure for table "sourceroute"
+--  Primary key structure for table "respondent"
 -- ----------------------------
-ALTER TABLE "sourceroute" ADD CONSTRAINT "sourceroute_pkey" PRIMARY KEY ("id") NOT DEFERRABLE INITIALLY IMMEDIATE;
+ALTER TABLE "respondent" ADD CONSTRAINT "respondent_pkey" PRIMARY KEY ("id") NOT DEFERRABLE INITIALLY IMMEDIATE;
 

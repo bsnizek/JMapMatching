@@ -148,7 +148,12 @@ public class GPSShapeFileImporter {
 			if( iterator != null ){
 				// YOU MUST CLOSE THE ITERATOR!
 				iterator.close();
-				session.close();
+				session.getTransaction().commit();
+				try {
+					session.close();
+					} finally {
+						System.out.println("was already closed - pyt ! ");
+					}
 			}
 		}
 	}
