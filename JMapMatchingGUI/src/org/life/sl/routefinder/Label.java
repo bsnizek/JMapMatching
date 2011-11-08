@@ -43,6 +43,7 @@ import org.geotools.feature.SchemaException;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.life.sl.mapmatching.EdgeStatistics;
+import org.life.sl.routefinder.RouteFinder.LabelTraversal;
 import org.life.sl.utils.MathUtil;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -66,10 +67,16 @@ public class Label implements Comparable<Label> {
 	 *
 	 */
 	public static class LastEdgeComparator implements Comparator<Label> {
-		public int compare(Label arg0, Label arg1) { return arg0.compareTo_LE(arg1); }	
-	}
-	public static class LastEdgeComparatorRev implements Comparator<Label> {
-		public int compare(Label arg0, Label arg1) { return -arg0.compareTo_LE(arg1); }	
+		RouteFinder.LabelTraversal sortOrder;
+		
+		public LastEdgeComparator(RouteFinder.LabelTraversal so) {
+			sortOrder = so;
+		}
+		public int compare(Label arg0, Label arg1) {
+			int r = arg0.compareTo_LE(arg1, sortOrder==LabelTraversal.BestFirstDR);
+			if (sortOrder == LabelTraversal.WorstFirst) r = -r;
+			return r;
+		}	
 	}
 	
 	private Label parent;			///> The parent of the Label
@@ -137,29 +144,27 @@ public class Label implements Comparable<Label> {
 //		else if (this.scoreCount < ov) r = -1;
 		return r;
 	}
+	
 	/**
 	 * Comparison method using only the last edge;
 	 * in addition to the score, the direction relative to the last edge is evaluated if necessary
 	 * @param arg0 the other object to compare this to
 	 * @return 1 if this object is larger than the other, -1 if smaller, 0 if equal
 	 */
-	public int compareTo_LE(Label arg0) {
+	public int compareTo_LE(Label arg0, boolean useDR) {
 		int r = 0;
 		int ov = arg0.getLastScoreCount();
 		if (this.lastScoreCount > ov) r = 1;
 		else if (this.lastScoreCount < ov) r = -1;
 		else {
 			r = compareTo(arg0);	// default fallback: if both are equal, sort them according to their total score
-			if (ov==0) {	// both edges have no points associated: compare directions
+			if (ov==0 && useDR) {	// both edges have no points associated: compare directions (dead reckoning)
 				if (parent != null && parent.backEdge != null) {
 					/* Some notes:
 					 * - both edges should have the same parent!
 					 * - at the root node (parent=null), this comparison should not be invoked anyway
 					 * - at the first node, we don't have a reference direction yet;
 					     but if we are at the first node after root and don't have GPS points, we have a problem anyway */
-//					double a = parent.backEdge.getSym().getAngle() - Math.PI;
-//					if (Math.abs(MathUtil.mapAngle_radians(this.backEdge.getAngle() - a)) 
-//							< Math.abs(MathUtil.mapAngle_radians(arg0.backEdge.getAngle() - a))) r = 1;
 					if (Math.abs(this.getAngleDiff()) < Math.abs(arg0.getAngleDiff())) r = 1;
 					else r = -1;	// (smaller deviation is better)
 				}
