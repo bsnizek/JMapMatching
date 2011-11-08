@@ -38,4 +38,14 @@
 
     </class>
 
+    <database-object> 
+    	<create>INSERT INTO "segregatedtype" VALUES ('0', null);
+				INSERT INTO "segregatedtype" VALUES ('1', 'no              ');
+				INSERT INTO "segregatedtype" VALUES ('2', 'yes             ');
+		</create> 
+        <drop></drop> 
+        <dialect-scope name="org.hibernatespatial.postgis.PostgisDialect" /> 
+   	</database-object>
+
+
 </hibernate-mapping>

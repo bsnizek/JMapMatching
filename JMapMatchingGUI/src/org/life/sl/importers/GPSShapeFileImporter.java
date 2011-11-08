@@ -132,7 +132,6 @@ public class GPSShapeFileImporter {
 				sp.setGeometry((Point) geometry.reverse());
 				sp.setSourcerouteid(route_id);
 				session.save(sp);
-<<<<<<< HEAD
 				System.out.print(".");
 				if (cntr > 300) {
 					System.out.println((cntr2/numberPoints*1.00)*100.00 + "% finished (" + cntr2 + "/" + numberPoints + ")");
@@ -143,8 +142,6 @@ public class GPSShapeFileImporter {
 				cntr2++;
 				cntr++;
 
-=======
->>>>>>> d90229c3291be525526e9b6c0fcd6aa93afe56dc
 			}
 		}
 		finally {
