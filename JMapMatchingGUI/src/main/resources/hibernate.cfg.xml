@@ -73,7 +73,11 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 		<mapping resource="org/life/sl/orm/Highwaytype.hbm.xml" />
 
 		<mapping resource="org/life/sl/orm/Trafficlight.hbm.xml" />
+		
+
          
 	</session-factory>
+
+
 
 </hibernate-configuration>
