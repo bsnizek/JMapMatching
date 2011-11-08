@@ -157,9 +157,9 @@ public class PathSegmentGraph {
 	 * initialize the graph from a section of the (database-stored) network enveloping the GPS track 
 	 * @param track array of points on the track under examination
 	 */
-	public PathSegmentGraph(ArrayList<Point> track, float bufferSize) {
+	public PathSegmentGraph(ArrayList<Point> track, float bufferSize, String dumpFile) {
 		this();
-		addLineStringsFromDatabase(track, bufferSize);
+		addLineStringsFromDatabase(track, bufferSize, dumpFile);
 	}
 	
 	/**
@@ -190,15 +190,16 @@ public class PathSegmentGraph {
 	 * Create a new graph, with linestrings read from the database (using the complete table OSMEdge!) 
 	 */
 	public void addLineStringsFromDatabase() {
-		addLineStringsFromDatabase(null, 0);
+		addLineStringsFromDatabase(null, 0, "");
 	}
 
 	/**
 	 * Create a new graph, with linestrings read from the database (optionally using only a buffer around a given track for the network)
 	 * @param track GPS track consisting of a list of data points
 	 * @param bufferSize size of the buffer to select around the track
+	 * @param dumpFile 
 	 */
-	public void addLineStringsFromDatabase(ArrayList<Point> track, float bufferSize) {
+	public void addLineStringsFromDatabase(ArrayList<Point> track, float bufferSize, String dumpFile) {
 		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
 		distancesCalculated = false;
 
@@ -258,15 +259,16 @@ public class PathSegmentGraph {
 				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype(), o.getGroenm());
 			}
 			
-//			try {
-//				this.dumpBuffer(result, "results/buffer.shp");
-//				System.out.println("buffer dumped");
-//			} catch (SchemaException e) {
-//				Logger.getRootLogger().error("");
-//			} catch (IOException e) {
-//				// TODO Auto-generated catch block
-//				e.printStackTrace();
-//			}
+			if (dumpFile != "") {
+				try {
+					this.dumpBuffer(result, dumpFile);
+					Logger.getRootLogger().info("buffer dumped");
+				} catch (SchemaException e) {
+					Logger.getRootLogger().error("error dumping buffer: " + e);
+				} catch (IOException e) {
+					Logger.getRootLogger().error("error dumping buffer: " + e);
+				}
+			}
 		}
 		
 		session.disconnect();
@@ -289,7 +291,6 @@ public class PathSegmentGraph {
 			OSMEdge o = iter.next();
 			SimpleFeature feature = featureBuilder.buildFeature(null);	
 			feature.setDefaultGeometry(o.getGeometry());
-			
 		}
 		
 		logger.info("Writing to shapefile " + filename);

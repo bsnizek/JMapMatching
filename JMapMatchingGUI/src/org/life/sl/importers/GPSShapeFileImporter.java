@@ -118,7 +118,6 @@ public class GPSShapeFileImporter {
 					session.save(r);
 				}
 				
-
 				Query result2 = session.createQuery("from Respondent WHERE id=" + respondent_id);
 				if (result2.list().size() == 0) {
 					Respondent r = new Respondent();
@@ -126,12 +125,10 @@ public class GPSShapeFileImporter {
 					session.save(r);
 				}
 				
-				
 				SourcePoint sp = new SourcePoint();
 				sp.setGeometry((Point) geometry.reverse());
 				sp.setSourcerouteid(route_id);
 				session.save(sp);
-
 			}
 		}
 		finally {

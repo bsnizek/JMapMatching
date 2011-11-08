@@ -133,7 +133,7 @@ public class JMapMatcher {
 	 * @return
 	 */
 	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
-		return new PathSegmentGraph(track, (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize));
+		return new PathSegmentGraph(track, (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize), "");
 	}
 	
 	/**
