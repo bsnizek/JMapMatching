@@ -20,22 +20,21 @@ You should have received a copy of the GNU General Public License along with
 this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-public class GlobalRegister {
+public class GraphParams {
 	
-	private static GlobalRegister instance = null;
+	private static GraphParams instance = null;
 	
-	public final static boolean SNAP = false;
+	public static boolean SNAP = false;
 
-	public final static double GLOBAL_SNAP = 0.01;
+	public static double GLOBAL_SNAP_DIST = 0.1;
 	
-	public double getSnap() {
-		return GLOBAL_SNAP;
-	}
+	public boolean getSnap() { return SNAP; }
+	public void setSnap(boolean b) { SNAP = b; }
+	public double getSnapDistance() { return GLOBAL_SNAP_DIST; }
+	public void setSnapDistance(double d) { GLOBAL_SNAP_DIST = d; }
 
-	public static GlobalRegister getInstance() {
-		if(instance == null) {
-			instance = new GlobalRegister();
-		}
+	public static GraphParams getInstance() {
+		if(instance == null) instance = new GraphParams();
 		return instance;
 	}
 }

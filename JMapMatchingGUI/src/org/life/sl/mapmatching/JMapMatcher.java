@@ -33,6 +33,7 @@ import org.geotools.feature.SchemaException;
 import org.hibernate.Query;
 import org.hibernate.Session;
 //import org.geotools.util.logging.Logging;
+import org.life.sl.graphs.GraphParams;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMNode;
@@ -76,7 +77,7 @@ public class JMapMatcher {
 
 	// input data:
 	private static gpsLoader kGPSLoader    = gpsLoader.BULK_PGSQLDATABASE;
-	private static gpsLoader kGraphLoader  = gpsLoader.SHAPEFILE;
+	private static gpsLoader kGraphLoader  = gpsLoader.PGSQLDATABASE;
 	private static boolean kUseReducedNetwork = true;	///< true: restrict network to an area enveloping the track
 	
 	private static String kGraphDataFileName = "testdata/SparseNetwork.shp";
@@ -124,7 +125,7 @@ public class JMapMatcher {
 	 * Deletes the currently loaded graph in order to free memory and start matching a new track (by setting it to null)
 	 */
 	public void clearGraph() {
-		this. graph = null;
+		this.graph = null;
 	}
 
 	/**
@@ -133,7 +134,9 @@ public class JMapMatcher {
 	 * @return
 	 */
 	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
-		return new PathSegmentGraph(track, (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize), "");
+		String dumpFile = "";
+		if (cfg.bDumpNetwork) dumpFile = String.format("%s/%05d%s", cfg.sDumpNetworkDir, sourcerouteID, "_network.shp");	// path for network buffer dump
+		return new PathSegmentGraph(track, (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize), dumpFile);
 	}
 	
 	/**
@@ -477,6 +480,8 @@ public class JMapMatcher {
 		logger.setLevel(cfg.logLevel);
 		Logger.getRootLogger().setLevel(cfg.logLevel);
 		//logger.setLevel(Level.INFO);
+		GraphParams.getInstance().setSnap(cfg.graphSnapDistance > 0.);
+		GraphParams.getInstance().setSnapDistance(cfg.graphSnapDistance);
 		
 		PathSegmentGraph g = null;
 		// Let us load the graph ...
@@ -502,7 +507,7 @@ public class JMapMatcher {
 			
 			Query result;
 			String query = "from SourceRoute";
-			if (args.length == 0 &&  cfg.sourcerouteID >= 0) query += " WHERE id="+cfg.sourcerouteID;
+			if (args.length == 0 && cfg.sourcerouteID >= 0) query += " WHERE id="+cfg.sourcerouteID;
 			if (args.length == 1) query += " WHERE id="+args[0];
 			if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
 			result = session.createQuery(query);

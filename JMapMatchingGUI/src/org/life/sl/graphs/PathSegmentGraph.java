@@ -117,6 +117,8 @@ public class PathSegmentGraph {
 	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 
 	private Logger logger = Logger.getRootLogger();
+	
+	private double snapDistance = 0.1;
 
 	public HashMap<Node, HashMap<Node, Float>> getAPSDistances() {
 		return allPairsShortestPath.getDistances();
@@ -197,7 +199,7 @@ public class PathSegmentGraph {
 	 * Create a new graph, with linestrings read from the database (optionally using only a buffer around a given track for the network)
 	 * @param track GPS track consisting of a list of data points
 	 * @param bufferSize size of the buffer to select around the track
-	 * @param dumpFile 
+	 * @param dumpFile if not empty, the path of a shapefile to dump the network into.
 	 */
 	public void addLineStringsFromDatabase(ArrayList<Point> track, float bufferSize, String dumpFile) {
 		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
@@ -259,14 +261,13 @@ public class PathSegmentGraph {
 				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype(), o.getGroenm());
 			}
 			
+			// if required, dump the graph to a shapefile:
 			if (dumpFile != "") {
 				try {
 					this.dumpBuffer(result, dumpFile);
-					Logger.getRootLogger().info("buffer dumped");
-				} catch (SchemaException e) {
-					Logger.getRootLogger().error("error dumping buffer: " + e);
-				} catch (IOException e) {
-					Logger.getRootLogger().error("error dumping buffer: " + e);
+					logger.info("buffer dumped");
+				} catch (Exception e) {
+					logger.error("error dumping buffer: " + e);
 				}
 			}
 		}
@@ -328,10 +329,10 @@ public class PathSegmentGraph {
             } finally {
                 transaction.close();
             }
-            // System.exit(0); // success!
+            //System.exit(0); // success!
         } else {
-            logger.error(typeName + " does not support read/write access");
-            System.exit(1);	// exit program with status 1 (error)
+        	logger.error(typeName + " does not support read/write access");
+            //System.exit(1);	// exit program with status 1 (error)
         }
 	}
 
@@ -341,7 +342,7 @@ public class PathSegmentGraph {
 
 	/**
 	 * Adds an Edge, DirectedEdges, and Nodes for the given LineString representation
-	 * of an edge. Snaps all vertices according to GlobalRegister.GLOBAL_SNAP
+	 * of an edge. Snaps all vertices according to GraphParams.GLOBAL_SNAP_DIST
 	 * @param lineString
 	 * @param id : the id coming out of OSM
 	 */
@@ -355,10 +356,11 @@ public class PathSegmentGraph {
 		Coordinate[] coordinates = lineString.getCoordinates();
 		modifyEnvelope(coordinates);
 
-		if (GlobalRegister.SNAP) {
+		if (GraphParams.getInstance().getSnap()) {
+			double sd = GraphParams.getInstance().getSnapDistance();
 			for(Coordinate c : coordinates) {
-				c.x = c.x - (c.x % GlobalRegister.GLOBAL_SNAP);
-				c.y = c.y - (c.y % GlobalRegister.GLOBAL_SNAP);
+				c.x = c.x - (c.x % sd);
+				c.y = c.y - (c.y % sd);
 			}
 		}
 
