@@ -110,7 +110,7 @@ public class ImportGoodBadCoverage {
  				
  				int lngth = cs.length;
  				
- 				int length = 50;
+ 				int length = 25;
  				
  				double shootOver = 0;
  				
@@ -174,7 +174,7 @@ public class ImportGoodBadCoverage {
 	}
 	
 	public static void main(String[] args) throws IllegalDataException, IOException {
-		String filename = "/Users/besn/git/JMapMatching/JMapMatchingGUI/testdata/paper1/poly1.shp";
+		String filename = "geodata/GoodBad/PolylinesHanddrawn.shp";
 		@SuppressWarnings("unused")
 		ImportGoodBadCoverage gfi = new ImportGoodBadCoverage(new File(filename));
 		System.out.println("Shapefile imported !");
