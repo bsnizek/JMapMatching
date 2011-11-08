@@ -135,7 +135,7 @@ public class JMapMatcher {
 	 */
 	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
 		String dumpFile = "";
-		if (cfg.bDumpNetwork) dumpFile = String.format("%s/%05d%s", cfg.sDumpNetworkDir, sourcerouteID, "_network.shp");	// path for network buffer dump
+		if (cfg.bDumpNetwork) dumpFile = String.format("%s/%05d%s", cfg.sDumpNetworkDir, sourcerouteID, ".shp");	// path for network buffer dump
 		return new PathSegmentGraph(track, (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize), dumpFile);
 	}
 	

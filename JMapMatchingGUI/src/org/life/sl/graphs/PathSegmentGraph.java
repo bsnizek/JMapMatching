@@ -290,6 +290,7 @@ public class PathSegmentGraph {
 			OSMEdge o = iter.next();
 			SimpleFeature feature = featureBuilder.buildFeature(null);	
 			feature.setDefaultGeometry(o.getGeometry());
+			collection.add(feature);
 		}
 		
 		logger.info("Writing to shapefile " + filename);
