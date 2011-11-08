@@ -53,6 +53,15 @@ public class ResultRoute {
 	private float trackLength;
 	private float lengthR;
 	private int sourceRouteID;
+	private int nodeID;
+	public int getNodeID() {
+		return nodeID;
+	}
+
+	public void setNodeID(int nodeID) {
+		this.nodeID = nodeID;
+	}
+
 	private int respondentID;
 	private long nAlternatives;
 	private float pPtsOn;
