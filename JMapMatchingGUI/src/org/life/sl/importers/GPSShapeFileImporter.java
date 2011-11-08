@@ -160,7 +160,8 @@ public class GPSShapeFileImporter {
 	
 	public static void main(String[] args) throws IllegalDataException, IOException {
 
-		String filename = "geodata/CopenhagenGPS/BiCycleTrips.shp";
+//		String filename = "geodata/CopenhagenGPS/BiCycleTrips.shp";
+		String filename = "testdata/CopenhagenTEst/TripTest.shp";
 
 		@SuppressWarnings("unused")
 		GPSShapeFileImporter gfi = new GPSShapeFileImporter(new File(filename));

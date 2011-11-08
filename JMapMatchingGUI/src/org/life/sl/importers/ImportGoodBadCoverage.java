@@ -109,7 +109,7 @@ public class ImportGoodBadCoverage {
  				Coordinate[] cs = ls.getCoordinates();
  				
  				int lngth = cs.length;
- 				
+
  				int length = 25;
  				
  				double shootOver = 0;
