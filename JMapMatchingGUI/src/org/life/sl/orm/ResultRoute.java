@@ -54,13 +54,6 @@ public class ResultRoute {
 	private float lengthR;
 	private int sourceRouteID;
 	private int nodeID;
-	public int getNodeID() {
-		return nodeID;
-	}
-
-	public void setNodeID(int nodeID) {
-		this.nodeID = nodeID;
-	}
 
 	private int respondentID;
 	private long nAlternatives;
@@ -440,6 +433,14 @@ public class ResultRoute {
 
 	public void setnTrafficLights(short nTrafficLights) {
 		this.nTrafficLights = nTrafficLights;
+	}
+	
+	public int getNodeID() {
+		return nodeID;
+	}
+
+	public void setNodeID(int nodeID) {
+		this.nodeID = nodeID;
 	}
 	
 	// this is extremely inelegant, but I don't know a better solution...

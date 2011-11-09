@@ -34,6 +34,7 @@
         <id name="id" column="id">
         </id>
         <property name="geometry" type="org.hibernatespatial.GeometryUserType" column="geom" />
+        <property name="nodeID" type="int"></property>
        
     </class>
     

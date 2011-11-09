@@ -24,6 +24,16 @@ import com.vividsolutions.jts.geom.Point;
 
 public class Trafficlight {
 	private int id;
+	private int nodeID;
+	
+	public int getNodeID() {
+		return nodeID;
+	}
+
+	public void setNodeID(int nodeID) {
+		this.nodeID = nodeID;
+	}
+
 	public int getId() {
 		return id;
 	}
