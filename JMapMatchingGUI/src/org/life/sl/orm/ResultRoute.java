@@ -255,7 +255,7 @@ public class ResultRoute {
 		for (int i = 0; i < n; i++) {
 			s1 += "," + nodeIDs[i];
 		}
-		String s = "select count(\"nodeID\") from trafficlight where \"nodeID\" in ("+s1+")";
+		String s = "select count(\"nodeid\") from trafficlight where \"nodeid\" in ("+s1+")";
 		Query res = session.createSQLQuery(s);
 		BigInteger ntl = (BigInteger)res.uniqueResult();
 		this.nTrafficLights = ntl.shortValue();
