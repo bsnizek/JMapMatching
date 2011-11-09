@@ -97,6 +97,36 @@ public class GPSTrack extends ArrayList<Point> {
 				}
 				p0 = p;
 			}
+			
+			// test: create new points by using floating averaging in order to reduce noise:
+			/*int kAvgCoords = 4;
+			trackLength = 0;
+			ArrayList<Coordinate> mc = new ArrayList<Coordinate>(this.size());
+			double x, y;
+			int i0, n = this.size();
+			double n0;
+			Coordinate c0;
+			for (int i = 0; i < n; i++) {
+				x = 0; y = 0;
+				i0 = Math.max(0, i-kAvgCoords+1);	// first point to use for current average
+				n0 = i - i0 + 1.;					// number of points used (<= kAvgCoords)
+				for (int j = i0; j <= i; j++) {		// very inefficient, but at least it works...
+					c0 = this.get(j).getCoordinate();
+					x += c0.x;
+					y += c0.y;
+				}
+				x /= n0;
+				y /= n0;
+				System.out.println(x + "\t" + y);
+				mc.add(new Coordinate(x, y));
+			}
+			c0 = null;
+			for (Coordinate c : mc) {
+				if (c0 != null) System.out.println(c.distance(c0));
+				if (c0 != null) trackLength += c.distance(c0);
+				c0 = c;
+			}*/
+			
 			avgDist = trackLength / size();
 			isDirty = false;
 		}

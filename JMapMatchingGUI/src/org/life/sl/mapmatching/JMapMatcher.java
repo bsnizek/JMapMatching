@@ -157,7 +157,7 @@ public class JMapMatcher {
 	 * @param sourceroute_id database ID of the sourcepoints (GPS route)
 	 */
 	public void match(int sourceroute_id)  {
-		System.out.println("Matching sourcerout (ID=" + sourceroute_id + ")");
+		System.out.println("Matching sourceroute (ID=" + sourceroute_id + ")");
 		gpsPoints = new GPSTrack(sourceroute_id);
 		if (gpsPoints.size() > 0) {	// check if the track contains points
 			sourcerouteID = sourceroute_id;				// store in class variable, for later use
@@ -176,7 +176,7 @@ public class JMapMatcher {
 		Timer timer = new Timer();
 		timer.init();	// initialize timer
 		
-		RFParams rfParams = initConstraints();
+		rfParams = initConstraints();
 		boolean repeat = false;
 		do {	// loop: will be repeated if network buffer is resized
 			if (graph == null || repeat) {	// create a new graph enveloping the GPS track
@@ -326,7 +326,7 @@ public class JMapMatcher {
 		BestNAverageStat matchScoreAvgs = new BestNAverageStat(nBest);
 		BestNAverageStat matchLengthAvgs = new BestNAverageStat(nBest);
 		BestNAverageStat noMatchEdgeAvgs = new BestNAverageStat(nBest);
-		for (int i=0; i < 100; i++) {
+		for (int i=0; i < Math.min(100, nLabels); i++) {
 			//matchScoreAvgs.add(labels.get(i).getScore());
 			ResultRoute route = new ResultRoute(sourcerouteID, respondentID, i==0, labels.get(i), gpsPoints);
 			matchScoreAvgs.add(route.getMatchScore());
