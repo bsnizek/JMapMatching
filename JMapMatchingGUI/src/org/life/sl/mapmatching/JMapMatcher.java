@@ -527,10 +527,11 @@ public class JMapMatcher {
 			}
 			JMapMatcher jmm = new JMapMatcher(null);
 			for (int i=0; i<sRoutes.size(); i++) {
-				logger.info("--- Matching track " + sRoutes.get(i) + "...");
+				Integer route = sRoutes.get(i);
+				logger.info("--- Matching track " + route + "...");
 				jmm.clearGraph();	// clear the graph, so that a new one enveloping the current track is loaded
-				jmm.match(sRoutes.get(i));
-				logger.info("--- Track " + sRoutes.get(i) + " matched.");
+				jmm.match(route);
+				logger.info("--- Track " + route + " matched.");
 			}
 			
 		}

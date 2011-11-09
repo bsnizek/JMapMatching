@@ -37,5 +37,18 @@
         <property name="descr" type="string"></property>
 
     </class>
+    
+    <database-object> 
+    	<create>INSERT INTO "bicycletype" VALUES ('0', null);</create> 
+        <drop></drop> 
+        <dialect-scope name="org.hibernatespatial.postgis.PostgisDialect" /> 
+   	</database-object>
+
+    <database-object> 
+    	<create>INSERT INTO "bicycletype" VALUES ('1', "zblab");</create> 
+        <drop></drop> 
+        <dialect-scope name="org.hibernatespatial.postgis.PostgisDialect" /> 
+   	</database-object>
+    
 
 </hibernate-mapping>
