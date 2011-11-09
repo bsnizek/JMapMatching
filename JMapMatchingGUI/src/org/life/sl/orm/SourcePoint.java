@@ -20,6 +20,8 @@ You should have received a copy of the GNU General Public License along with
 this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
+import java.util.Date;
+
 import com.vividsolutions.jts.geom.Point;
 
 public class SourcePoint {
@@ -27,7 +29,7 @@ public class SourcePoint {
 	private int id;
 	private Point geometry;
 	private int sourcerouteid;
-	private int t;
+	private Date t;
 	/*private int ts; // timestamp ? 
 	
 	public int getTs() {
@@ -38,11 +40,11 @@ public class SourcePoint {
 		this.ts = ts;
 	}*/
 
-	public int getT() {
+	public Date getT() {
 		return t;
 	}
 
-	public void setT(int t) {
+	public void setT(Date t) {
 		this.t = t;
 	}
 
