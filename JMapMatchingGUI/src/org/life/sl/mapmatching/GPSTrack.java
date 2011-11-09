@@ -44,7 +44,7 @@ public class GPSTrack extends ArrayList<Point> {
 		super();
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
-		Query result = session.createQuery("from SourcePoint WHERE sourcerouteid=" + sourceRouteID + " order by id");
+		Query result = session.createQuery("from SourcePoint WHERE sourcerouteid=" + sourceRouteID + " order by t");
 		@SuppressWarnings("unchecked")
 		Iterator<SourcePoint> iter = result.iterate();
 		while (iter.hasNext()) {	// create list from query results
