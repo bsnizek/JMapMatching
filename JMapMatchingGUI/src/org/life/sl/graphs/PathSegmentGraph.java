@@ -222,13 +222,6 @@ public class PathSegmentGraph {
 			// let us join the nodes of the track to a linestring ....
 			
 			Iterator<Point> trackIter = track.iterator();
-			
-//			ArrayList<Coordinate> coords = new ArrayList<Coordinate>();
-//			while (trackIter.hasNext()) {
-//				Point p = trackIter.next();	
-//				coords.add(p.getCoordinate());
-//			}
-			
 			Coordinate[] coords = new Coordinate[track.size()];
 			int i =0;
 			while (trackIter.hasNext()) {
@@ -239,12 +232,11 @@ public class PathSegmentGraph {
 			
 			LineString l = fact.createLineString(coords);
 			
-			// ... build a buffer ...
-			
-			Geometry buffer = l.buffer(bufferSize);
-	        
 	        Criteria testCriteria = session.createCriteria(OSMEdge.class);
-			testCriteria.add(SpatialRestrictions.within("geometry", buffer));
+			if (bufferSize > 0.) {	// ... build a buffer ...
+				Geometry buffer = l.buffer(bufferSize);
+				testCriteria.add(SpatialRestrictions.within("geometry", buffer));
+			}
 			@SuppressWarnings("unchecked")
 			List<OSMEdge> result = testCriteria.list();
 			
