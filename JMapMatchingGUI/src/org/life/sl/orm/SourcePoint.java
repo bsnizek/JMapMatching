@@ -27,6 +27,7 @@ public class SourcePoint {
 	private int id;
 	private Point geometry;
 	private int sourcerouteid;
+	private int t;
 	/*private int ts; // timestamp ? 
 	
 	public int getTs() {
@@ -36,6 +37,14 @@ public class SourcePoint {
 	public void setTs(int ts) {
 		this.ts = ts;
 	}*/
+
+	public int getT() {
+		return t;
+	}
+
+	public void setT(int t) {
+		this.t = t;
+	}
 
 	public int getSourcerouteid() {
 		return sourcerouteid;

@@ -39,6 +39,7 @@
         	<column name="geom" />
         </property>
         <property name="sourcerouteid" ></property>
+        <property name="timestamp" type="int"></property>
         <!--<property name="ts" ></property>-->
 
     </class>
