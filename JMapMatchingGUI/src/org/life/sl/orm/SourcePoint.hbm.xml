@@ -39,13 +39,13 @@
         	<column name="geom" />
         </property>
         <property name="sourcerouteid" ></property>
-        <property name="timestamp" type="int"></property>
+        <property name="t" type="timestamp"></property>
         <!--<property name="ts" ></property>-->
 
     </class>
     
     <database-object> 
-    	<create>CREATE INDEX idx_sourcepoint_geom ON sourcepoint USING GIST (geom)</create> 
+    	<create>CREATE INDEX "ts" ON "public"."sourcepoint" USING btree(sourcerouteid ASC NULLS LAST, "t" ASC NULLS LAST)</create> 
         <drop></drop> 
         <dialect-scope name="org.hibernatespatial.postgis.PostgisDialect" /> 
    	</database-object>
