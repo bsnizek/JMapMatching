@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -112,6 +113,7 @@ public class GPSShapeFileImporter {
 				
 				int route_id = (Integer) attributes.get("tripstay");
 				int respondent_id = (Integer) attributes.get("RespID");
+				Date date_time = (Date) attributes.get("DATE_TIME");
 				
 				Query result = session.createQuery("from SourceRoute WHERE id=" + route_id);
 				if (result.list().size() == 0) {
@@ -131,6 +133,7 @@ public class GPSShapeFileImporter {
 				SourcePoint sp = new SourcePoint();
 				sp.setGeometry((Point) geometry.reverse());
 				sp.setSourcerouteid(route_id);
+				sp.setT(date_time);
 				session.save(sp);
 				System.out.print(".");
 				if (cntr > 300) {
