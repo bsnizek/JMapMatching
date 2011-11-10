@@ -29,6 +29,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.log4j.Logger;
 import org.geotools.data.DataStore;
 import org.geotools.data.DataStoreFinder;
 import org.geotools.data.FeatureSource;
@@ -36,6 +37,7 @@ import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.hibernate.cfg.Configuration;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.Respondent;
 import org.life.sl.orm.SourcePoint;
@@ -51,13 +53,15 @@ import com.vividsolutions.jts.geom.Point;
 public class GPSShapeFileImporter {
 
 	private Session session;
+	private Logger logger = Logger.getRootLogger();
 	
 	public GPSShapeFileImporter(String directory) {
 		// TODO: loop over files.
 	}
 	
 	public GPSShapeFileImporter(File file) throws IOException {
-		
+		Integer batchSize = Integer.getInteger(new Configuration().getProperty("hibernate.jdbc.batch_size"), 30);
+		logger.info("Database batch size: " + batchSize);
 		setUp();
 
 		Map<String,Serializable> connectParameters = new HashMap<String,Serializable>();
@@ -68,7 +72,7 @@ public class GPSShapeFileImporter {
 		String[] typeNames = dataStore.getTypeNames();
 		String typeName = typeNames[0];
 
-		System.out.println("Reading content " + typeName);
+		logger.info("Reading content " + typeName);
 
 		FeatureSource<SimpleFeatureType, SimpleFeature> featureSource;
 		FeatureCollection<SimpleFeatureType, SimpleFeature> collection;
@@ -90,15 +94,16 @@ public class GPSShapeFileImporter {
 			}
 		}
 
+		Map<Integer, Integer> routeIDs = new HashMap<Integer,Integer>();
+		Map<Integer, Integer> respondentIDs = new HashMap<Integer,Integer>();
+		int nPoints =0;
+		int numberPoints = collection.size();
 		try {
-			int cntr = 0;
-			int cntr2 =0;
-			int numberPoints = collection.size();
 			while (iterator.hasNext()) {
-				
+				nPoints++;
+
 				SimpleFeature feature = iterator.next();
 				Geometry geometry = (Geometry) feature.getDefaultGeometry();
-				
 				if(geometry.getClass() != Point.class && geometry.getClass() != Point.class) {
 					//    				ErrorHandler.getInstance().error("Error, shapefile must contain lines", 2);
 					System.out.println("ERROR: Shapefile must contain points, but does not.");
@@ -108,26 +113,35 @@ public class GPSShapeFileImporter {
 				HashMap<String, Object> attributes = new HashMap<String, Object>();
 				for (String fn : fieldnames) {
 					attributes.put(fn, feature.getAttribute(fn));
-
 				}
 				
 				int route_id = (Integer) attributes.get("tripstay");
 				int respondent_id = (Integer) attributes.get("RespID");
 				Date date_time = (Date) attributes.get("DATE_TIME");
 				
-				Query result = session.createQuery("from SourceRoute WHERE id=" + route_id);
-				if (result.list().size() == 0) {
-					SourceRoute r = new SourceRoute();
-					r.setId(route_id);
-					r.setRespondentid(respondent_id);
-					session.save(r);
+				// check if route_id was already handled:
+				if (!routeIDs.containsKey(route_id)) {
+					routeIDs.put(route_id, respondent_id);
+					// if not, check if it exists in the database:
+					Query result = session.createQuery("from SourceRoute WHERE id=" + route_id);
+					if (result.list().size() == 0) {	// if not, add the SourceRoute
+						SourceRoute r = new SourceRoute();
+						r.setId(route_id);
+						r.setRespondentid(respondent_id);
+						session.save(r);
+					}
 				}
 				
-				Query result2 = session.createQuery("from Respondent WHERE id=" + respondent_id);
-				if (result2.list().size() == 0) {
-					Respondent r = new Respondent();
-					r.setId(respondent_id);
-					session.save(r);
+				// check if route_id was already handled:
+				if (!routeIDs.containsKey(respondent_id)) {
+					routeIDs.put(respondent_id, route_id);
+					// if not, check if it exists in the database:
+					Query result2 = session.createQuery("from Respondent WHERE id=" + respondent_id);
+					if (result2.list().size() == 0) {	// if not, add the Respondent
+						Respondent r = new Respondent();
+						r.setId(respondent_id);
+						session.save(r);
+					}
 				}
 				
 				SourcePoint sp = new SourcePoint();
@@ -135,28 +149,32 @@ public class GPSShapeFileImporter {
 				sp.setSourcerouteid(route_id);
 				sp.setT(date_time);
 				session.save(sp);
-				System.out.print(".");
-				if (cntr > 300) {
-					System.out.println(((double)cntr2/(double)numberPoints)*100. + "% finished (" + cntr2 + "/" + numberPoints + ")");
-					cntr = 0;
-					session.getTransaction().commit();
-					setUp();
+				if (nPoints % batchSize == 0) {
+					session.flush();
+					session.clear();
+					System.out.print(".");
 				}
-				cntr2++;
-				cntr++;
-
+				if (nPoints % 1000 == 0) {
+					System.out.printf("%2.2f%% finished (%d/%d)\n", ((double)nPoints/(double)numberPoints)*100., nPoints, numberPoints);
+				//	session.getTransaction().commit();
+				//	setUp();
+				}
 			}
 		}
 		finally {
 			if( iterator != null ){
+				if (nPoints % batchSize == 0) {
+					session.flush();
+					session.clear();
+				}
 				// YOU MUST CLOSE THE ITERATOR!
 				iterator.close();
 				session.getTransaction().commit();
 				try {
 					session.close();
-					} finally {
-						System.out.println("was already closed - pyt ! ");
-					}
+				} catch(Exception e) {
+					System.out.println("session was already closed - pyt ! ");
+				}
 			}
 		}
 	}
@@ -168,8 +186,8 @@ public class GPSShapeFileImporter {
 	
 	public static void main(String[] args) throws IllegalDataException, IOException {
 
-//		String filename = "geodata/CopenhagenGPS/BiCycleTrips.shp";
-		String filename = "testdata/CopenhagenTEst/TripTest.shp";
+		String filename = "geodata/CopenhagenGPS/BiCycleTrips.shp";
+//		String filename = "testdata/CopenhagenTEst/TripTest.shp";
 
 		@SuppressWarnings("unused")
 		GPSShapeFileImporter gfi = new GPSShapeFileImporter(new File(filename));

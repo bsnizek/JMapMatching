@@ -238,21 +238,19 @@ public class RouteFinder {
 				if (iShowProgressDetail > 0) {	// some log output?
 					if (iShowProgressDetail > 1 && numLabels%50000 == 0) System.out.print(".");
 					if (numLabels%5000000 == 0) {
-						System.out.println("dead ends: " + numDeadEnds);
-						System.out.println("overlaps:  " + numLabels_overlap);
-						System.out.println("rejected:  " + numLabels_rejected);
+						System.out.printf("dead ends: %d - overlaps: %d - rejected: %d\n", numDeadEnds, numLabels_overlap, numLabels_rejected);
 						String s = numLabels + " - ";
 						if (iShowProgressDetail > 1) s += (expandingLabel.getLength() / gpsPathLength) + " - ";
 						s += result.size();
 						System.out.println(s);
 					}
 					long freeMem = Runtime.getRuntime().freeMemory();
-					if (numLabels%200000 == 0 && freeMem / (double)Runtime.getRuntime().maxMemory() < .1) {
+					if (numLabels%500000 == 0 && freeMem / (double)Runtime.getRuntime().maxMemory() < .1) {
 						System.out.print("Mem: " + freeMem/(1024*1024) + "MB");
 						System.gc();
 						System.out.println(" / " + Runtime.getRuntime().freeMemory()/(1024*1024) + "MB");
 						// if there is really no memory left, just stop:
-						if (Runtime.getRuntime().freeMemory() < 10000000) {	// 10MB
+						if (Runtime.getRuntime().freeMemory() < 50000000) {	// 10MB
 							logger.error("Stopping due to memory overload!");
 							break stackLoop;
 						}
@@ -300,6 +298,9 @@ public class RouteFinder {
 //			System.out.println("I'm here!");
 //		}
 
+		//double maxLen = rfParams.getDouble(RFParams.Type.MaximumLength);	// use exact estimate for maximum path length
+		double parentLength = parentLabel.getLength();
+		
 		/////////////////////////////////////
 		// MAKE LABELS FROM NEIGHBORS
 		/////////////////////////////////////			
@@ -313,7 +314,7 @@ public class RouteFinder {
 			if (pe != null && currentEdge.getEdge() == pe.getEdge()) continue;	// going back the same edge where we come from is prohibited!
 
 			double lastEdgeLength = ((LineMergeEdge)currentEdge.getEdge()).getLine().getLength();	// length of new last edge
-			double length = parentLabel.getLength() + lastEdgeLength;	// new total length
+			double length = parentLength + lastEdgeLength;	// new total length
 			newLabel = new Label(parentLabel, currentEdge.getToNode(), currentEdge, length, lastEdgeLength);
 			numLabels_rejected++;	// increment by default, decrement again if label is not rejected
 			
@@ -337,9 +338,8 @@ public class RouteFinder {
 			// PATH-LENGTH CONSTRAINTS
 			/////////////////////////////////////			
 
-			double maxLen = rfParams.getDouble(RFParams.Type.MaximumLength);	// use exact estimate for maximum path length
 			// 1. path length exceeded maxLength constraint with this edge?
-			if (checkPathLength(length, maxLen, "length")) continue;	// don't store the label at all, because the route is too long anyway
+			//if (checkPathLength(length, maxLen, "length")) continue;	// don't store the label at all, because the route is too long anyway
 
 			if (maxPathLength > 0.) {	// only if we have a valid path length
 				// 2. Length + Euclidian distance to endNode greater than referencePathLength? (can't reach endNode)
@@ -362,7 +362,7 @@ public class RouteFinder {
 			// rules for node occurrences: 
 			// 1) the start-node is counted except in the beginning of the route
 			// 2) the end-node is counted except if at the end of the route
-			// 3) all other occurances are counted
+			// 3) all other occurrences are counted
 
 			// get current total overlap for node
 			int nodeOccurrences = newLabel.getOccurrencesOfNode(newLabel.getNode());
