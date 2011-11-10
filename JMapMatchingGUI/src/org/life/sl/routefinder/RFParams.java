@@ -49,6 +49,7 @@ public class RFParams {
 		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
 		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
 		RejectedLabelsLimit,	///< limit for the number of unsuccessful labels (no routes, only rejected labels)
+		MaxLabels,				///< maximum number of labels to create/evaluate
 		NoLabelsResizeNetwork,	///< factor to resize the network if no routes have been found
 		NetworkBufferSizeMax,	///< maximum network buffer size
 		ShowProgressDetail,		///< how much detail regarding the progress is shown ("progress bar"): 0, 1, 2
@@ -192,8 +193,9 @@ public class RFParams {
 			if (map2Double(iniMap, "MaximumLength", Type.MaximumLength)) r++;
 			if (map2Double(iniMap, "DistanceFactor", Type.DistanceFactor)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize", Type.NetworkBufferSize)) r++;
-			if (map2Int(iniMap, "RejectedLabelsIncrNet", Type.RejectedLabelsLimit)) r++;
+			if (map2Int(iniMap, "RejectedLabelsLimit", Type.RejectedLabelsLimit)) r++;
 			if (map2Double(iniMap, "NoLabelsResizeNetwork", Type.NoLabelsResizeNetwork)) r++;
+			if (map2Int(iniMap, "MaxLabels", Type.MaxLabels)) r++;
 			if (map2Double(iniMap, "NetworkBufferSizeMax", Type.NetworkBufferSizeMax)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
 			if (map2Int(iniMap, "ShowProgressDetail", Type.ShowProgressDetail)) r++;

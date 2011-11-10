@@ -28,6 +28,7 @@ public class GPSTrack extends ArrayList<Point> {
 	private double minDist = 0;
 	private double maxDist = 0;
 	private boolean isDirty = true;	///< indicates if data has been modified since last statistics calculation
+	private int sourceRouteID;
 	
 	/**
 	 * Create a GPSTrack from an ArrayList of Points (e.g., when reading from a shapefile)
@@ -44,6 +45,7 @@ public class GPSTrack extends ArrayList<Point> {
 	 */
 	public GPSTrack(int sourceRouteID) {
 		super();
+		this.sourceRouteID = sourceRouteID;
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		Query result = session.createQuery("from SourcePoint WHERE sourcerouteid=" + sourceRouteID + " order by t");
@@ -157,4 +159,9 @@ public class GPSTrack extends ArrayList<Point> {
 		calcStatistics();
 		return maxDist;
 	}
+
+	public int getSourceRouteID() {
+		return sourceRouteID;
+	}
+
 }

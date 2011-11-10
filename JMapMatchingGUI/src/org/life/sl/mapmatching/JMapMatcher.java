@@ -46,14 +46,13 @@ import org.life.sl.readers.shapefile.PointFileReader;
 import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
+import org.life.sl.routefinder.MatchStats;
 import org.life.sl.utils.BestNAverageStat;
 import org.life.sl.utils.MathUtil;
 import org.life.sl.utils.Timer;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.Point;
-//import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Node;
 
@@ -72,6 +71,7 @@ public class JMapMatcher {
 	}
 
 	private static String kCfgFileName = "JMM.cfg";
+	private static String kStatFileName = "JMM_stats.dat";
 	private static String kOutputDir = "results/";
 	public final double kCoordEps = 1.e-6;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
 
@@ -82,7 +82,6 @@ public class JMapMatcher {
 	
 	private static String kGraphDataFileName = "tmp/04577_network.shp";
 	private static String kGPSPointFileName = "testdata/GPS_Points.shp";
-	
 	private static int kGPSTrackID = 12158;		///< database ID of GPS track to match	
 
 	private PathSegmentGraph graph = null;	///< data basis (graph)
@@ -133,7 +132,7 @@ public class JMapMatcher {
 	 * @param track the GPS data
 	 * @return
 	 */
-	private PathSegmentGraph loadGraphFromDB(ArrayList<Point> track) {
+	private PathSegmentGraph loadGraphFromDB(GPSTrack track) {
 		String dumpFile = "";
 		if (cfg.bDumpNetwork) {
 			File dir = new File(cfg.sDumpNetworkDir);
@@ -146,24 +145,27 @@ public class JMapMatcher {
 	/**
 	 * Loads GPS data from a file, then invokes the actual matching
 	 * @throws IOException
+	 * @return status code (0 = OK)
 	 */
-	public void match(String fileName) throws IOException {
+	public MatchStats match(String fileName) throws IOException {
 		loadGPSPoints(fileName);
-		match();
+		return match();
 	}	
 
 	/**
 	 * Starts the map matching using GPS data from the database
 	 * @param sourceroute_id database ID of the sourcepoints (GPS route)
+	 * @return status code (0 = OK)
 	 */
-	public void match(int sourceroute_id)  {
+	public MatchStats match(int sourceroute_id)  {
 		System.out.println("Matching sourceroute (ID=" + sourceroute_id + ")");
 		gpsPoints = new GPSTrack(sourceroute_id);
 		if (gpsPoints.size() > 0) {	// check if the track contains points
 			sourcerouteID = sourceroute_id;				// store in class variable, for later use
-			match();								// start the matching process with the loaded track
+			return match();								// start the matching process with the loaded track
 		} else {
 			System.err.println("GPS track " + sourceroute_id + " contains no points!");
+			return new MatchStats(sourcerouteID, MatchStats.Status.EMPTYTRACK);
 		}
 	}
 
@@ -171,14 +173,17 @@ public class JMapMatcher {
 	 * Controls the map matching algorithm (assumes GPS data and graph data have been loaded before);
 	 * if no graph has been loaded yet, a new graph enveloping the GPS track is read from the database
 	 * @throws IOException
+	 * @return status code (0 = OK)
 	 */
-	public void match() {
+	public MatchStats match() {
 		Timer timer = new Timer();
 		timer.init();	// initialize timer
-		
+		MatchStats stats;
+
 		rfParams = initConstraints();
 		boolean repeat = false;
 		do {	// loop: will be repeated if network buffer is resized
+			stats = null;
 			if (graph == null || repeat) {	// create a new graph enveloping the GPS track
 				graph = loadGraphFromDB(gpsPoints);
 			}
@@ -196,7 +201,8 @@ public class JMapMatcher {
 			double t_2 = timer.getRunTime(true);
 	
 			ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsPoints.getTrackLength());	///< list containing all routes that were found (still unsorted)
-	
+			stats = rf.getStats();
+			
 			double t_1 = timer.getRunTime(true, "++ Routefinding finished");
 			double t_3 = 0;
 			
@@ -214,6 +220,7 @@ public class JMapMatcher {
 				logger.info("++ saveRoutes: " + t_3 + "s");
 			} else {	// no labels found
 				logger.warn("No labels found");
+				stats.status = MatchStats.Status.NOROUTES;
 				double bsf = rfParams.getDouble(RFParams.Type.NoLabelsResizeNetwork);
 				if (bsf > 1.) {	// try to resize the network
 					double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize) * bsf;
@@ -228,7 +235,11 @@ public class JMapMatcher {
 				}
 			}
 			logger.info("++ Total time: " + (t_0 + t_1 + t_2 + t_3) + "s");
+			//if (t_1 > 60) stats.status = rf.getStatus();
+			stats.runTime = t_1;
 		} while (repeat);
+		
+		return stats;
 	}
 	
 	/**
@@ -273,7 +284,7 @@ public class JMapMatcher {
 				j = i;
 			} else {	// select random route
 				do {
-					j = (int)(Math.random() * nLabels + .5);
+					j = Math.min((int)(Math.random() * nLabels + .5), nLabels - 1);
 				} while (selRoutes.contains(j));
 			}
 			Label curLabel = labels.get(j);
@@ -515,6 +526,7 @@ public class JMapMatcher {
 			if (args.length == 0 && cfg.sourcerouteID >= 0) query += " WHERE id="+cfg.sourcerouteID;
 			if (args.length == 1) query += " WHERE id="+args[0];
 			if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
+			query += " ORDER BY id";
 			result = session.createQuery(query);
 			@SuppressWarnings("unchecked")
 			Iterator<SourceRoute> iterator = result.iterate();
@@ -526,14 +538,17 @@ public class JMapMatcher {
 				//
 			}
 			JMapMatcher jmm = new JMapMatcher(null);
+			HashMap<Integer, Integer> stat = new HashMap<Integer,Integer>(sRoutes.size());
 			for (int i=0; i<sRoutes.size(); i++) {
 				Integer route = sRoutes.get(i);
 				logger.info("--- Matching track " + route + "...");
 				jmm.clearGraph();	// clear the graph, so that a new one enveloping the current track is loaded
-				jmm.match(route);
+				MatchStats stats = jmm.match(route);
+				stats.save(kOutputDir+kStatFileName, i==0);
+				
 				logger.info("--- Track " + route + " matched.");
 			}
-			
+			for (Integer r : stat.keySet()) System.out.println(r + "\t" + stat.get(r));
 		}
 	}
 }

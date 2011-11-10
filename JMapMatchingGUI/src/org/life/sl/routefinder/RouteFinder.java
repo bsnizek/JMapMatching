@@ -91,6 +91,7 @@ public class RouteFinder {
 	private long numLabels_rejected = 0;	///< number of labels (states) that have been rejected due to constraints
 	private long rejectedLabelsLimit = 0;	///< limit for number of labels (states) that have been rejected
 	private long numLabels_overlap = 0;		///< number of labels that have overlapping nodes 
+	private long maxLabels = 0;
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
 	
@@ -99,6 +100,7 @@ public class RouteFinder {
 	private EdgeStatistics edgeStatistics = null;
 
 	private Logger logger = Logger.getLogger("RouteFinder");
+	private MatchStats stats = new MatchStats(); 
 	
 	/**
 	 * create a Routefinder from a PathSegmentGraph, using default parameters
@@ -185,6 +187,7 @@ public class RouteFinder {
 
 		this.itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal));
 		this.rejectedLabelsLimit = rfParams.getInt(RFParams.Type.RejectedLabelsLimit);
+		this.maxLabels = rfParams.getInt(RFParams.Type.MaxLabels);
 		this.iShowProgressDetail = rfParams.getInt(RFParams.Type.ShowProgressDetail);
 		// precalculate the minimum path length, for use as a constraint in label expansion:
 		maxPathLength = gpsPathLength * rfParams.getDouble(RFParams.Type.DistanceFactor);
@@ -194,8 +197,19 @@ public class RouteFinder {
 			System.err.println("Warning: invalid GPS data? referencePathLength < minDist (" + maxPathLength + " < " + minDist + ")");
 			maxPathLength = 0.;
 		}
-		logger.info("Euclidian GPS Path length = " + gpsPathLength + ", path length limit = " + maxPathLength);
-		logger.info("Network size (edges): " + network.getSize_Edges());
+		// populate statistics
+		stats.status = MatchStats.Status.OK;
+		stats.sourceRouteID = network.getSourceRouteID();
+		stats.trackLength = gpsPathLength;
+		stats.ODDist = minDist;
+		stats.maxLength = maxPathLength;
+		stats.network_edges = network.getSize_Edges();
+		stats.network_nodes = network.getSize_Nodes();
+		stats.network_meanDegree = network.getMeanDegree();
+		stats.network_maxRoutesEst = Math.pow(stats.network_meanDegree-1., (double)stats.network_nodes/2.);
+		logger.info("Euclidian GPS Path length = " + gpsPathLength + ", path length limit = " + maxPathLength + "; O-D-Distance = " + minDist);
+		logger.info("Network size (edges): " + stats.network_edges);
+		logger.info("Graph: max. route estimate: " + stats.network_maxRoutesEst +  " / " + network.getNCombinations());
 
 		System.gc();	// can't hurt...
 		ArrayList<Label> result = new ArrayList<Label>();
@@ -228,17 +242,25 @@ public class RouteFinder {
 						result.add(currentLabel);		// add the valid route to list of routes
 						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
 						if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
-							logger.info("Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
+							logger.warn("["+network.getSourceRouteID()+"] Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
+							stats.status = MatchStats.Status.MAXROUTES;
 							break stackLoop;
 						}
 					}
-					else stack.push(currentLabel);		// destination is not reached yet: store the label on stack for the next iteration
+					else {
+						if (maxLabels > 0 && numLabels > maxLabels) {
+							logger.warn("["+network.getSourceRouteID()+"] Maximum number of labels reached (Constraint.MaxLabels = " + rfParams.getInt(RFParams.Type.MaxLabels) + ")");
+							stats.status = MatchStats.Status.MAXLABELS;
+							break stackLoop;
+						}
+						else stack.push(currentLabel);		// destination is not reached yet: store the label on stack for the next iteration
+					}
 				}
 				
 				if (iShowProgressDetail > 0) {	// some log output?
 					if (iShowProgressDetail > 1 && numLabels%50000 == 0) System.out.print(".");
 					if (numLabels%5000000 == 0) {
-						System.out.printf("dead ends: %d - overlaps: %d - rejected: %d\n", numDeadEnds, numLabels_overlap, numLabels_rejected);
+						System.out.printf("[%d] dead ends: %d - overlaps: %d - rejected: %d\n", network.getSourceRouteID(), numDeadEnds, numLabels_overlap, numLabels_rejected);
 						String s = numLabels + " - ";
 						if (iShowProgressDetail > 1) s += (expandingLabel.getLength() / gpsPathLength) + " - ";
 						s += result.size();
@@ -250,14 +272,15 @@ public class RouteFinder {
 						System.gc();
 						System.out.println(" / " + Runtime.getRuntime().freeMemory()/(1024*1024) + "MB");
 						// if there is really no memory left, just stop:
-						if (Runtime.getRuntime().freeMemory() < 50000000) {	// 10MB
+						if (Runtime.getRuntime().freeMemory() < 250000000) {	// 10MB
 							logger.error("Stopping due to memory overload!");
+							stats.status = MatchStats.Status.MEMORY;
 							break stackLoop;
 						}
 					}
 				}
 				// check for rejectedLabelsLimit-constraint:
-				if (rejectedLabelsLimit > 0 && numLabels_rejected > rejectedLabelsLimit && result.size() == 0) {
+				if (rejectedLabelsLimit > 0 && numLabels_rejected > 0 && numLabels_rejected%rejectedLabelsLimit == 0 && result.size() == 0) {
 					logger.warn("Reached rejectedLabelsLimit - increase network buffer size?");
 				}
 			} else {	// "dead end" - this label is invalid
@@ -269,6 +292,13 @@ public class RouteFinder {
 		System.out.printf("\nlabels analyzed:\t%14d\nvalid routes:\t\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",
 				numLabels, result.size(), numDeadEnds, (100.*numDeadEnds/numLabels), numLabels_rejected, (100.*numLabels_rejected/numLabels), 
 				network.getNodes().size());
+		// populate statistics container:
+		stats.nLabels = numLabels;
+		stats.nRoutes = result.size();
+		stats.nRejected_length = numLabels_rejected - numLabels_overlap;
+		stats.nRejected_overlap = numLabels_overlap;
+		stats.nDeadEnds = numDeadEnds;
+		
 		return result;
 	}
 
@@ -412,6 +442,8 @@ public class RouteFinder {
 	public long getNumLabels() {
 		return numLabels;
 	}
+	
+	public MatchStats getStats() { return stats; }
 	
 	/**
 	 * ??

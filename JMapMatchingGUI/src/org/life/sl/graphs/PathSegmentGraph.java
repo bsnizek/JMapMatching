@@ -82,6 +82,7 @@ import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernatespatial.criterion.SpatialRestrictions;
+import org.life.sl.mapmatching.GPSTrack;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMEdge;
 import org.opengis.feature.simple.SimpleFeature;
@@ -108,6 +109,7 @@ import com.vividsolutions.jts.planargraph.Node;
 public class PathSegmentGraph {
 
 	private double xMin,xMax,yMin,yMax;
+	private int sourceRouteID;
 
 	// algorithms
 	private AllPairsShortestPath allPairsShortestPath;
@@ -157,8 +159,9 @@ public class PathSegmentGraph {
 	 * initialize the graph from a section of the (database-stored) network enveloping the GPS track 
 	 * @param track array of points on the track under examination
 	 */
-	public PathSegmentGraph(ArrayList<Point> track, float bufferSize, String dumpFile) {
+	public PathSegmentGraph(GPSTrack track, float bufferSize, String dumpFile) {
 		this();
+		this.sourceRouteID = track.getSourceRouteID();
 		addLineStringsFromDatabase(track, bufferSize, dumpFile);
 	}
 	
@@ -459,12 +462,46 @@ public class PathSegmentGraph {
 		return getLineMergeGraphH4cked().getEdges().size();
 	}
 
+	public int getSize_Nodes() {
+		return getLineMergeGraphH4cked().getNodes().size();
+	}
+
 	public LineMergeGraphH4cked getLineMergeGraphH4cked() {
 		return lineMergeGraphH4cked;
 	}
 
 	public void setLineMergeGraphH4cked(LineMergeGraphH4cked lineMergeGraphH4cked) {
 		this.lineMergeGraphH4cked = lineMergeGraphH4cked;
+	}
+	
+	public double getMeanDegree() {
+		List<Node> nodes = getNodes();
+		int n = 0, ns = 0, nMax = 0, nMin = Integer.MAX_VALUE;
+		double nd = 0;
+		for (Node node : nodes) {
+			n = node.getDegree();
+			ns += n;
+			if (n > nMax) nMax = n;
+			if (n < nMin) nMin = n;
+		}
+		nd = (double)ns / (double)nodes.size();
+		System.out.printf("Graph: %d nodes, d_mean = %2.3f, d_max = %d, d_min = %d\n", nodes.size(), nd, nMax, nMin);
+		return nd;
+	}
+	
+	public double getNCombinations() {
+		List<Node> nodes = getNodes();
+		double nd = 1.;
+		int n;
+		for (Node node : nodes) {
+			n = Math.max(node.getDegree()-1, 1);
+			nd *= n;
+		}
+		return Math.sqrt(nd);
+	}
+
+	public int getSourceRouteID() {
+		return sourceRouteID;
 	}
 
 	public static void main(String[] args) {
