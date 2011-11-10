@@ -175,7 +175,7 @@ public class RouteFinder {
 		// check that startNode and endNode belong to same graph
 		if (network.findClosestNode(startNode.getCoordinate()) == null ||
 				network.findClosestNode(endNode.getCoordinate()) == null) {
-			logger.warn("---- origin and/or destination are not in network!");	// indicate failure
+			logger.error("Origin and/or destination are not in network!");	// indicate failure
 			return new ArrayList<Label>();
 		}
 

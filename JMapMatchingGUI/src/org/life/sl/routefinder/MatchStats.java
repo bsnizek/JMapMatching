@@ -9,7 +9,7 @@ import java.io.FileWriter;
  *
  */
 public class MatchStats {
-	public enum Status { OK, NOROUTES, MAXLABELS, MAXROUTES, MEMORY, EMPTYTRACK };
+	public enum Status { OK, NOROUTES, MAXLABELS, MAXROUTES, MEMORY, EMPTYTRACK, NETERROR };
 	
 	public int sourceRouteID = 0;
 	

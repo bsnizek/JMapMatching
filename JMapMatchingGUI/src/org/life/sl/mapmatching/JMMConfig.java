@@ -28,7 +28,7 @@ public class JMMConfig {
 	public Level logLevel = Level.INFO;
 	public boolean bDumpNetwork = false;
 	public String sDumpNetworkDir = "tmp";
-	public int sourcerouteID = -1;				// default: -1 = none
+	public String sourcerouteIDs = "";				// default: -1 = none
 	public double graphSnapDistance = 0.1;
 	
 	public JMMConfig() {}
@@ -64,7 +64,7 @@ public class JMMConfig {
 			if (iniMap.containsKey("DumpNetworkDir")) sDumpNetworkDir = iniMap.get("DumpNetworkDir").trim();
 
 			iniMap = ini.get("Input");
-			if (iniMap.containsKey("sourcerouteID")) sourcerouteID = Integer.parseInt(iniMap.get("sourcerouteID"));
+			if (iniMap.containsKey("sourcerouteIDs")) sourcerouteIDs = iniMap.get("sourcerouteIDs");
 			if (iniMap.containsKey("GraphSnapDistance")) graphSnapDistance = Double.parseDouble(iniMap.get("GraphSnapDistance"));
 		} catch (InvalidFileFormatException e) {
 			Logger.getRootLogger().error("Invalid file format");

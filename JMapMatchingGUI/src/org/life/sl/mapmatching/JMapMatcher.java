@@ -189,6 +189,11 @@ public class JMapMatcher {
 			}
 			Node fromNode = graph.findClosestNode(gpsPoints.getCoordinate(0));	// first node (Origin)
 			Node toNode   = graph.findClosestNode(gpsPoints.getCoordinate(-1));	// last node in GPS route (Destination) 
+			if (fromNode == null || toNode == null) {	// nodes are not in network - error and stop:
+				logger.error("Origin and destination not in network!?");
+				stats = new MatchStats(sourcerouteID, MatchStats.Status.NETERROR);
+				break;
+			}
 			// log coordinates:
 			logger.info("Origin:      " + fromNode.getCoordinate());
 			logger.info("Destination: " + toNode.getCoordinate());
@@ -523,7 +528,7 @@ public class JMapMatcher {
 			
 			Query result;
 			String query = "from SourceRoute";
-			if (args.length == 0 && cfg.sourcerouteID >= 0) query += " WHERE id="+cfg.sourcerouteID;
+			if (args.length == 0 && cfg.sourcerouteIDs != "") query += " WHERE id IN ("+cfg.sourcerouteIDs+")";
 			if (args.length == 1) query += " WHERE id="+args[0];
 			if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
 			query += " ORDER BY id";
