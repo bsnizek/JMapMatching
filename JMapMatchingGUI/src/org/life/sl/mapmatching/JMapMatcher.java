@@ -521,14 +521,9 @@ public class JMapMatcher {
 		// ... and invoke the matching algorithm:
 		if (kGPSLoader == gpsLoader.PGSQLDATABASE) {
 			new JMapMatcher(g).match(kGPSTrackID);			// get track from database; NOTE: g may be null here
-		} 
-		
-		if (kGPSLoader == gpsLoader.SHAPEFILE) {
+		} else if (kGPSLoader == gpsLoader.SHAPEFILE) {
 			new JMapMatcher(g).match(kGPSPointFileName);	// get track data from a file
-		}
-		
-		// ... a sweet bulk loader
-		if (kGPSLoader == gpsLoader.BULK_PGSQLDATABASE) {
+		} else if (kGPSLoader == gpsLoader.BULK_PGSQLDATABASE) {	// ... a sweet bulk loader
 			// 1. get a list over sourceroute ids
 			org.hibernate.classic.Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 			session.beginTransaction();

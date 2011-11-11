@@ -26,6 +26,7 @@ import gnu.trove.TIntProcedure;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Properties;
 
 import java.util.Stack;
@@ -64,6 +65,7 @@ public class RouteFinder {
 	public static enum LabelTraversal {
 		None,			///< no special sorting
 		Shuffle,		///< shuffle labels before advancing in the iteration
+		ShuffleReset,	///< shuffle labels before advancing in the iteration, and reset the search after a route was found
 		BestFirst,		///< traverse label in reverse natural order (highest score first) - this should find the globally best route first
 		BestFirstDR,	///< like BestFirst, but including a Dead Reckoning fallback strategy
 		WorstFirst,		///< traverse label in natural order (highest score last)
@@ -88,6 +90,7 @@ public class RouteFinder {
 //	private Collection<Edge> bridges = new ArrayList<Edge>();
 
 	private long numLabels = 0;				///< number of labels (states) generated when running algorithm
+	int numExpansions = 0;					///< number of expansions that were performed
 	private long numLabels_rejected = 0;	///< number of labels (states) that have been rejected due to constraints
 	private long rejectedLabelsLimit = 0;	///< limit for number of labels (states) that have been rejected
 	private long numLabels_overlap = 0;		///< number of labels that have overlapping nodes 
@@ -184,6 +187,7 @@ public class RouteFinder {
 		this.gpsPathLength = gpsPathLength0;
 		numLabels = 0;
 		int numDeadEnds = 0;
+		numExpansions = 0;
 
 		this.itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal));
 		this.rejectedLabelsLimit = rfParams.getInt(RFParams.Type.RejectedLabelsLimit);
@@ -215,7 +219,8 @@ public class RouteFinder {
 		ArrayList<Label> result = new ArrayList<Label>();
 		Stack<Label> stack = new Stack<Label>();
 		//*** START OF ALGORITHM ***//
-		stack.push(new Label(startNode));	// push start node to stack
+		Label rootLabel = new Label(startNode);
+		stack.push(rootLabel);	// push start node to stack
 
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
 		stackLoop:
@@ -224,7 +229,7 @@ public class RouteFinder {
 			Label expandingLabel = stack.pop();	// get last label from stack and expand it:
 			ArrayList<Label> expansion = expandLabel(expandingLabel);	// calculate the expansion of the label (continuation from last node along all available edges)
 			if (expansion.size() > 0) {
-				if (itLabelOrder == LabelTraversal.Shuffle) Collections.shuffle(expansion);				// randomize the order in which the labels are treated
+				if (itLabelOrder == LabelTraversal.Shuffle || itLabelOrder == LabelTraversal.ShuffleReset) Collections.shuffle(expansion);				// randomize the order in which the labels are treated
 				// Attention: sorting the labels affects two parts:
 				// 1. the expansion array, which is processed linearly
 				// 2. the stack, which is effectively processed in reverse order!
@@ -239,12 +244,21 @@ public class RouteFinder {
 					numLabels++;
 					// is label a new valid route?
 					if (isValidRoute(currentLabel))	{	// valid route means: it ends in the destination node and fulfills the length constraints
-						result.add(currentLabel);		// add the valid route to list of routes
+						//result.add(currentLabel);		// add the valid route to list of routes
 						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
 						if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
 							logger.warn("["+network.getSourceRouteID()+"] Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
 							stats.status = MatchStats.Status.MAXROUTES;
 							break stackLoop;
+						}
+						if (itLabelOrder == LabelTraversal.ShuffleReset) {	// reset search:
+							boolean b = true;
+							for (Label l : result) {
+								if (currentLabel.equals(l)) { b = false; break; }
+							}
+							if (b) result.add(currentLabel);
+							stack.removeAllElements();	// remove all elements except for the root node
+							stack.push(rootLabel);
 						}
 					}
 					else {
@@ -261,9 +275,9 @@ public class RouteFinder {
 					if (iShowProgressDetail > 1 && numLabels%50000 == 0) System.out.print(".");
 					if (numLabels%5000000 == 0) {
 						System.out.printf("[%d] dead ends: %d - overlaps: %d - rejected: %d\n", network.getSourceRouteID(), numDeadEnds, numLabels_overlap, numLabels_rejected);
-						String s = numLabels + " - ";
-						if (iShowProgressDetail > 1) s += (expandingLabel.getLength() / gpsPathLength) + " - ";
-						s += result.size();
+						String s = "lbl: " + numLabels;
+						if (iShowProgressDetail > 1) s += " - l: " + (expandingLabel.getLength() / gpsPathLength);
+						s += " - exp: " + numExpansions + " - res: " + result.size();
 						System.out.println(s);
 					}
 					long freeMem = Runtime.getRuntime().freeMemory();
@@ -335,8 +349,10 @@ public class RouteFinder {
 		// MAKE LABELS FROM NEIGHBORS
 		/////////////////////////////////////			
 
-		for(Object obj : 
-			parentLabel.getNode().getOutEdges().getEdges()) {	// loop over all edges leaving from the current node
+		@SuppressWarnings("unchecked")
+		List<Label> labels = (List<Label>)parentLabel.getNode().getOutEdges().getEdges();
+		if (labels.size() > 1) numExpansions++;	// size() == 1 means that the only edge is the backedge 
+		for(Object obj : labels ) {	// loop over all edges leaving from the current node
 
 			DirectedEdge currentEdge = (DirectedEdge) obj;
 			// check if the current edge is identical to the parent node, where we just came from:

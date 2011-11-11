@@ -128,6 +128,16 @@ public class Label implements Comparable<Label> {
 	public String toString() {
 		return node.toString();
 	}
+	
+	public boolean equals(Label l) {
+		boolean b = false;
+		if (l.score == this.score) {	// just to avoid having to create and compare the whole node lists
+			List<Node> nodes0 = this.getNodes();
+			List<Node> nodes1 = l.getNodes();
+			b = nodes0.equals(nodes1);
+		}
+		return b;
+	}
 
 	/**
 	 * Comparison method
