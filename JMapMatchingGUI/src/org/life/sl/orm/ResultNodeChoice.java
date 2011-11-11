@@ -35,6 +35,8 @@ public class ResultNodeChoice {
 	private float angleToDest;
 	private short envType;
 	private short cykType;
+	private float groenM;
+	private float groenPct;
 
 	public ResultNodeChoice() {}
 
@@ -67,6 +69,8 @@ public class ResultNodeChoice {
 		this.angleToDest = rnc.angleToDest;
 		this.envType = rnc.envType;
 		this.cykType = rnc.cykType;
+		this.groenM = rnc.groenM;
+		this.groenPct = rnc.groenPct;
 	}
 
 	public ResultNodeChoice clone() {
@@ -76,15 +80,13 @@ public class ResultNodeChoice {
 	public int getId() {
 		return id;
 	}
-
 	public void setId(int id) {
 		this.id = id;
 	}
 
-	public boolean isSelected() {
+	public boolean getSelected() {
 		return selected;
 	}
-
 	public void setSelected(boolean selected) {
 		this.selected = selected;
 	}
@@ -92,7 +94,6 @@ public class ResultNodeChoice {
 	public float getDist() {
 		return dist;
 	}
-
 	public void setDist(float dist) {
 		this.dist = dist;
 	}
@@ -100,7 +101,6 @@ public class ResultNodeChoice {
 	public float getAngle() {
 		return angle;
 	}
-
 	public void setAngle(float angle) {
 		this.angle = angle;
 	}
@@ -108,7 +108,6 @@ public class ResultNodeChoice {
 	public int getRouteID() {
 		return routeID;
 	}
-
 	public void setRouteID(int routeID) {
 		this.routeID = routeID;
 	}
@@ -116,7 +115,6 @@ public class ResultNodeChoice {
 	public int getSourceRouteID() {
 		return sourceRouteID;
 	}
-
 	public void setSourceRouteID(int sourceRouteID) {
 		this.sourceRouteID = sourceRouteID;
 	}
@@ -124,7 +122,6 @@ public class ResultNodeChoice {
 	public int getRespondentID() {
 		return respondentID;
 	}
-
 	public void setRespondentID(int respondentID) {
 		this.respondentID = respondentID;
 	}
@@ -132,7 +129,6 @@ public class ResultNodeChoice {
 	public int getEdgeID() {
 		return edgeID;
 	}
-
 	public void setEdgeID(int edgeID) {
 		this.edgeID = edgeID;
 	}
@@ -140,7 +136,6 @@ public class ResultNodeChoice {
 	public int getNodeID() {
 		return nodeID;
 	}
-
 	public void setNodeID(int nodeID) {
 		this.nodeID = nodeID;
 	}
@@ -148,7 +143,6 @@ public class ResultNodeChoice {
 	public float getAngleToDest() {
 		return angleToDest;
 	}
-
 	public void setAngleToDest(float angleToDest) {
 		this.angleToDest = angleToDest;
 	}
@@ -156,7 +150,6 @@ public class ResultNodeChoice {
 	public short getEnvType() {
 		return envType;
 	}
-
 	public void setEnvType(short envType) {
 		this.envType = envType;
 	}
@@ -164,9 +157,21 @@ public class ResultNodeChoice {
 	public short getCykType() {
 		return cykType;
 	}
-
 	public void setCykType(short cykType) {
 		this.cykType = cykType;
+	}
+
+	public float getGroenM() {
+		return groenM;
+	}
+	public void setGroenM(float a) {
+		this.groenM = a;
+	}
+	public float getGroenPct() {
+		return groenPct;
+	}
+	public void setGroenPct(float a) {
+		this.groenPct = a;
 	}
 
 	public int getI() {

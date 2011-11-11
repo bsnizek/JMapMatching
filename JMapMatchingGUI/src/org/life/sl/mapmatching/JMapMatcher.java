@@ -53,7 +53,9 @@ import org.life.sl.utils.Timer;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.operation.linemerge.LineMergeEdge;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
+import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.Node;
 
 // JVM argument for max. heap size (required for large networks): -Xmx2048m
@@ -73,7 +75,7 @@ public class JMapMatcher {
 	private static String kCfgFileName = "JMM.cfg";
 	private static String kStatFileName = "JMM_stats.dat";
 	private static String kOutputDir = "results/";
-	public final double kCoordEps = 1.e-6;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+	public static double kCoordEps = 1.e-3;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
 
 	// input data:
 	private static gpsLoader kGPSLoader    = gpsLoader.BULK_PGSQLDATABASE;
@@ -434,13 +436,17 @@ public class JMapMatcher {
 					@SuppressWarnings("unchecked")
 					List<DirectedEdge> outEdges = node.getOutEdges().getEdges();
 					for (DirectedEdge oe : outEdges) {
-						if (oe != lastEdge) {	// don't use the backEdge!	// if (lastEdge != null && 
+						if (lastEdge==null || (lastEdge != null && oe != lastEdge.getSym())) {	// don't use the backEdge (lastEdge.getSym())! 
+							Edge oee = oe.getEdge();
 							@SuppressWarnings("unchecked")
-							HashMap<String, Object> ed2 = (HashMap<String, Object>) oe.getEdge().getData();
+							HashMap<String, Object> ed2 = (HashMap<String, Object>) oee.getData();
 							choice.setSelected(oe == e);
 							choice.setEdgeID((Integer)ed2.get("id"));
 							choice.setEnvType((Short)ed2.get("et"));
 							choice.setCykType((Short)ed2.get("ct"));
+							choice.setGroenM(((Double)ed2.get("gm")).floatValue());
+							double l = ((LineMergeEdge)oee).getLine().getLength();
+							choice.setGroenPct((float)((Double)ed2.get("gm") / l));
 							choice.setAngleToDest((float)(MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - angle_direct))));	// store value in degrees
 							choice.setAngle(lastEdge != null ? (float)MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - lastEdge.getAngle())) : 0);	// angle between edges at node
 	
@@ -503,6 +509,7 @@ public class JMapMatcher {
 		//logger.setLevel(Level.INFO);
 		GraphParams.getInstance().setSnap(cfg.graphSnapDistance > 0.);
 		GraphParams.getInstance().setSnapDistance(cfg.graphSnapDistance);
+		if (cfg.graphSnapDistance > 0.) kCoordEps = cfg.graphSnapDistance;
 		
 		PathSegmentGraph g = null;
 		// Let us load the graph ...
