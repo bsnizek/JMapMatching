@@ -72,6 +72,7 @@ public class RouteFinder {
 		BestLastEdge;	///< traverse label in reverse natural order, considering only the last edge
 	}
 
+	private int kShuffleReset_bestLabels = 5;
 	private int iShowProgressDetail = 2;	///< show a progress indicator while finding routes?
 
 	private LabelTraversal itLabelOrder = LabelTraversal.BestFirst;
@@ -222,6 +223,8 @@ public class RouteFinder {
 		Label rootLabel = new Label(startNode);
 		stack.push(rootLabel);	// push start node to stack
 
+		LabelTraversal itLabelOrder_orig = itLabelOrder;
+		if (itLabelOrder == LabelTraversal.ShuffleReset) itLabelOrder = LabelTraversal.BestFirstDR; 
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
 		stackLoop:
 		while (!stack.empty()) {	// algorithm's main loop
@@ -244,24 +247,29 @@ public class RouteFinder {
 					numLabels++;
 					// is label a new valid route?
 					if (isValidRoute(currentLabel))	{	// valid route means: it ends in the destination node and fulfills the length constraints
-						//result.add(currentLabel);		// add the valid route to list of routes
+						if (itLabelOrder == LabelTraversal.ShuffleReset) {	// reset search:
+							// check if this route already exists:
+							boolean b = true;
+							for (Label l : result) {
+								if (currentLabel.equals(l)) { b = false; break; }
+							}
+							if (b) result.add(currentLabel);
+						} else {
+							result.add(currentLabel);	// add the valid route to list of routes (without comparison - labels are all different due to search strategy) 
+						}
+						if (itLabelOrder_orig == LabelTraversal.ShuffleReset && result.size() >= kShuffleReset_bestLabels) itLabelOrder = itLabelOrder_orig;
+						if (itLabelOrder == LabelTraversal.ShuffleReset) {
+							stack.removeAllElements();	// remove all elements except for the root node
+							stack.push(rootLabel);
+						}
+						// check if maximum number of routes is reached
 						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
 						if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
 							logger.warn("["+network.getSourceRouteID()+"] Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
 							stats.status = MatchStats.Status.MAXROUTES;
 							break stackLoop;
 						}
-						if (itLabelOrder == LabelTraversal.ShuffleReset) {	// reset search:
-							boolean b = true;
-							for (Label l : result) {
-								if (currentLabel.equals(l)) { b = false; break; }
-							}
-							if (b) result.add(currentLabel);
-							stack.removeAllElements();	// remove all elements except for the root node
-							stack.push(rootLabel);
-						}
-					}
-					else {
+					} else {
 						if (maxLabels > 0 && numLabels > maxLabels) {
 							logger.warn("["+network.getSourceRouteID()+"] Maximum number of labels reached (Constraint.MaxLabels = " + rfParams.getInt(RFParams.Type.MaxLabels) + ")");
 							stats.status = MatchStats.Status.MAXLABELS;
