@@ -38,20 +38,21 @@ import org.ini4j.InvalidFileFormatException;
  */
 public class RFParams {
 	public enum Type {
-		NodeOverlap,	///< maximum number of overlaps in a node for a valid route
-		ArticulationPointOverlap,	///< Maximum number of overlaps in an articulation point for a valid route
-		EdgeOverlap,	///< maximum number of overlaps in an edge for a valid route
-		BridgeOverlap,	///< maximum number of overlaps in a bridge for a valid route
-		MinimumLength,	///< minimum length of a valid route; length is defined as the sum of weights over edges in the route 
-		MaximumLength,	///< maximum length of a valid route; length is defined as the sum of weights over edges in the route 
-		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
+		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
 		DistanceFactor,			///< this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
 		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
-		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
-		RejectedLabelsLimit,	///< limit for the number of unsuccessful labels (no routes, only rejected labels)
+		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
+		ShuffleResetExtraRoutes,	///< number of extra "BestFirstDR" routes to compute if LabelTraversal==ShuffleReset
 		MaxLabels,				///< maximum number of labels to create/evaluate
+		RejectedLabelsLimit,	///< limit for the number of unsuccessful labels (no routes, only rejected labels)
 		NoLabelsResizeNetwork,	///< factor to resize the network if no routes have been found
 		NetworkBufferSizeMax,	///< maximum network buffer size
+		NodeOverlap,			///< maximum number of overlaps in a node for a valid route
+		ArticulationPointOverlap,	///< Maximum number of overlaps in an articulation point for a valid route
+		EdgeOverlap,			///< maximum number of overlaps in an edge for a valid route
+		BridgeOverlap,			///< maximum number of overlaps in a bridge for a valid route
+		MinimumLength,			///< minimum length of a valid route; length is defined as the sum of weights over edges in the route 
+		MaximumLength,			///< maximum length of a valid route; length is defined as the sum of weights over edges in the route 
 		ShowProgressDetail,		///< how much detail regarding the progress is shown ("progress bar"): 0, 1, 2
 	}
 
@@ -198,6 +199,7 @@ public class RFParams {
 			if (map2Int(iniMap, "MaxLabels", Type.MaxLabels)) r++;
 			if (map2Double(iniMap, "NetworkBufferSizeMax", Type.NetworkBufferSizeMax)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
+			if (map2Int(iniMap, "ShuffleResetExtraRoutes", Type.ShuffleResetExtraRoutes)) r++;
 			if (map2Int(iniMap, "ShowProgressDetail", Type.ShowProgressDetail)) r++;
 		} catch (InvalidFileFormatException e) {
 			Logger.getRootLogger().error("Invalid file format");

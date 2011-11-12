@@ -72,7 +72,6 @@ public class RouteFinder {
 		BestLastEdge;	///< traverse label in reverse natural order, considering only the last edge
 	}
 
-	private int kShuffleReset_bestLabels = 5;
 	private int iShowProgressDetail = 2;	///< show a progress indicator while finding routes?
 
 	private LabelTraversal itLabelOrder = LabelTraversal.BestFirst;
@@ -224,7 +223,9 @@ public class RouteFinder {
 		stack.push(rootLabel);	// push start node to stack
 
 		LabelTraversal itLabelOrder_orig = itLabelOrder;
-		if (itLabelOrder == LabelTraversal.ShuffleReset) itLabelOrder = LabelTraversal.BestFirstDR; 
+		int shuffleResetExtraRoutes = rfParams.getInt(RFParams.Type.ShuffleResetExtraRoutes);
+		if (itLabelOrder == LabelTraversal.ShuffleReset && shuffleResetExtraRoutes > 0) itLabelOrder = LabelTraversal.BestFirstDR; 
+		logger.info("Tree traversal strategy: " + itLabelOrder.toString());
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
 		stackLoop:
 		while (!stack.empty()) {	// algorithm's main loop
@@ -257,7 +258,11 @@ public class RouteFinder {
 						} else {
 							result.add(currentLabel);	// add the valid route to list of routes (without comparison - labels are all different due to search strategy) 
 						}
-						if (itLabelOrder_orig == LabelTraversal.ShuffleReset && result.size() >= kShuffleReset_bestLabels) itLabelOrder = itLabelOrder_orig;
+						// check for shuffleResetExtraRoutes and switch to ShuffleReset mode, if applicable:
+						if (itLabelOrder != LabelTraversal.ShuffleReset && itLabelOrder_orig == LabelTraversal.ShuffleReset && result.size() >= shuffleResetExtraRoutes) {
+							itLabelOrder = itLabelOrder_orig;
+						}
+						// in ShuffleReset mode, stop tree search and start again at the root node (Origin):
 						if (itLabelOrder == LabelTraversal.ShuffleReset) {
 							stack.removeAllElements();	// remove all elements except for the root node
 							stack.push(rootLabel);
@@ -316,6 +321,7 @@ public class RouteFinder {
 				network.getNodes().size());
 		// populate statistics container:
 		stats.nLabels = numLabels;
+		stats.nExpansions = numExpansions;
 		stats.nRoutes = result.size();
 		stats.nRejected_length = numLabels_rejected - numLabels_overlap;
 		stats.nRejected_overlap = numLabels_overlap;

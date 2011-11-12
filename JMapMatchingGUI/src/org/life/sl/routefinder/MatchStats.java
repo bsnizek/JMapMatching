@@ -24,6 +24,7 @@ public class MatchStats {
 	public double ODDist = 0.;
 	public double maxLength = 0.;
 	public long nLabels = 0;
+	public long nExpansions = 0;
 	public long nRoutes = 0;
 	public long nDeadEnds = 0;
 	public long nRejected_length = 0;
@@ -47,7 +48,7 @@ public class MatchStats {
 				fw.write("# sourceID\tedges\tnodes\tmeanDegree\tmaxRoutes\ttrackLen\tODDist\tmaxLen\tnLabels\tnRoutes\tnDeadEnds\tnRej_length\tnRej_overlap\trunTime\tstatus\n");
 			}
 			String s = String.format("%d\t%d\t%d\t%2.3f\t%2.3g\t", sourceRouteID, network_edges, network_nodes, network_meanDegree, network_maxRoutesEst); 
-			s += String.format("%2.3f\t%2.3f\t%2.3f\t%d\t%d\t%d\t%d\t%d\t", trackLength, ODDist, maxLength, nLabels, nRoutes, nDeadEnds, nRejected_length, nRejected_overlap); 
+			s += String.format("%2.3f\t%2.3f\t%2.3f\t%d\t%d\t%d\t%d\t%d\t%d\t", trackLength, ODDist, maxLength, nLabels, nExpansions, nRoutes, nDeadEnds, nRejected_length, nRejected_overlap); 
 			s += String.format("%2.3f\t%d\n", runTime, status.ordinal()); 
 			
 			fw.write(s);
