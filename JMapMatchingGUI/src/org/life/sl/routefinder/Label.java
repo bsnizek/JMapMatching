@@ -287,6 +287,21 @@ public class Label implements Comparable<Label> {
 	public double getLastEdgeLength() {
 		return this.lastEdgeLength;
 	}
+	
+	/**
+	 * Return a parent label n generations back
+	 * @param n how far back in the history
+	 * @return label n generations back
+	 */
+	public Label getNthParent(int n) {
+		int i = n;
+		Label label = this;
+		while (label.parent != null && i > 0) {
+			label = label.parent;
+			i--;
+		}
+		return label;
+	}
 
 	/**
 	 * Given a directed edge, this method calculates how many times the undirected parent edge has been visited by the route

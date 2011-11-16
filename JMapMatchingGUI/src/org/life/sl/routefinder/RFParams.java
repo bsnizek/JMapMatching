@@ -42,11 +42,13 @@ public class RFParams {
 		DistanceFactor,			///< this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
 		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
 		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
+		ShuffleResetNBack,		///< number of steps to step back in the search tree at a "reset"
 		ShuffleResetExtraRoutes,	///< number of extra "BestFirstDR" routes to compute if LabelTraversal==ShuffleReset
 		MaxLabels,				///< maximum number of labels to create/evaluate
 		RejectedLabelsLimit,	///< limit for the number of unsuccessful labels (no routes, only rejected labels)
 		NoLabelsResizeNetwork,	///< factor to resize the network if no routes have been found
 		NetworkBufferSizeMax,	///< maximum network buffer size
+		SwapOD,					///< swap origin and destination
 		NodeOverlap,			///< maximum number of overlaps in a node for a valid route
 		ArticulationPointOverlap,	///< Maximum number of overlaps in an articulation point for a valid route
 		EdgeOverlap,			///< maximum number of overlaps in an edge for a valid route
@@ -60,8 +62,10 @@ public class RFParams {
 	private HashMap<Type, Integer> c_int = null;
 	// collection of double constraints, i.e. min/max length constraints
 	private HashMap<Type, Double> c_double = null;
-	// collection of double constraints, i.e. min/max length constraints
+	// collection of string parameters
 	private HashMap<Type, String> c_str = null;
+	// collection of boolean constraints, i.e. yes/no constraints
+	private HashMap<Type, Boolean> c_bool = null;
 
 	Map<String, String> iniMap = null;
 	
@@ -73,6 +77,7 @@ public class RFParams {
 		c_int = new HashMap<Type, Integer>();
 		c_double = new HashMap<Type, Double>();
 		c_str = new HashMap<Type, String>();
+		c_bool = new HashMap<Type, Boolean>();
 	}
 
 	/**
@@ -145,6 +150,15 @@ public class RFParams {
 	}
 
 	/**
+	 * Sets a constraint value; variant: boolean value
+	 * @param type	the constraint key
+	 * @param value	the value for this constraint
+	 */
+	public void set(Type type, boolean value) {
+		c_bool.put(type, value);
+	}
+
+	/**
 	 * Gets the value of an integer constraint
 	 * @param type the constraint key
 	 * @return The value of the constraint.
@@ -170,6 +184,15 @@ public class RFParams {
 	 */
 	public String getString(Type type) {
 		return (String) iniMap.get(type.toString());
+	}
+
+	/**
+	 * Gets the string value of a constraint as read from the ini file
+	 * @param type the constraint key
+	 * @return The value of the constraint.
+	 */
+	public boolean getBool(Type type) {
+		return c_bool.get(type);
 	}
 	
 	/**
@@ -200,7 +223,9 @@ public class RFParams {
 			if (map2Double(iniMap, "NetworkBufferSizeMax", Type.NetworkBufferSizeMax)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
 			if (map2Int(iniMap, "ShuffleResetExtraRoutes", Type.ShuffleResetExtraRoutes)) r++;
+			if (map2Int(iniMap, "ShuffleResetNBack", Type.ShuffleResetNBack)) r++;
 			if (map2Int(iniMap, "ShowProgressDetail", Type.ShowProgressDetail)) r++;
+			if (map2Bool(iniMap, "SwapOD", Type.SwapOD)) r++;
 		} catch (InvalidFileFormatException e) {
 			Logger.getRootLogger().error("Invalid file format");
 		} catch (IOException e) {
@@ -248,6 +273,21 @@ public class RFParams {
 	private boolean map2String(Map<String, String> iniMap, String mapKey, Type parKey) {
 		boolean ok = iniMap.containsKey(mapKey); 
 		if (ok) set(parKey, iniMap.get(mapKey));
+		return ok;
+	}
+	/**
+	 * Reads a boolean value from a given Map and stores it in the Boolean Hashmap
+	 * @param iniMap the map containing keys and values
+	 * @param mapKey key to look for in the map
+	 * @param parKey parameter key (enum) to store the value
+	 * @return true if the map contained the key (and thus the value could be stored)
+	 */
+	private boolean map2Bool(Map<String, String> iniMap, String mapKey, Type parKey) {
+		boolean ok = iniMap.containsKey(mapKey); 
+		if (ok) {
+			Boolean d = Boolean.parseBoolean(iniMap.get(mapKey));
+			set(parKey, d.booleanValue());
+		}
 		return ok;
 	}
 }

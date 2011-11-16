@@ -95,6 +95,7 @@ public class RouteFinder {
 	private long rejectedLabelsLimit = 0;	///< limit for number of labels (states) that have been rejected
 	private long numLabels_overlap = 0;		///< number of labels that have overlapping nodes 
 	private long maxLabels = 0;
+	private int nGenBack = 0;
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
 	
@@ -182,21 +183,27 @@ public class RouteFinder {
 			return new ArrayList<Label>();
 		}
 
-		this.startNode = startNode;
-		this.endNode = endNode;
+		if (rfParams.getBool(RFParams.Type.SwapOD)) {
+			this.startNode = endNode;
+			this.endNode = startNode;
+		} else {
+			this.startNode = startNode;
+			this.endNode = endNode;
+		}
 		this.gpsPathLength = gpsPathLength0;
 		numLabels = 0;
 		int numDeadEnds = 0;
 		numExpansions = 0;
 
 		this.itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal));
+		this.nGenBack = rfParams.getInt(RFParams.Type.ShuffleResetNBack);
 		this.rejectedLabelsLimit = rfParams.getInt(RFParams.Type.RejectedLabelsLimit);
 		this.maxLabels = rfParams.getInt(RFParams.Type.MaxLabels);
 		this.iShowProgressDetail = rfParams.getInt(RFParams.Type.ShowProgressDetail);
 		// precalculate the minimum path length, for use as a constraint in label expansion:
 		maxPathLength = gpsPathLength * rfParams.getDouble(RFParams.Type.DistanceFactor);
 		// if there was a problem, use the given maximum length constraint:
-		double minDist = startNode.getCoordinate().distance(endNode.getCoordinate());	// compare to Euclidian distance
+		double minDist = this.startNode.getCoordinate().distance(this.endNode.getCoordinate());	// compare to Euclidian distance
 		if (maxPathLength < minDist) {
 			System.err.println("Warning: invalid GPS data? referencePathLength < minDist (" + maxPathLength + " < " + minDist + ")");
 			maxPathLength = 0.;
@@ -219,13 +226,13 @@ public class RouteFinder {
 		ArrayList<Label> result = new ArrayList<Label>();
 		Stack<Label> stack = new Stack<Label>();
 		//*** START OF ALGORITHM ***//
-		Label rootLabel = new Label(startNode);
+		Label rootLabel = new Label(this.startNode);
 		stack.push(rootLabel);	// push start node to stack
 
 		LabelTraversal itLabelOrder_orig = itLabelOrder;
 		int shuffleResetExtraRoutes = rfParams.getInt(RFParams.Type.ShuffleResetExtraRoutes);
 		if (itLabelOrder == LabelTraversal.ShuffleReset && shuffleResetExtraRoutes > 0) itLabelOrder = LabelTraversal.BestFirstDR; 
-		logger.info("Tree traversal strategy: " + itLabelOrder.toString());
+		logger.info("Initial tree traversal strategy: " + itLabelOrder.toString());
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
 		stackLoop:
 		while (!stack.empty()) {	// algorithm's main loop
@@ -261,11 +268,19 @@ public class RouteFinder {
 						// check for shuffleResetExtraRoutes and switch to ShuffleReset mode, if applicable:
 						if (itLabelOrder != LabelTraversal.ShuffleReset && itLabelOrder_orig == LabelTraversal.ShuffleReset && result.size() >= shuffleResetExtraRoutes) {
 							itLabelOrder = itLabelOrder_orig;
+							logger.info("Switching tree traversal strategy: " + itLabelOrder.toString());
 						}
 						// in ShuffleReset mode, stop tree search and start again at the root node (Origin):
 						if (itLabelOrder == LabelTraversal.ShuffleReset) {
-							stack.removeAllElements();	// remove all elements except for the root node
-							stack.push(rootLabel);
+							if (nGenBack == 0) {	// remove all elements except for the root node
+								stack.removeAllElements();	// faster: remove all, ...
+								stack.push(rootLabel);		// ... then return the root node to the stack
+							} else {	// step back a certain number of generations
+								Label backLabel = currentLabel.getNthParent(nGenBack);
+								while (stack.size() > 0 && stack.pop() != backLabel) {
+									stack.push(backLabel);	// put it back on stack and start from there
+								}
+							}
 						}
 						// check if maximum number of routes is reached
 						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
@@ -337,7 +352,7 @@ public class RouteFinder {
 	 */
 	private boolean isValidRoute(Label label) {
 		return (	
-			label.getNode() == endNode &&
+			label.getNode() == this.endNode &&
 			label.getLength() >= rfParams.getDouble(RFParams.Type.MinimumLength) &&
 			label.getLength() <= rfParams.getDouble(RFParams.Type.MaximumLength)
 		);
