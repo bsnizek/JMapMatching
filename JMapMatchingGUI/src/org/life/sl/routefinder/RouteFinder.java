@@ -254,17 +254,17 @@ public class RouteFinder {
 				for (Label currentLabel : expansion) {	// loop over all next-generation labels
 					numLabels++;
 					// is label a new valid route?
-					if (isValidRoute(currentLabel))	{	// valid route means: it ends in the destination node and fulfills the length constraints
+					boolean bStoreRoute = isValidRoute(currentLabel);
+					if (bStoreRoute)	{	// valid route means: it ends in the destination node and fulfills the length constraints
 						if (itLabelOrder == LabelTraversal.ShuffleReset) {	// reset search:
 							// check if this route already exists:
-							boolean b = true;
 							for (Label l : result) {
-								if (currentLabel.equals(l)) { b = false; break; }
+								if (currentLabel.equals(l)) { bStoreRoute = false; break; }
 							}
-							if (b) result.add(currentLabel);
-						} else {
-							result.add(currentLabel);	// add the valid route to list of routes (without comparison - labels are all different due to search strategy) 
-						}
+							if (bStoreRoute) result.add(currentLabel);
+						} //else without comparison - labels are all different due to search strategy
+						if (bStoreRoute) result.add(currentLabel);	// add the valid route to list of routes
+						
 						// check for shuffleResetExtraRoutes and switch to ShuffleReset mode, if applicable:
 						if (itLabelOrder != LabelTraversal.ShuffleReset && itLabelOrder_orig == LabelTraversal.ShuffleReset && result.size() >= shuffleResetExtraRoutes) {
 							itLabelOrder = itLabelOrder_orig;
@@ -289,7 +289,9 @@ public class RouteFinder {
 							stats.status = MatchStats.Status.MAXROUTES;
 							break stackLoop;
 						}
-					} else {
+					}
+
+					if (!bStoreRoute) {	// check for maxLabels condition:
 						if (maxLabels > 0 && numLabels > maxLabels) {
 							logger.warn("["+network.getSourceRouteID()+"] Maximum number of labels reached (Constraint.MaxLabels = " + rfParams.getInt(RFParams.Type.MaxLabels) + ")");
 							stats.status = MatchStats.Status.MAXLABELS;
