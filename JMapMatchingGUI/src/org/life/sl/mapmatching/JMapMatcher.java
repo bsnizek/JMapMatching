@@ -297,7 +297,7 @@ public class JMapMatcher {
 			Label curLabel = labels.get(j);
 			
 			if (cfg.bWriteToDatabase) {
-				if (writeLabelToDatabase(curLabel, first, respondentID, fromNode, toNode)) {
+				if (writeLabelToDatabase(curLabel, first, respondentID, fromNode, toNode, eStat)) {
 					nOK++;
 				} else {
 					logger.error("ERROR storing route!!");
@@ -373,7 +373,7 @@ public class JMapMatcher {
 	 * @param toNode destination D
 	 * @return true if no error occurred during writing the data
 	 */
-	private boolean writeLabelToDatabase(Label label, boolean isChoice, int respondentID, Node fromNode, Node toNode) {
+	private boolean writeLabelToDatabase(Label label, boolean isChoice, int respondentID, Node fromNode, Node toNode, EdgeStatistics eStat) {
 		boolean ok = false;
 		
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
@@ -449,6 +449,7 @@ public class JMapMatcher {
 							choice.setGroenPct((float)((Double)ed2.get("gm") / l));
 							choice.setAngleToDest((float)(MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - angle_direct))));	// store value in degrees
 							choice.setAngle(lastEdge != null ? (float)MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - lastEdge.getAngle())) : 0);	// angle between edges at node
+							choice.setnPts(eStat.getCount(oee));
 	
 							session.save(choice.clone());	// save 1 choice/nonchoice for each outEdge!
 						}

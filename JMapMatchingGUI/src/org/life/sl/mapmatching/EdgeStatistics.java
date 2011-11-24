@@ -108,9 +108,9 @@ public class EdgeStatistics {
 	 * add a new edge to the statistics table and initialize its counter with 0
 	 * @param e the edge to add
 	 */
-	public void addEdge(Edge e) {
+	/*public void addEdge(Edge e) {
 		edgePoints.put(e, (short)0);
-	}
+	}*/
 	
 	/**
 	 * add a point to an associated edge; 

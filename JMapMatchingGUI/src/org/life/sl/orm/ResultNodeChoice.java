@@ -37,6 +37,7 @@ public class ResultNodeChoice {
 	private short cykType;
 	private float groenM;
 	private float groenPct;
+	private short nPts;
 
 	public ResultNodeChoice() {}
 
@@ -71,6 +72,7 @@ public class ResultNodeChoice {
 		this.cykType = rnc.cykType;
 		this.groenM = rnc.groenM;
 		this.groenPct = rnc.groenPct;
+		this.nPts = rnc.nPts;
 	}
 
 	public ResultNodeChoice clone() {
@@ -180,6 +182,14 @@ public class ResultNodeChoice {
 
 	public void setI(int i) {
 		this.i = i;
+	}
+
+	public short getnPts() {
+		return nPts;
+	}
+
+	public void setnPts(short nPts) {
+		this.nPts = nPts;
 	}
 
 }

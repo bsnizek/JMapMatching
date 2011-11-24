@@ -40,6 +40,7 @@
 		<property name="cykType"></property>
 		<property type="float" name="groenM"></property>
 		<property type="float" name="groenPct"></property>
+		<property type="short" name="nPts"></property>
 		
 	</class>
 
