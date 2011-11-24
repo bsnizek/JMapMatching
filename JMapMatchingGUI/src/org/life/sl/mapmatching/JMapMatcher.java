@@ -435,22 +435,45 @@ public class JMapMatcher {
 
 					@SuppressWarnings("unchecked")
 					List<DirectedEdge> outEdges = node.getOutEdges().getEdges();
+					if (lastEdge != null) outEdges.remove(lastEdge.getSym());
+					outEdges.remove(e);
+					Collections.shuffle(outEdges);	// use a random selection: the first noe are selected, the remaining ones are dropped
+					outEdges.add(0, e);				// put the chosen edge at the first position
+					int nOE = outEdges.size();
+					if (cfg.iFixedChoices > 0) {
+						if (nOE < cfg.iFixedChoices) {	// if there are not enough edges, fill up with null:
+							for (int j = nOE; j < cfg.iFixedChoices; j++) outEdges.add(null);
+						} else if (nOE > cfg.iFixedChoices) {	// too many: remove:
+							for (int j = nOE-1; j >= cfg.iFixedChoices; j--) outEdges.remove(j);
+						}
+					}	// now, we have exactly cfg.iFixedChoices edges in the list
 					for (DirectedEdge oe : outEdges) {
-						if (lastEdge==null || (lastEdge != null && oe != lastEdge.getSym())) {	// don't use the backEdge (lastEdge.getSym())! 
-							Edge oee = oe.getEdge();
-							@SuppressWarnings("unchecked")
-							HashMap<String, Object> ed2 = (HashMap<String, Object>) oee.getData();
-							choice.setSelected(oe == e);
-							choice.setEdgeID((Integer)ed2.get("id"));
-							choice.setEnvType((Short)ed2.get("et"));
-							choice.setCykType((Short)ed2.get("ct"));
-							choice.setGroenM(((Double)ed2.get("gm")).floatValue());
-							double l = ((LineMergeEdge)oee).getLine().getLength();
-							choice.setGroenPct((float)((Double)ed2.get("gm") / l));
-							choice.setAngleToDest((float)(MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - angle_direct))));	// store value in degrees
-							choice.setAngle(lastEdge != null ? (float)MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - lastEdge.getAngle())) : 0);	// angle between edges at node
-							choice.setnPts(eStat.getCount(oee));
-	
+						if (lastEdge==null || (lastEdge != null && oe != lastEdge.getSym())) {	// don't use the backEdge (lastEdge.getSym())!
+							if (oe != null) {
+								Edge oee = oe.getEdge();
+								@SuppressWarnings("unchecked")
+								HashMap<String, Object> ed2 = (HashMap<String, Object>) oee.getData();
+								choice.setSelected(oe == e);
+								choice.setEdgeID((Integer)ed2.get("id"));
+								choice.setEnvType((Short)ed2.get("et"));
+								choice.setCykType((Short)ed2.get("ct"));
+								choice.setGroenM(((Double)ed2.get("gm")).floatValue());
+								double l = ((LineMergeEdge)oee).getLine().getLength();
+								choice.setGroenPct((float)((Double)ed2.get("gm") / l));
+								choice.setAngleToDest((float)(MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - angle_direct))));	// store value in degrees
+								choice.setAngle(lastEdge != null ? (float)MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - lastEdge.getAngle())) : 0);	// angle between edges at node
+								choice.setnPts(eStat.getCount(oee));
+							} else {	// oe==null: empty pseudo-edge
+								choice.setSelected(false);
+								choice.setEdgeID(0);
+								choice.setEnvType((short)0);
+								choice.setCykType((short)0);
+								choice.setGroenM(0f);
+								choice.setGroenPct(0f);
+								choice.setAngleToDest(0f);
+								choice.setAngle(0);
+								choice.setnPts((short)0);
+							}
 							session.save(choice.clone());	// save 1 choice/nonchoice for each outEdge!
 						}
 					}
