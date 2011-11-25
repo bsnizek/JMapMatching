@@ -44,7 +44,7 @@ import com.vividsolutions.jts.planargraph.Node;
 public class ResultRoute {
 
 	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///< limits determining when a change in angle is counted as a left/right/front/back turn, in radians
-	public final double kCoordEps = 1.e-6;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+	public final double kCoordEps = 1.e0;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
 	
 	private int id;
 	private LineString geometry;
@@ -243,7 +243,7 @@ public class ResultRoute {
 			while (it.hasNext()) {
 				OSMNode on = it.next();
 				Coordinate onc = on.getGeometry().getCoordinate();
-				if (Math.abs(c_n.x - onc.x) < kCoordEps && Math.abs(c_n.x - onc.x) < kCoordEps) {
+				if (Math.abs(c_n.x - onc.x) < kCoordEps && Math.abs(c_n.y - onc.y) < kCoordEps) {
 					nodeID = on.getId();
 					break;
 				}								

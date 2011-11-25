@@ -96,7 +96,7 @@ public class RouteFinder {
 	private long rejectedLabelsLimit = 0;	///< limit for number of labels (states) that have been rejected
 	private long numLabels_overlap = 0;		///< number of labels that have overlapping nodes 
 	private long maxLabels = 0;				///< maximum number of labels to compute
-	private long maxRuntime = 0;			///< maximum computation time per route, in seconds
+	private double maxRuntime = 0;			///< maximum computation time per route, in seconds
 	private int nGenBack = 0;
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
@@ -201,7 +201,7 @@ public class RouteFinder {
 		this.nGenBack = rfParams.getInt(RFParams.Type.ShuffleResetNBack);
 		this.rejectedLabelsLimit = rfParams.getInt(RFParams.Type.RejectedLabelsLimit);
 		this.maxLabels = rfParams.getInt(RFParams.Type.MaxLabels);
-		this.maxRuntime = rfParams.getInt(RFParams.Type.MaxRuntime);
+		this.maxRuntime = rfParams.getDouble(RFParams.Type.MaxRuntime);
 		this.iShowProgressDetail = rfParams.getInt(RFParams.Type.ShowProgressDetail);
 		// precalculate the minimum path length, for use as a constraint in label expansion:
 		maxPathLength = gpsPathLength * rfParams.getDouble(RFParams.Type.DistanceFactor);
@@ -238,7 +238,8 @@ public class RouteFinder {
 		logger.info("Initial tree traversal strategy: " + itLabelOrder.toString());
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
 		
-		Timer timer = new Timer();
+		Timer timer = new Timer();	// timer to observe total runtime
+		timer.init();
 		
 		stackLoop:
 		while (!stack.empty()) {	// algorithm's main loop
@@ -339,7 +340,10 @@ public class RouteFinder {
 			}
 			
 			// check the runtime constraint (top priority):
-			
+			if (maxRuntime > 0 && timer.getRunTime(false) > maxRuntime) {
+				logger.warn("Reached maximum runtime of "+maxRuntime+" s");
+				break stackLoop;
+			}
 		}
 		// some statistics on the computation:
 		System.out.printf("\nlabels analyzed:\t%14d\nvalid routes:\t\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",

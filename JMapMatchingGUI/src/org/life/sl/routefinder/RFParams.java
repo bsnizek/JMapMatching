@@ -221,7 +221,7 @@ public class RFParams {
 			if (map2Int(iniMap, "RejectedLabelsLimit", Type.RejectedLabelsLimit)) r++;
 			if (map2Double(iniMap, "NoLabelsResizeNetwork", Type.NoLabelsResizeNetwork)) r++;
 			if (map2Int(iniMap, "MaxLabels", Type.MaxLabels)) r++;
-			if (map2Int(iniMap, "MaxRuntime", Type.MaxRuntime)) r++;
+			if (map2Double(iniMap, "MaxRuntime", Type.MaxRuntime)) r++;
 			if (map2Double(iniMap, "NetworkBufferSizeMax", Type.NetworkBufferSizeMax)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
 			if (map2Int(iniMap, "ShuffleResetExtraRoutes", Type.ShuffleResetExtraRoutes)) r++;
