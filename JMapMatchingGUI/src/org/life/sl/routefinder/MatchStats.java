@@ -10,6 +10,7 @@ import java.io.FileWriter;
  */
 public class MatchStats {
 	public enum Status { OK, NOROUTES, MAXLABELS, MAXROUTES, MEMORY, EMPTYTRACK, NETERROR };
+	public enum SourceRouteStatus { UNDEFINED, OK, NOROUTES };
 	
 	public int sourceRouteID = 0;
 	
@@ -32,6 +33,7 @@ public class MatchStats {
 
 	public double runTime = 0.;
 	public Status status = Status.OK;
+	public SourceRouteStatus srStatus = SourceRouteStatus.UNDEFINED;
 	
 	public MatchStats() {}
 	public MatchStats(int sourceRouteID, Status status) {

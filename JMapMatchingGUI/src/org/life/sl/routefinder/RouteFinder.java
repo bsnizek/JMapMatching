@@ -35,6 +35,7 @@ import org.apache.log4j.Logger;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.routefinder.Label;
+import org.life.sl.utils.Timer;
 
 //import org.life.sl.shapefilereader.ShapeFileReader;
 
@@ -94,7 +95,8 @@ public class RouteFinder {
 	private long numLabels_rejected = 0;	///< number of labels (states) that have been rejected due to constraints
 	private long rejectedLabelsLimit = 0;	///< limit for number of labels (states) that have been rejected
 	private long numLabels_overlap = 0;		///< number of labels that have overlapping nodes 
-	private long maxLabels = 0;
+	private long maxLabels = 0;				///< maximum number of labels to compute
+	private long maxRuntime = 0;			///< maximum computation time per route, in seconds
 	private int nGenBack = 0;
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
@@ -199,6 +201,7 @@ public class RouteFinder {
 		this.nGenBack = rfParams.getInt(RFParams.Type.ShuffleResetNBack);
 		this.rejectedLabelsLimit = rfParams.getInt(RFParams.Type.RejectedLabelsLimit);
 		this.maxLabels = rfParams.getInt(RFParams.Type.MaxLabels);
+		this.maxRuntime = rfParams.getInt(RFParams.Type.MaxRuntime);
 		this.iShowProgressDetail = rfParams.getInt(RFParams.Type.ShowProgressDetail);
 		// precalculate the minimum path length, for use as a constraint in label expansion:
 		maxPathLength = gpsPathLength * rfParams.getDouble(RFParams.Type.DistanceFactor);
@@ -234,6 +237,9 @@ public class RouteFinder {
 		if (itLabelOrder == LabelTraversal.ShuffleReset && shuffleResetExtraRoutes > 0) itLabelOrder = LabelTraversal.BestFirstDR; 
 		logger.info("Initial tree traversal strategy: " + itLabelOrder.toString());
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
+		
+		Timer timer = new Timer();
+		
 		stackLoop:
 		while (!stack.empty()) {	// algorithm's main loop
 			// create label expansion (next generation):
@@ -331,6 +337,9 @@ public class RouteFinder {
 				numDeadEnds++;
 				expandingLabel = null;
 			}
+			
+			// check the runtime constraint (top priority):
+			
 		}
 		// some statistics on the computation:
 		System.out.printf("\nlabels analyzed:\t%14d\nvalid routes:\t\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",

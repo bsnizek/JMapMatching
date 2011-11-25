@@ -225,9 +225,12 @@ public class JMapMatcher {
 				logger.info("++ load graph: " + t_0 + "s");
 				logger.info("++ findRoutes: " + t_1 + "s");
 				logger.info("++ saveRoutes: " + t_3 + "s");
+				stats.srStatus = MatchStats.SourceRouteStatus.OK;
 			} else {	// no labels found
 				logger.warn("No labels found");
 				stats.status = MatchStats.Status.NOROUTES;
+				stats.srStatus = MatchStats.SourceRouteStatus.NOROUTES;
+				
 				double bsf = rfParams.getDouble(RFParams.Type.NoLabelsResizeNetwork);
 				if (bsf > 1.) {	// try to resize the network
 					double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize) * bsf;
@@ -241,6 +244,14 @@ public class JMapMatcher {
 					// if repeat==true, the matching will now be repeated with a bigger network buffer
 				}
 			}
+			
+			// update/store sourceroute status:
+			if (kGPSLoader == gpsLoader.PGSQLDATABASE || kGPSLoader == gpsLoader.BULK_PGSQLDATABASE) {
+				SourceRoute sr = SourceRoute.getSourceRoute(sourcerouteID);
+				sr.setStatus((short)stats.srStatus.ordinal());
+				sr.save();
+			}
+
 			logger.info("++ Total time: " + (t_0 + t_1 + t_2 + t_3) + "s");
 			//if (t_1 > 60) stats.status = rf.getStatus();
 			stats.runTime = t_1;
@@ -440,11 +451,11 @@ public class JMapMatcher {
 					Collections.shuffle(outEdges);	// use a random selection: the first noe are selected, the remaining ones are dropped
 					outEdges.add(0, e);				// put the chosen edge at the first position
 					int nOE = outEdges.size();
-					if (cfg.iFixedChoices > 0) {
-						if (nOE < cfg.iFixedChoices) {	// if there are not enough edges, fill up with null:
-							for (int j = nOE; j < cfg.iFixedChoices; j++) outEdges.add(null);
-						} else if (nOE > cfg.iFixedChoices) {	// too many: remove:
-							for (int j = nOE-1; j >= cfg.iFixedChoices; j--) outEdges.remove(j);
+					if (cfg.iFixedNodeChoices > 0) {
+						if (nOE < cfg.iFixedNodeChoices) {	// if there are not enough edges, fill up with null:
+							for (int j = nOE; j < cfg.iFixedNodeChoices; j++) outEdges.add(null);
+						} else if (nOE > cfg.iFixedNodeChoices) {	// too many: remove:
+							for (int j = nOE-1; j >= cfg.iFixedNodeChoices; j--) outEdges.remove(j);
 						}
 					}	// now, we have exactly cfg.iFixedChoices edges in the list
 					for (DirectedEdge oe : outEdges) {
@@ -551,7 +562,7 @@ public class JMapMatcher {
 			// 1. get a list over sourceroute ids
 			org.hibernate.classic.Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 			session.beginTransaction();
-			
+
 			Query result;
 			String query = "from SourceRoute";
 			if (args.length == 0 && cfg.sourcerouteIDs != "") query += " WHERE id IN ("+cfg.sourcerouteIDs+")";

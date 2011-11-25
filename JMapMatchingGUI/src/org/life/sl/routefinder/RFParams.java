@@ -45,6 +45,7 @@ public class RFParams {
 		ShuffleResetNBack,		///< number of steps to step back in the search tree at a "reset"
 		ShuffleResetExtraRoutes,	///< number of extra "BestFirstDR" routes to compute if LabelTraversal==ShuffleReset
 		MaxLabels,				///< maximum number of labels to create/evaluate
+		MaxRuntime,				///< maximum computation time per run in seconds
 		RejectedLabelsLimit,	///< limit for the number of unsuccessful labels (no routes, only rejected labels)
 		NoLabelsResizeNetwork,	///< factor to resize the network if no routes have been found
 		NetworkBufferSizeMax,	///< maximum network buffer size
@@ -220,6 +221,7 @@ public class RFParams {
 			if (map2Int(iniMap, "RejectedLabelsLimit", Type.RejectedLabelsLimit)) r++;
 			if (map2Double(iniMap, "NoLabelsResizeNetwork", Type.NoLabelsResizeNetwork)) r++;
 			if (map2Int(iniMap, "MaxLabels", Type.MaxLabels)) r++;
+			if (map2Int(iniMap, "MaxRuntime", Type.MaxRuntime)) r++;
 			if (map2Double(iniMap, "NetworkBufferSizeMax", Type.NetworkBufferSizeMax)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
 			if (map2Int(iniMap, "ShuffleResetExtraRoutes", Type.ShuffleResetExtraRoutes)) r++;

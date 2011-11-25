@@ -1,5 +1,12 @@
 package org.life.sl.orm;
 
+import java.util.Iterator;
+
+import org.hibernate.Query;
+import org.hibernate.Session;
+
+import com.vividsolutions.jts.geom.Point;
+
 /*
 JMapMatcher
 
@@ -23,6 +30,20 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 public class SourceRoute {
 	private int id;
 	private int respondentid;
+	private short status;
+	
+	static public SourceRoute getSourceRoute(int id) {
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+		return (SourceRoute)session.get(SourceRoute.class, new Integer(id));
+	}
+	
+	public void save() {
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+		session.save(this);
+		session.getTransaction().commit();
+	}
 	
 	public int getRespondentid() {
 		return respondentid;
@@ -38,6 +59,14 @@ public class SourceRoute {
 
 	public void setId(int id) {
 		this.id = id;
+	}
+
+	public short getStatus() {
+		return status;
+	}
+
+	public void setStatus(short status) {
+		this.status = status;
 	}
 
 	

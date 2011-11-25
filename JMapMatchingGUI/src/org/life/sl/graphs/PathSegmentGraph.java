@@ -238,7 +238,8 @@ public class PathSegmentGraph {
 	        Criteria testCriteria = session.createCriteria(OSMEdge.class);
 			if (bufferSize > 0.) {	// ... build a buffer ...
 				Geometry buffer = l.buffer(bufferSize);
-				testCriteria.add(SpatialRestrictions.within("geometry", buffer));
+//				testCriteria.add(SpatialRestrictions.within("geometry", buffer));
+				testCriteria.add(SpatialRestrictions.intersects("geometry", buffer));
 			}
 			@SuppressWarnings("unchecked")
 			List<OSMEdge> result = testCriteria.list();
