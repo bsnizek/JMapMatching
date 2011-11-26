@@ -47,6 +47,7 @@ import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
 import org.life.sl.routefinder.MatchStats;
+import org.life.sl.routefinder.RouteFinder.LabelTraversal;
 import org.life.sl.utils.BestNAverageStat;
 import org.life.sl.utils.MathUtil;
 import org.life.sl.utils.Timer;
@@ -213,8 +214,17 @@ public class JMapMatcher {
 			double t_1 = timer.getRunTime(true, "++ Routefinding finished");
 			double t_3 = 0;
 			
+			// check if we need to resize the buffer:
 			repeat = false;
-			if (!labels.isEmpty()) {
+			double bsf = rfParams.getDouble(RFParams.Type.NoLabelsResizeNetwork);	// if > 1, buffer resizing is active
+			int minRoutes = rfParams.getInt(RFParams.Type.ShuffleResetExtraRoutes);	// buffer will be resized if less than this number of routes has been found
+			if (bsf > 1. && 
+					LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal)) == LabelTraversal.ShuffleReset && 
+					minRoutes > 0 && labels.size() < minRoutes) {
+				repeat = true;
+			}
+			if (!labels.isEmpty()) stats.srStatus = MatchStats.SourceRouteStatus.OK;	// set sourceroute status: some routes were found after all
+			if (!labels.isEmpty() && !repeat) {	// finished
 				// loop over all result routes, store them together with their score: 
 				t_2 += timer.getRunTime(true, "++ Edge statistics created");
 				Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
@@ -225,13 +235,15 @@ public class JMapMatcher {
 				logger.info("++ load graph: " + t_0 + "s");
 				logger.info("++ findRoutes: " + t_1 + "s");
 				logger.info("++ saveRoutes: " + t_3 + "s");
-				stats.srStatus = MatchStats.SourceRouteStatus.OK;
-			} else {	// no labels found
-				logger.warn("No labels found");
-				stats.status = MatchStats.Status.NOROUTES;
-				stats.srStatus = MatchStats.SourceRouteStatus.NOROUTES;
-				
-				double bsf = rfParams.getDouble(RFParams.Type.NoLabelsResizeNetwork);
+			} else {	// no or not enough labels found
+				if (labels.isEmpty()) {	// no routes at all were found
+					logger.warn("No labels found");
+					stats.status = MatchStats.Status.NOROUTES;
+					stats.srStatus = MatchStats.SourceRouteStatus.NOROUTES;
+				} else { 	// not enough routes were found, so we repeat nevertheless
+					logger.warn("Not enough labels found");
+				}
+				repeat = false;
 				if (bsf > 1.) {	// try to resize the network
 					double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize) * bsf;
 					rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);

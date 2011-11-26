@@ -232,6 +232,7 @@ public class RouteFinder {
 		Label rootLabel = new Label(this.startNode);
 		stack.push(rootLabel);	// push start node to stack
 
+		// set up tree traversal strategy:
 		LabelTraversal itLabelOrder_orig = itLabelOrder;
 		int shuffleResetExtraRoutes = rfParams.getInt(RFParams.Type.ShuffleResetExtraRoutes);
 		if (itLabelOrder == LabelTraversal.ShuffleReset && shuffleResetExtraRoutes > 0) itLabelOrder = LabelTraversal.BestFirstDR; 
