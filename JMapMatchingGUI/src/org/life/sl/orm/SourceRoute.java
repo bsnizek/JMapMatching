@@ -1,11 +1,6 @@
 package org.life.sl.orm;
 
-import java.util.Iterator;
-
-import org.hibernate.Query;
 import org.hibernate.Session;
-
-import com.vividsolutions.jts.geom.Point;
 
 /*
 JMapMatcher

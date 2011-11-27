@@ -142,7 +142,9 @@ public class JMapMatcher {
 			if (!dir.exists()) dir.mkdirs();
 			dumpFile = String.format("%s/%05d%s", cfg.sDumpNetworkDir, sourcerouteID, "_network.shp");	// path for network buffer dump
 		}
-		return new PathSegmentGraph(track, (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize), dumpFile);
+		float bs = (float)rfParams.getDouble(RFParams.Type.InitialBufferSize);
+		if (bs <= 0.) bs = (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize);
+		return new PathSegmentGraph(track, bs, dumpFile);
 	}
 	
 	/**
@@ -247,6 +249,7 @@ public class JMapMatcher {
 				if (bsf > 1.) {	// try to resize the network
 					double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize) * bsf;
 					rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);
+					rfParams.setDouble(RFParams.Type.InitialBufferSize, 0.);
 					if (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax)) {
 						repeat = true;
 						logger.info("Network buffer resized to " + bs + " - repeating task");

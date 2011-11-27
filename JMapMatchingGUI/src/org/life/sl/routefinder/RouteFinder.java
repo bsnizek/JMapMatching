@@ -140,6 +140,7 @@ public class RouteFinder {
 		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);		///< how much the route may deviate from the shortest possible
 		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///< minimum route length
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
+		rfParams.setDouble(RFParams.Type.InitialBufferSize, 0.);	///< initial buffer size in meters (!)
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
 		rfParams.setInt(RFParams.Type.RejectedLabelsLimit, 0);		///< limit for unsuccessful labels
 		rfParams.setInt(RFParams.Type.NoLabelsResizeNetwork, 0);	///< factor to resize network buffer if no routes were found

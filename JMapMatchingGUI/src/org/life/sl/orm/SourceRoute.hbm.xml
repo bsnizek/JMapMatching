@@ -36,7 +36,7 @@
         </id>
         
         <property name="respondentid" ></property>
-        <property name="status" ></property>
+        <property name="status" type="short" ></property>
 
     </class>
 

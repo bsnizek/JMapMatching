@@ -39,6 +39,7 @@ import org.ini4j.InvalidFileFormatException;
 public class RFParams {
 	public enum Type {
 		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
+		InitialBufferSize,		///< initial buffer size, if BestFirst and ShuffleReset strategies are combined
 		DistanceFactor,			///< this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
 		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
 		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
@@ -218,6 +219,7 @@ public class RFParams {
 			if (map2Double(iniMap, "MaximumLength", Type.MaximumLength)) r++;
 			if (map2Double(iniMap, "DistanceFactor", Type.DistanceFactor)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize", Type.NetworkBufferSize)) r++;
+			if (map2Double(iniMap, "InitialBufferSize", Type.InitialBufferSize)) r++;
 			if (map2Int(iniMap, "RejectedLabelsLimit", Type.RejectedLabelsLimit)) r++;
 			if (map2Double(iniMap, "NoLabelsResizeNetwork", Type.NoLabelsResizeNetwork)) r++;
 			if (map2Int(iniMap, "MaxLabels", Type.MaxLabels)) r++;
