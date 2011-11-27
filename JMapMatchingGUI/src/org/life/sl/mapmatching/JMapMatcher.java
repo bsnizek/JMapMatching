@@ -188,7 +188,7 @@ public class JMapMatcher {
 		double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize);
 		double bs2 = rfParams.getDouble(RFParams.Type.NetworkBufferSize2);
 		boolean useShuffleReset = (LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal)) == LabelTraversal.ShuffleReset);
-		boolean useSecondStrategy = (bs2 >= 0. && useShuffleReset);
+		boolean useSecondStrategy = (bs2 >= 0.);
 		ArrayList<Label> labels0 = new ArrayList<Label>();
 		boolean repeat = false;
 		do {	// loop: will be repeated if network buffer is resized
@@ -425,12 +425,12 @@ public class JMapMatcher {
 		ResultRoute route = new ResultRoute(sourcerouteID, respondentID, isChoice, label, gpsPoints);
 		// set remaining route parameters:
 		// get node list to create the lineString representing the route:
-		//Coordinate[] coordinates = label.getCoordinates();
-		//ok = (coordinates.length > 0);	// true if there were any points in the route
-		LineString lineString = label.getLineString();
-		ok = (lineString.getLength() > 0);
+		Coordinate[] coordinates = label.getCoordinates();
+		ok = (coordinates.length > 0);	// true if there were any points in the route
+		//LineString lineString = label.getLineString();
+		//ok = (lineString.getLength() > 0);
 		if (ok) try {
-			//LineString lineString = fact.createLineString(coordinates);
+			LineString lineString = fact.createLineString(coordinates);
 			route.setGeometry(lineString);
 			
 			session.save(route);
