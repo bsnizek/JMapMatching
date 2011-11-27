@@ -400,6 +400,21 @@ public class Label implements Comparable<Label> {
 		}
 		return coordinates;
 	}
+	
+	/**
+	 * @return an array of Coordinates of all nodes (sorted from start to end)
+	 */
+	public LineString getLineString() {
+		List<Node> nodes = getNodes();
+		List<DirectedEdge> edges = getRouteAsEdges();
+		LineString ls = null;//new LineString();	// TODO: initialize linestring
+		for (DirectedEdge e : edges) {
+			@SuppressWarnings("unchecked")
+			HashMap<String, Object> data = (HashMap<String, Object>) e.getEdge().getData();
+			//ls += (LineString)data.get("geom");	// TODO: connect linestrings here!
+		}
+		return ls;
+	}
 
 	/**
 	 * export the label data to a shape file

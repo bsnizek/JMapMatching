@@ -142,8 +142,7 @@ public class JMapMatcher {
 			if (!dir.exists()) dir.mkdirs();
 			dumpFile = String.format("%s/%05d%s", cfg.sDumpNetworkDir, sourcerouteID, "_network.shp");	// path for network buffer dump
 		}
-		float bs = (float)rfParams.getDouble(RFParams.Type.InitialBufferSize);
-		if (bs <= 0.) bs = (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize);
+		float bs = (float)rfParams.getDouble(RFParams.Type.NetworkBufferSize);
 		return new PathSegmentGraph(track, bs, dumpFile);
 	}
 	
@@ -186,8 +185,14 @@ public class JMapMatcher {
 		MatchStats stats;
 
 		rfParams = initConstraints();
+		double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize);
+		double bs2 = rfParams.getDouble(RFParams.Type.NetworkBufferSize2);
+		boolean useShuffleReset = (LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal)) == LabelTraversal.ShuffleReset);
+		boolean useSecondStrategy = (bs2 >= 0. && useShuffleReset);
+		ArrayList<Label> labels0 = new ArrayList<Label>();
 		boolean repeat = false;
 		do {	// loop: will be repeated if network buffer is resized
+			rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);	// reinit buffer size
 			stats = null;
 			if (graph == null || repeat) {	// create a new graph enveloping the GPS track
 				graph = loadGraphFromDB(gpsPoints);
@@ -208,8 +213,8 @@ public class JMapMatcher {
 			rf.calculateNearest();	// calculate nearest edges to all data points (needed for edges statistics)
 			// Prepare the evaluation (assigning score to labels):
 			EdgeStatistics eStat = new EdgeStatistics(rf, gpsPoints);
-			double t_2 = timer.getRunTime(true);
-	
+			double t_2 = timer.getRunTime(true, "++ Edge statistics created");
+
 			ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsPoints.getTrackLength());	///< list containing all routes that were found (still unsorted)
 			stats = rf.getStats();
 			
@@ -221,14 +226,15 @@ public class JMapMatcher {
 			double bsf = rfParams.getDouble(RFParams.Type.NoLabelsResizeNetwork);	// if > 1, buffer resizing is active
 			int minRoutes = rfParams.getInt(RFParams.Type.ShuffleResetExtraRoutes);	// buffer will be resized if less than this number of routes has been found
 			if (bsf > 1. && 
-					LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal)) == LabelTraversal.ShuffleReset && 
+					useShuffleReset && 
 					minRoutes > 0 && labels.size() < minRoutes) {
 				repeat = true;
 			}
 			if (!labels.isEmpty()) stats.srStatus = MatchStats.SourceRouteStatus.OK;	// set sourceroute status: some routes were found after all
 			if (!labels.isEmpty() && !repeat) {	// finished
+				// first check if we have labels stored from a previous run:
+				if (labels0.size() > 0) labels.addAll(labels0);
 				// loop over all result routes, store them together with their score: 
-				t_2 += timer.getRunTime(true, "++ Edge statistics created");
 				Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
 		
 				int nOK = saveData(labels, fromNode, toNode, eStat);
@@ -237,27 +243,37 @@ public class JMapMatcher {
 				logger.info("++ load graph: " + t_0 + "s");
 				logger.info("++ findRoutes: " + t_1 + "s");
 				logger.info("++ saveRoutes: " + t_3 + "s");
-			} else {	// no or not enough labels found
+			} else {	// not yet - no or not enough labels found, or switch to final ShuffleReset run
+				// log message and status parameters:
 				if (labels.isEmpty()) {	// no routes at all were found
 					logger.warn("No labels found");
 					stats.status = MatchStats.Status.NOROUTES;
 					stats.srStatus = MatchStats.SourceRouteStatus.NOROUTES;
 				} else { 	// not enough routes were found, so we repeat nevertheless
-					logger.warn("Not enough labels found");
+					logger.warn("Not enough labels found yet");
 				}
-				repeat = false;
-				if (bsf > 1.) {	// try to resize the network
-					double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize) * bsf;
-					rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);
-					rfParams.setDouble(RFParams.Type.InitialBufferSize, 0.);
-					if (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax)) {
-						repeat = true;
+				
+				// resize buffer: check if resizing is allowed:
+				if (bsf > 1.) {	
+					bs *= bsf;
+					repeat = (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax));	// we can increase the buffer size
+					if (repeat) {
 						logger.info("Network buffer resized to " + bs + " - repeating task");
 					} else {	// network size limit reached
 						logger.warn("Network buffer size limit reached!");
 					}
-					// if repeat==true, the matching will now be repeated with a bigger network buffer
 				}
+				
+				if (useSecondStrategy && (labels.size() >= minRoutes || !repeat)) {	// either minRoutes have been found, or NetworkBufferSizeMax was reached
+					// switch to ShuffleReset strategy:
+					bs = bs2;	// additional run's buffer size
+					rfParams.set(RFParams.Type.LabelTraversal, rfParams.getString(RFParams.Type.LabelTraversal2));
+					rfParams.setInt(RFParams.Type.ShuffleResetExtraRoutes, 0);	// for the next run, we don't need the extra routes, we should start with ShuffleReset immediately
+					repeat = true;
+					// save labels for later:
+					labels0.addAll(labels);
+				}
+				// if repeat==true, the matching will now be repeated with a bigger network buffer or the second strategy
 			}
 			
 			// update/store sourceroute status:
@@ -409,10 +425,12 @@ public class JMapMatcher {
 		ResultRoute route = new ResultRoute(sourcerouteID, respondentID, isChoice, label, gpsPoints);
 		// set remaining route parameters:
 		// get node list to create the lineString representing the route:
-		Coordinate[] coordinates = label.getCoordinates();
-		ok = (coordinates.length > 0);	// true if there were any points in the route
+		//Coordinate[] coordinates = label.getCoordinates();
+		//ok = (coordinates.length > 0);	// true if there were any points in the route
+		LineString lineString = label.getLineString();
+		ok = (lineString.getLength() > 0);
 		if (ok) try {
-			LineString lineString = fact.createLineString(coordinates);
+			//LineString lineString = fact.createLineString(coordinates);
 			route.setGeometry(lineString);
 			
 			session.save(route);

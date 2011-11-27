@@ -39,9 +39,10 @@ import org.ini4j.InvalidFileFormatException;
 public class RFParams {
 	public enum Type {
 		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
-		InitialBufferSize,		///< initial buffer size, if BestFirst and ShuffleReset strategies are combined
+		NetworkBufferSize2,		///< buffer size for optional second run
 		DistanceFactor,			///< this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
 		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
+		LabelTraversal2,		///< type of label traversal for optional second run (RouteFinder.LabelTraversal)
 		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
 		ShuffleResetNBack,		///< number of steps to step back in the search tree at a "reset"
 		ShuffleResetExtraRoutes,	///< number of extra "BestFirstDR" routes to compute if LabelTraversal==ShuffleReset
@@ -219,13 +220,14 @@ public class RFParams {
 			if (map2Double(iniMap, "MaximumLength", Type.MaximumLength)) r++;
 			if (map2Double(iniMap, "DistanceFactor", Type.DistanceFactor)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize", Type.NetworkBufferSize)) r++;
-			if (map2Double(iniMap, "InitialBufferSize", Type.InitialBufferSize)) r++;
+			if (map2Double(iniMap, "NetworkBufferSize2", Type.NetworkBufferSize2)) r++;
 			if (map2Int(iniMap, "RejectedLabelsLimit", Type.RejectedLabelsLimit)) r++;
 			if (map2Double(iniMap, "NoLabelsResizeNetwork", Type.NoLabelsResizeNetwork)) r++;
 			if (map2Int(iniMap, "MaxLabels", Type.MaxLabels)) r++;
 			if (map2Double(iniMap, "MaxRuntime", Type.MaxRuntime)) r++;
 			if (map2Double(iniMap, "NetworkBufferSizeMax", Type.NetworkBufferSizeMax)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
+			if (map2String(iniMap, "LabelTraversal2", Type.LabelTraversal2)) r++;
 			if (map2Int(iniMap, "ShuffleResetExtraRoutes", Type.ShuffleResetExtraRoutes)) r++;
 			if (map2Int(iniMap, "ShuffleResetNBack", Type.ShuffleResetNBack)) r++;
 			if (map2Int(iniMap, "ShowProgressDetail", Type.ShowProgressDetail)) r++;

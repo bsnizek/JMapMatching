@@ -140,11 +140,12 @@ public class RouteFinder {
 		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);		///< how much the route may deviate from the shortest possible
 		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///< minimum route length
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
-		rfParams.setDouble(RFParams.Type.InitialBufferSize, 0.);	///< initial buffer size in meters (!)
+		rfParams.setDouble(RFParams.Type.NetworkBufferSize2, 0.);	///< initial buffer size in meters (!)
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
 		rfParams.setInt(RFParams.Type.RejectedLabelsLimit, 0);		///< limit for unsuccessful labels
 		rfParams.setInt(RFParams.Type.NoLabelsResizeNetwork, 0);	///< factor to resize network buffer if no routes were found
 		rfParams.set(RFParams.Type.LabelTraversal, LabelTraversal.BestFirst.toString());		///< way of label traversal
+		rfParams.set(RFParams.Type.LabelTraversal2, LabelTraversal.ShuffleReset.toString());		///< way of label traversal
 		rfParams.setInt(RFParams.Type.ShowProgressDetail, 2);		///< how often each edge may be used
 	}
 	
@@ -236,7 +237,7 @@ public class RouteFinder {
 		// set up tree traversal strategy:
 		LabelTraversal itLabelOrder_orig = itLabelOrder;
 		int shuffleResetExtraRoutes = rfParams.getInt(RFParams.Type.ShuffleResetExtraRoutes);
-		if (itLabelOrder == LabelTraversal.ShuffleReset && shuffleResetExtraRoutes > 0) itLabelOrder = LabelTraversal.BestFirstDR; 
+		if (itLabelOrder == LabelTraversal.ShuffleReset && shuffleResetExtraRoutes > 0) itLabelOrder = LabelTraversal.Shuffle;//BestFirstDR; 
 		logger.info("Initial tree traversal strategy: " + itLabelOrder.toString());
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
 		
