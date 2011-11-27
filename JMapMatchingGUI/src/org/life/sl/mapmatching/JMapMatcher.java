@@ -47,7 +47,6 @@ import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
 import org.life.sl.routefinder.MatchStats;
-import org.life.sl.routefinder.RouteFinder.LabelTraversal;
 import org.life.sl.utils.BestNAverageStat;
 import org.life.sl.utils.MathUtil;
 import org.life.sl.utils.Timer;
@@ -185,12 +184,14 @@ public class JMapMatcher {
 		MatchStats stats;
 
 		rfParams = initConstraints();
+		double t_1_tot = 0;
+		double t_1_totMax = rfParams.getDouble(RFParams.Type.MaxRuntimeTotal);
 		double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize);
 		double bs2 = rfParams.getDouble(RFParams.Type.NetworkBufferSize2);
-		boolean useShuffleReset = (LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal)) == LabelTraversal.ShuffleReset);
-		boolean useSecondStrategy = (bs2 >= 0.);
+		boolean useSecondStrategy = (bs2 > 0.);
 		ArrayList<Label> labels0 = new ArrayList<Label>();
 		boolean repeat = false;
+		boolean secondRun = false;
 		do {	// loop: will be repeated if network buffer is resized
 			rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);	// reinit buffer size
 			stats = null;
@@ -219,17 +220,17 @@ public class JMapMatcher {
 			stats = rf.getStats();
 			
 			double t_1 = timer.getRunTime(true, "++ Routefinding finished");
+			t_1_tot += t_1;
 			double t_3 = 0;
 			
 			// check if we need to resize the buffer:
 			repeat = false;
 			double bsf = rfParams.getDouble(RFParams.Type.NoLabelsResizeNetwork);	// if > 1, buffer resizing is active
 			int minRoutes = rfParams.getInt(RFParams.Type.ShuffleResetExtraRoutes);	// buffer will be resized if less than this number of routes has been found
-			if (bsf > 1. && 
-					useShuffleReset && 
-					minRoutes > 0 && labels.size() < minRoutes) {
+			if ((bsf > 1. && minRoutes > 0 && labels.size() < minRoutes) || (useSecondStrategy && !secondRun)) {
 				repeat = true;
 			}
+			if (t_1_totMax > 0 && t_1_tot > t_1_totMax) repeat = false;	// if the maximum run time is consumed, break out in any case
 			if (!labels.isEmpty()) stats.srStatus = MatchStats.SourceRouteStatus.OK;	// set sourceroute status: some routes were found after all
 			if (!labels.isEmpty() && !repeat) {	// finished
 				// first check if we have labels stored from a previous run:
@@ -249,19 +250,16 @@ public class JMapMatcher {
 					logger.warn("No labels found");
 					stats.status = MatchStats.Status.NOROUTES;
 					stats.srStatus = MatchStats.SourceRouteStatus.NOROUTES;
-				} else { 	// not enough routes were found, so we repeat nevertheless
+				} else if (!useSecondStrategy || (useSecondStrategy && !secondRun)) { 	// not enough routes were found, so we repeat nevertheless
 					logger.warn("Not enough labels found yet");
+				} else {
+					logger.warn("Starting second run");
 				}
 				
 				// resize buffer: check if resizing is allowed:
 				if (bsf > 1.) {	
 					bs *= bsf;
 					repeat = (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax));	// we can increase the buffer size
-					if (repeat) {
-						logger.info("Network buffer resized to " + bs + " - repeating task");
-					} else {	// network size limit reached
-						logger.warn("Network buffer size limit reached!");
-					}
 				}
 				
 				if (useSecondStrategy && (labels.size() >= minRoutes || !repeat)) {	// either minRoutes have been found, or NetworkBufferSizeMax was reached
@@ -270,8 +268,15 @@ public class JMapMatcher {
 					rfParams.set(RFParams.Type.LabelTraversal, rfParams.getString(RFParams.Type.LabelTraversal2));
 					rfParams.setInt(RFParams.Type.ShuffleResetExtraRoutes, 0);	// for the next run, we don't need the extra routes, we should start with ShuffleReset immediately
 					repeat = true;
+					secondRun = true;
 					// save labels for later:
 					labels0.addAll(labels);
+				}
+
+				if (repeat) {
+					logger.info("Network buffer resized to " + bs + " - repeating task");
+				} else {	// network size limit reached
+					logger.warn("Network buffer size limit reached!");
 				}
 				// if repeat==true, the matching will now be repeated with a bigger network buffer or the second strategy
 			}
@@ -388,7 +393,7 @@ public class JMapMatcher {
 		BestNAverageStat noMatchEdgeAvgs = new BestNAverageStat(nBest);
 		for (int i=0; i < Math.min(100, nLabels); i++) {
 			//matchScoreAvgs.add(labels.get(i).getScore());
-			ResultRoute route = new ResultRoute(sourcerouteID, respondentID, i==0, labels.get(i), gpsPoints);
+			ResultRoute route = new ResultRoute(sourcerouteID, respondentID, i==0, labels.get(i), gpsPoints, false);
 			matchScoreAvgs.add(route.getMatchScore());
 			matchLengthAvgs.add(route.getMatchLengthR());
 			noMatchEdgeAvgs.add((double)(route.getnEdgesWOPts()));
@@ -422,7 +427,7 @@ public class JMapMatcher {
 		session.beginTransaction();
 		
 		// set up entry for route table:
-		ResultRoute route = new ResultRoute(sourcerouteID, respondentID, isChoice, label, gpsPoints);
+		ResultRoute route = new ResultRoute(sourcerouteID, respondentID, isChoice, label, gpsPoints, cfg.bWriteTrafficLights);
 		// set remaining route parameters:
 		// get node list to create the lineString representing the route:
 		Coordinate[] coordinates = label.getCoordinates();
@@ -598,7 +603,7 @@ public class JMapMatcher {
 
 			Query result;
 			String query = "from SourceRoute";
-			if (args.length == 0 && cfg.sourcerouteIDs != "") query += " WHERE id IN ("+cfg.sourcerouteIDs+")";
+			if (args.length == 0 && !cfg.sourcerouteIDs.trim().isEmpty()) query += " WHERE id IN ("+cfg.sourcerouteIDs+")";
 			if (args.length == 1) query += " WHERE id="+args[0];
 			if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
 			query += " ORDER BY id";

@@ -44,10 +44,12 @@ public class RFParams {
 		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
 		LabelTraversal2,		///< type of label traversal for optional second run (RouteFinder.LabelTraversal)
 		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
+		MaximumNumberOfRoutes2,	///< the same for a second run
 		ShuffleResetNBack,		///< number of steps to step back in the search tree at a "reset"
 		ShuffleResetExtraRoutes,	///< number of extra "BestFirstDR" routes to compute if LabelTraversal==ShuffleReset
 		MaxLabels,				///< maximum number of labels to create/evaluate
 		MaxRuntime,				///< maximum computation time per run in seconds
+		MaxRuntimeTotal,		///< maximum computation time for multiple runs in seconds
 		RejectedLabelsLimit,	///< limit for the number of unsuccessful labels (no routes, only rejected labels)
 		NoLabelsResizeNetwork,	///< factor to resize the network if no routes have been found
 		NetworkBufferSizeMax,	///< maximum network buffer size
@@ -186,7 +188,7 @@ public class RFParams {
 	 * @return The value of the constraint.
 	 */
 	public String getString(Type type) {
-		return (String) iniMap.get(type.toString());
+		return (String) c_str.get(type);
 	}
 
 	/**
@@ -212,6 +214,7 @@ public class RFParams {
 			
 			r = 0;
 			if (map2Int(iniMap, "MaximumNumberOfRoutes", Type.MaximumNumberOfRoutes)) r++;
+			if (map2Int(iniMap, "MaximumNumberOfRoutes2", Type.MaximumNumberOfRoutes2)) r++;
 			if (map2Int(iniMap, "NodeOverlap", Type.NodeOverlap)) r++;
 			if (map2Int(iniMap, "ArticulationPointOverlap", Type.ArticulationPointOverlap)) r++;
 			if (map2Int(iniMap, "EdgeOverlap", Type.EdgeOverlap)) r++;
@@ -225,6 +228,7 @@ public class RFParams {
 			if (map2Double(iniMap, "NoLabelsResizeNetwork", Type.NoLabelsResizeNetwork)) r++;
 			if (map2Int(iniMap, "MaxLabels", Type.MaxLabels)) r++;
 			if (map2Double(iniMap, "MaxRuntime", Type.MaxRuntime)) r++;
+			if (map2Double(iniMap, "MaxRuntimeTotal", Type.MaxRuntimeTotal)) r++;
 			if (map2Double(iniMap, "NetworkBufferSizeMax", Type.NetworkBufferSizeMax)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;
 			if (map2String(iniMap, "LabelTraversal2", Type.LabelTraversal2)) r++;

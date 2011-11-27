@@ -237,7 +237,7 @@ public class RouteFinder {
 		// set up tree traversal strategy:
 		LabelTraversal itLabelOrder_orig = itLabelOrder;
 		int shuffleResetExtraRoutes = rfParams.getInt(RFParams.Type.ShuffleResetExtraRoutes);
-		if (itLabelOrder == LabelTraversal.ShuffleReset && shuffleResetExtraRoutes > 0) itLabelOrder = LabelTraversal.Shuffle;//BestFirstDR; 
+		if (itLabelOrder == LabelTraversal.ShuffleReset && shuffleResetExtraRoutes > 0) itLabelOrder = LabelTraversal.BestFirstDR; 
 		logger.info("Initial tree traversal strategy: " + itLabelOrder.toString());
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
 		

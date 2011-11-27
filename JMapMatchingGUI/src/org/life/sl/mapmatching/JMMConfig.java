@@ -21,6 +21,7 @@ public class JMMConfig {
 	public int nRoutesToWrite = 10;
 	public boolean bWriteChoices = true;
 	public int iFixedNodeChoices = 0;
+	public boolean bWriteTrafficLights = true;
 	public boolean bWriteToShapefiles = false;
 	public boolean bWriteToDatabase = true;
 	public boolean bRandomSelect = true;
@@ -58,6 +59,7 @@ public class JMMConfig {
 			if (iniMap.containsKey("WriteNBest")) iWriteNBest = Integer.parseInt(iniMap.get("WriteNBest"));
 			if (iniMap.containsKey("WriteNWorst")) iWriteNWorst = Integer.parseInt(iniMap.get("WriteNWorst"));
 			if (iniMap.containsKey("WriteChoices")) bWriteChoices = Boolean.parseBoolean(iniMap.get("WriteChoices"));
+			if (iniMap.containsKey("WriteTrafficLights")) bWriteTrafficLights = Boolean.parseBoolean(iniMap.get("WriteTrafficLights"));
 			if (iniMap.containsKey("FixedNodeChoices")) iFixedNodeChoices = Integer.parseInt(iniMap.get("FixedNodeChoices"));
 			if (iniMap.containsKey("WriteToShapefiles")) bWriteToShapefiles = Boolean.parseBoolean(iniMap.get("WriteToShapefiles"));
 			if (iniMap.containsKey("WriteToDatabase")) bWriteToDatabase = Boolean.parseBoolean(iniMap.get("WriteToDatabase"));

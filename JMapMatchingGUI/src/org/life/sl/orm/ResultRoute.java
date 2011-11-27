@@ -97,17 +97,17 @@ public class ResultRoute {
 	private Label label;			///< the corresponding label from the map matching algorithm
 	GPSTrack gpsPoints;
 
-	public ResultRoute(int sourceRouteID, int respondentID, boolean isChoice, Label label, GPSTrack gpsPoints) {
+	public ResultRoute(int sourceRouteID, int respondentID, boolean isChoice, Label label, GPSTrack gpsPoints, boolean calcTrafficLights) {
 		this.sourceRouteID = sourceRouteID;
 		this.respondentID = respondentID;
 		this.selected = isChoice;
 		this.label = label;
 		this.gpsPoints = gpsPoints;
 		this.trackLength = (float)gpsPoints.getTrackLength();
-		calcData();
+		calcData(calcTrafficLights);
 	}
 	
-	public void calcData() {
+	public void calcData(boolean calcTrafficLights) {
 		int i;
 		List<Label> labels = label.getLabels();
 		int nNodes = labels.size();
@@ -194,7 +194,7 @@ public class ResultRoute {
 
 		pPtsOn = (float)( (double)scoreCount / (double)gpsPoints.size() );	// fraction of points on edges 
 		pPtsOff = (1.f - pPtsOn);
-		getNumberOfTrafficLights();
+		if (calcTrafficLights) getNumberOfTrafficLights();
 	}
 	
 	public void transferEnvParams() {
