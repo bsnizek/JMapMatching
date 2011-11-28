@@ -88,7 +88,7 @@ public class EdgeStatistics {
 		distPEAvg /= l;
 		distPE05 = pointEdgeDist[(int)Math.round(l*0.05)];
 		distPE50 = pointEdgeDist[(int)Math.round(l*0.5)];
-		distPE95 = pointEdgeDist[(int)Math.round(l*0.95)];
+		distPE95 = pointEdgeDist[Math.max((int)Math.round(l*0.95), (int)l-1)];
 	}
 	
 	public double getDistPEAvg() {
