@@ -92,6 +92,8 @@ public class Label implements Comparable<Label> {
 	private List<Node> nodeList = null;
 	private List<DirectedEdge> edgeList = null;
 
+	private static com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
+	
 	/**
 	 * Create a new Label as descendant of a parent label
 	 * @param parent The Label that this Label was expanded from
@@ -402,18 +404,66 @@ public class Label implements Comparable<Label> {
 	}
 	
 	/**
-	 * @return an array of Coordinates of all nodes (sorted from start to end)
+	 * @return an array of Coordinates of all vertices (sorted from start to end) (not just nodes!)
 	 */
 	public LineString getLineString() {
-		List<Node> nodes = getNodes();
+		ArrayList<Coordinate> coordinates = new ArrayList<Coordinate>();
 		List<DirectedEdge> edges = getRouteAsEdges();
-		LineString ls = null;//new LineString();	// TODO: initialize linestring
-		for (DirectedEdge e : edges) {
+
+		// check edge 0 versus edge 1
+		@SuppressWarnings("unchecked")
+		HashMap<String, Object> data0 = (HashMap<String, Object>) edges.get(0).getEdge().getData();
+		LineString ls0 = (LineString)data0.get("geom");
+		if (edges.size() > 1 && ls0 != null) {
+			double kSnapDistance = 0.5;
+
+			Coordinate[] cs0 = ls0.getCoordinates();
+
 			@SuppressWarnings("unchecked")
-			HashMap<String, Object> data = (HashMap<String, Object>) e.getEdge().getData();
-			//ls += (LineString)data.get("geom");	// TODO: connect linestrings here!
+			HashMap<String, Object> data1 = (HashMap<String, Object>) edges.get(1).getEdge().getData();
+			LineString ls1 = (LineString)data1.get("geom");
+			Coordinate[] cs1 = ls1.getCoordinates();
+
+			// let's isolate vertex number 0:
+			Coordinate cs0_vertex_0 = cs0[0];
+			Coordinate cs1_vertex_0 = cs1[0];
+			Coordinate cs1_vertex_last = cs1[cs1.length-1];
+
+			if ((cs0_vertex_0.distance(cs1_vertex_0) < kSnapDistance) || (cs0_vertex_0.distance(cs1_vertex_last) < kSnapDistance)) {
+				// reverse direction:
+				for (int c=cs0.length-1;c>-1; c--) coordinates.add(cs0[c]);
+			} else {
+				// we already have the correct direction:
+				for (int c=0; c<cs0.length; c++) coordinates.add(cs0[c]);
+			}
+
+			int i = 0;
+			for (DirectedEdge e : edges) {
+				if (i > 0) {	// only from the second edge on
+					@SuppressWarnings("unchecked")
+					HashMap<String, Object> data = (HashMap<String, Object>) e.getEdge().getData();
+					LineString ls = (LineString)data.get("geom");
+
+					Coordinate[] cc = ls.getCoordinates();
+					int ccl = cc.length;
+					if (ccl > 1) {	// cc.length must be >= 2
+						// check linestring direction:
+						if (cc[0].distance(coordinates.get(coordinates.size()-1)) < kSnapDistance) {
+							for (int c = 1; c < ccl; c++) coordinates.add(cc[c]);	// first to last
+						} else {
+							for (int c = cc.length-2; c >= 0; c--) coordinates.add(cc[c]);	// reverse direction
+						}
+					}
+				}
+				i++;
+			}
+
+			Coordinate[] coords = new Coordinate[coordinates.size()];
+			coordinates.toArray(coords);
+			return fact.createLineString(coords);
+		} else {	// we have only 1 edge
+			return ls0;
 		}
-		return ls;
 	}
 
 	/**

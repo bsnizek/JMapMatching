@@ -370,7 +370,7 @@ public class PathSegmentGraph {
 			userdata.put("et", envType);
 			userdata.put("ct", cykType);
 			userdata.put("gm", groenM);	// groenM
-	// 		userdata.put("geom", lineString);
+	 		userdata.put("geom", lineString);
 			edge.setData(userdata);
 		}
 	}

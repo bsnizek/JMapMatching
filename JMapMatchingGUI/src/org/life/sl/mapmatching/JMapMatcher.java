@@ -93,7 +93,7 @@ public class JMapMatcher {
 	
 	private int sourcerouteID = 0;
 	
-	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
+	//private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 	private static Logger logger = Logger.getLogger("JMapMatcher");
 
 	/**
@@ -430,12 +430,12 @@ public class JMapMatcher {
 		ResultRoute route = new ResultRoute(sourcerouteID, respondentID, isChoice, label, gpsPoints, cfg.bWriteTrafficLights);
 		// set remaining route parameters:
 		// get node list to create the lineString representing the route:
-		Coordinate[] coordinates = label.getCoordinates();
-		ok = (coordinates.length > 0);	// true if there were any points in the route
-		//LineString lineString = label.getLineString();
-		//ok = (lineString.getLength() > 0);
+		//Coordinate[] coordinates = label.getCoordinates();
+		//ok = (coordinates.length > 0);	// true if there were any points in the route
+		LineString lineString = label.getLineString();
+		ok = (lineString.getLength() > 0);
 		if (ok) try {
-			LineString lineString = fact.createLineString(coordinates);
+			//LineString lineString = fact.createLineString(coordinates);
 			route.setGeometry(lineString);
 			
 			session.save(route);
