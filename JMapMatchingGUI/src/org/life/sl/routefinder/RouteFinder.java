@@ -105,6 +105,7 @@ public class RouteFinder {
 	private double maxPathLength = 0.;
 	private EdgeStatistics edgeStatistics = null;
 
+	ArrayList<Label> results = null;
 	private Logger logger = Logger.getLogger("RouteFinder");
 	private MatchStats stats = new MatchStats(); 
 	
@@ -122,8 +123,18 @@ public class RouteFinder {
 	 * @param network the input PathSegmentGraph
 	 */
 	public RouteFinder(PathSegmentGraph network, RFParams rfParams0) {
+		this(network, rfParams0, null);
+	}
+	
+	/**
+	 * create a Routefinder from a PathSegmentGraph, using a defined parameter set
+	 * @param network the input PathSegmentGraph
+	 */
+	public RouteFinder(PathSegmentGraph network, RFParams rfParams0, ArrayList<Label> labels0) {
 		this(network);
 		rfParams = rfParams0;
+		if (labels0 != null && !labels0.isEmpty()) this.results = labels0;
+		else this.results = new ArrayList<Label>();
 	}
 	
 	/**
@@ -228,7 +239,6 @@ public class RouteFinder {
 		logger.info("Graph: max. route estimate: " + stats.network_maxRoutesEst +  " / " + network.getNCombinations());
 
 		System.gc();	// can't hurt...
-		ArrayList<Label> result = new ArrayList<Label>();
 		Stack<Label> stack = new Stack<Label>();
 		//*** START OF ALGORITHM ***//
 		Label rootLabel = new Label(this.startNode);
@@ -268,15 +278,15 @@ public class RouteFinder {
 					if (bStoreRoute)	{	// valid route means: it ends in the destination node and fulfills the length constraints
 						if (itLabelOrder == LabelTraversal.ShuffleReset) {	// reset search:
 							// check if this route already exists:
-							for (Label l : result) {
+							for (Label l : results) {
 								if (currentLabel.equals(l)) { bStoreRoute = false; break; }
 							}
-							if (bStoreRoute) result.add(currentLabel);
+							if (bStoreRoute) results.add(currentLabel);
 						} //else without comparison - labels are all different due to search strategy
-						if (bStoreRoute) result.add(currentLabel);	// add the valid route to list of routes
+						if (bStoreRoute) results.add(currentLabel);	// add the valid route to list of routes
 						
 						// check for shuffleResetExtraRoutes and switch to ShuffleReset mode, if applicable:
-						if (itLabelOrder != LabelTraversal.ShuffleReset && itLabelOrder_orig == LabelTraversal.ShuffleReset && result.size() >= shuffleResetExtraRoutes) {
+						if (itLabelOrder != LabelTraversal.ShuffleReset && itLabelOrder_orig == LabelTraversal.ShuffleReset && results.size() >= shuffleResetExtraRoutes) {
 							itLabelOrder = itLabelOrder_orig;
 							logger.info("Switching tree traversal strategy: " + itLabelOrder.toString());
 						}
@@ -294,7 +304,7 @@ public class RouteFinder {
 						}
 						// check if maximum number of routes is reached
 						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
-						if (nMaxRoutes > 0 && result.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
+						if (nMaxRoutes > 0 && results.size() >= nMaxRoutes) {	// stop after the defined max. number of routes
 							logger.warn("["+network.getSourceRouteID()+"] Maximum number of routes reached (Constraint.MaximumNumberOfRoutes = " + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + ")");
 							stats.status = MatchStats.Status.MAXROUTES;
 							break stackLoop;
@@ -317,7 +327,7 @@ public class RouteFinder {
 						System.out.printf("[%d] dead ends: %d - overlaps: %d - rejected: %d\n", network.getSourceRouteID(), numDeadEnds, numLabels_overlap, numLabels_rejected);
 						String s = "lbl: " + numLabels;
 						if (iShowProgressDetail > 1) s += " - l: " + (expandingLabel.getLength() / gpsPathLength);
-						s += " - exp: " + numExpansions + " - res: " + result.size();
+						s += " - exp: " + numExpansions + " - res: " + results.size();
 						System.out.println(s);
 					}
 					long freeMem = Runtime.getRuntime().freeMemory();
@@ -334,7 +344,7 @@ public class RouteFinder {
 					}
 				}
 				// check for rejectedLabelsLimit-constraint:
-				if (rejectedLabelsLimit > 0 && numLabels_rejected > 0 && numLabels_rejected%rejectedLabelsLimit == 0 && result.size() == 0) {
+				if (rejectedLabelsLimit > 0 && numLabels_rejected > 0 && numLabels_rejected%rejectedLabelsLimit == 0 && results.size() == 0) {
 					logger.warn("Reached rejectedLabelsLimit - increase network buffer size?");
 				}
 			} else {	// "dead end" - this label is invalid
@@ -350,17 +360,17 @@ public class RouteFinder {
 		}
 		// some statistics on the computation:
 		System.out.printf("\nlabels analyzed:\t%14d\nvalid routes:\t\t%14d\ndead end-labels:\t%14d\t(%2.2f%%)\nlabels rejected:\t%14d\t(%2.2f%%)\nnodes in network:\t%14d\n\n",
-				numLabels, result.size(), numDeadEnds, (100.*numDeadEnds/numLabels), numLabels_rejected, (100.*numLabels_rejected/numLabels), 
+				numLabels, results.size(), numDeadEnds, (100.*numDeadEnds/numLabels), numLabels_rejected, (100.*numLabels_rejected/numLabels), 
 				network.getNodes().size());
 		// populate statistics container:
 		stats.nLabels = numLabels;
 		stats.nExpansions = numExpansions;
-		stats.nRoutes = result.size();
+		stats.nRoutes = results.size();
 		stats.nRejected_length = numLabels_rejected - numLabels_overlap;
 		stats.nRejected_overlap = numLabels_overlap;
 		stats.nDeadEnds = numDeadEnds;
 		
-		return result;
+		return results;
 	}
 
 	/**

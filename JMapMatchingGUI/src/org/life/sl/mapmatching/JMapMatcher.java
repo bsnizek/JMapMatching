@@ -210,7 +210,7 @@ public class JMapMatcher {
 			logger.info("Destination: " + toNode.getCoordinate());
 			double t_0 = timer.getRunTime(true, "++ graph loaded");
 
-			RouteFinder rf = new RouteFinder(graph, rfParams);	// perform the actual route finding procedure on the PathSegmentGraph
+			RouteFinder rf = new RouteFinder(graph, rfParams, labels0);	// perform the actual route finding procedure on the PathSegmentGraph
 			rf.calculateNearest();	// calculate nearest edges to all data points (needed for edges statistics)
 			// Prepare the evaluation (assigning score to labels):
 			EdgeStatistics eStat = new EdgeStatistics(rf, gpsPoints);
@@ -234,7 +234,7 @@ public class JMapMatcher {
 			if (!labels.isEmpty()) stats.srStatus = MatchStats.SourceRouteStatus.OK;	// set sourceroute status: some routes were found after all
 			if (!labels.isEmpty() && !repeat) {	// finished
 				// first check if we have labels stored from a previous run:
-				if (labels0.size() > 0) labels.addAll(labels0);
+				//if (labels0.size() > 0) labels.addAll(labels0);
 				// loop over all result routes, store them together with their score: 
 				Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
 		
@@ -271,6 +271,9 @@ public class JMapMatcher {
 					secondRun = true;
 					// save labels for later:
 					labels0.addAll(labels);
+					// for the next run, we have to consider that routes are already saved:
+					int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes2);
+					rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, nMaxRoutes);
 				}
 
 				if (repeat) {
