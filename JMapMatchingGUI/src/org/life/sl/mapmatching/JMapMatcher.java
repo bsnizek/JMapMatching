@@ -198,8 +198,13 @@ public class JMapMatcher {
 			if (graph == null || repeat) {	// create a new graph enveloping the GPS track
 				graph = loadGraphFromDB(gpsPoints);
 			}
+					
+			graph.splitGraphAtPoint(gpsPoints.getCoordinate(0));
+			graph.splitGraphAtPoint(gpsPoints.getCoordinate(-1));
+			
 			Node fromNode = graph.findClosestNode(gpsPoints.getCoordinate(0));	// first node (Origin)
 			Node toNode   = graph.findClosestNode(gpsPoints.getCoordinate(-1));	// last node in GPS route (Destination) 
+			
 			if (fromNode == null || toNode == null) {	// nodes are not in network - error and stop:
 				logger.error("Origin and destination not in network!?");
 				stats = new MatchStats(sourcerouteID, MatchStats.Status.NETERROR);

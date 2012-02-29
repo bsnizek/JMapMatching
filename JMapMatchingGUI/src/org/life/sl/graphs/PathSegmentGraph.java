@@ -55,6 +55,8 @@ this program; if not, see <http://www.gnu.org/licenses/>.
  */
 
 
+import gnu.trove.TIntProcedure;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
@@ -64,6 +66,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import org.apache.log4j.Logger;
 import org.geotools.data.DataUtilities;
@@ -88,15 +91,21 @@ import org.life.sl.orm.OSMEdge;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
+import com.infomatiq.jsi.Rectangle;
+import com.infomatiq.jsi.SpatialIndex;
+import com.infomatiq.jsi.test.SpatialIndexFactory;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Point;
 
+import com.vividsolutions.jts.operation.linemerge.LineMergeEdge;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.Node;
+import com.vividsolutions.jump.algorithm.EuclideanDistanceToPoint;
+import com.vividsolutions.jump.algorithm.PointPairDistance;
 
 /**
  * A planar graph of edges that is analyzed to sew the edges together. The 
@@ -108,6 +117,8 @@ import com.vividsolutions.jts.planargraph.Node;
  */
 public class PathSegmentGraph {
 
+	private float kNearestEdgeDistance = 50.f;	// the larger, the slower
+	
 	private double xMin,xMax,yMin,yMax;
 	private int sourceRouteID;
 
@@ -115,6 +126,10 @@ public class PathSegmentGraph {
 	private AllPairsShortestPath allPairsShortestPath;
 	private boolean distancesCalculated;
 	private LineMergeGraphH4cked lineMergeGraphH4cked;
+	
+	private HashMap<Integer, Edge> edgeId__edge = new HashMap<Integer, Edge>();
+	
+	private SpatialIndex si;
 	
 	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 
@@ -134,6 +149,10 @@ public class PathSegmentGraph {
 		super();
 		distancesCalculated = false;
 		setLineMergeGraphH4cked(new LineMergeGraphH4cked());
+		Properties p = new Properties();
+	    p.setProperty("MinNodeEntries", "1");
+	    p.setProperty("MaxNodeEntries", "10");
+		si = SpatialIndexFactory.newInstance("rtree.RTree", p);
 	}
 	
 	/**
@@ -195,6 +214,85 @@ public class PathSegmentGraph {
 	public void addLineStringsFromDatabase() {
 		addLineStringsFromDatabase(null, 0, "");
 	}
+	
+	/**
+	 * Find the edge nearest to a given point
+	 * @param p point for which to calculate the nearest edge
+	 * @return the nearest edge to the point
+	 */
+	public Edge findNearestEdge(Coordinate c) {
+		Point p = fact.createPoint(c);
+		com.infomatiq.jsi.Point pp = new com.infomatiq.jsi.Point((float) p.getX(), (float) p.getY());
+
+		ReturnArray r = new ReturnArray();
+		this.si.nearestNUnsorted(pp, r, 8, kNearestEdgeDistance);	// TODO: decide how to choose value for furthestDistance? 10 meters is just a guess.
+		double dMin = Double.MAX_VALUE, d = 0;
+		Edge e0 = null;
+		for (Integer i : r.getResult()) {
+			Edge e = (Edge) getEdgeByID(i);
+			d = p.distance(((LineMergeEdge)e).getLine());
+			if (d < dMin) {
+				dMin = d;
+				e0 = e;
+			}
+		}
+		return e0;
+	}
+	
+	public Edge getEdgeByID(int edgeId) {
+		return edgeId__edge.get(edgeId);
+	}
+	
+	public void splitGraphAtPoint(Coordinate c) {
+		Edge nearestEdge = findNearestEdge(c);
+		// get the projected point on the nearest edge
+		
+		PointPairDistance ppd = new PointPairDistance(); 
+		EuclideanDistanceToPoint.computeDistance((LineString)((HashMap)nearestEdge.getData()).get("geom"), c, ppd); 
+
+        Coordinate resultcoord = null;
+        
+        for (Coordinate cc : ppd.getCoordinates()) { 
+            // System.out.println(cc); 
+            if (cc.equals(c) == false) {
+            	resultcoord = cc;
+            }
+        } 
+        
+        Coordinate fromCoord = nearestEdge.getDirEdge(0).getFromNode().getCoordinate();
+        Coordinate toCoord = nearestEdge.getDirEdge(0).getToNode().getCoordinate();
+        
+        Coordinate[] fc = {fromCoord, resultcoord};
+        Coordinate[] tc = {resultcoord, toCoord};
+        
+        
+        // TODO: make a nice id here
+        addLineString(fact.createLineString(fc), -1);
+        addLineString(fact.createLineString(tc), -2);
+        System.out.println("Graph split @ " + resultcoord);
+	}
+	
+	
+	
+	public void addOSMEdgeToSpatialIndex(OSMEdge osmEdge) {
+		// System.out.println("added edge with ID " + osmEdge.getId());
+		// counter__edge.put(osmEdge.getId(), osmEdge.getGeometry());	// store edges in the hash map
+		
+		Geometry env = osmEdge.getGeometry().getBoundary();
+		//  (minx, miny), (maxx, miny), (maxx, maxy), (minx, maxy), (minx, miny).
+		
+		if (env.getNumGeometries() > 0) {			
+			Point p1 = (Point) env.getGeometryN(0);
+			Point p2 = (Point) env.getGeometryN(1);
+
+			si.add(new Rectangle((float) p1.getX(),
+								 (float) p1.getY(), 
+								 (float) p2.getX(), 
+								 (float) p2.getY()), 
+								 osmEdge.getId());	
+		}
+	}
+	
 
 	/**
 	 * Create a new graph, with linestrings read from the database (optionally using only a buffer around a given track for the network)
@@ -220,6 +318,9 @@ public class PathSegmentGraph {
 				OSMEdge  o = iter.next();
 				LineString g = o.getGeometry();
 				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype(), o.getGroenm());
+				// let us add this thing to the spatial index
+				addOSMEdgeToSpatialIndex(o);
+				
 			}
 		} else {
 			// let us join the nodes of the track to a linestring ....
@@ -253,6 +354,8 @@ public class PathSegmentGraph {
 				OSMEdge  o = iter.next();
 				LineString g = o.getGeometry();
 				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype(), o.getGroenm());
+				// let us add this thing to the spatial index
+				addOSMEdgeToSpatialIndex(o);
 			}
 			
 			// if required, dump the graph to a shapefile:
@@ -360,6 +463,7 @@ public class PathSegmentGraph {
 		}
 
 		Edge edge = getLineMergeGraphH4cked().addEdge(lineString);
+		edgeId__edge.put(id, edge);
 		if (edge != null) {	// edge might not have been added because of coinciding coordinates
 			if (lineString.getUserData() == null) lineString.setUserData(new HashMap<String, Object>(3));
 			@SuppressWarnings("unchecked")
@@ -372,6 +476,12 @@ public class PathSegmentGraph {
 			userdata.put("gm", groenM);	// groenM
 	 		userdata.put("geom", lineString);
 			edge.setData(userdata);
+			
+			// add edge data to the spatial index
+			
+			
+			
+			
 		}
 	}
 
@@ -459,6 +569,14 @@ public class PathSegmentGraph {
 		return (Collection<Edge>) getLineMergeGraphH4cked().getEdges();
 	}
 	
+	/*
+	 * removes an edge 
+	 */
+	public void removeEdge(Edge edge) {
+		getLineMergeGraphH4cked().remove(edge);
+	}
+	
+	
 	public int getSize_Edges() {
 		return getLineMergeGraphH4cked().getEdges().size();
 	}
@@ -504,6 +622,24 @@ public class PathSegmentGraph {
 	public int getSourceRouteID() {
 		return sourceRouteID;
 	}
+	
+	/**
+	 * Result container; looks like a bit of overkill, but is required by SpatialIndex...
+	 */
+	class ReturnArray implements TIntProcedure {
+
+		private ArrayList<Integer> result = new ArrayList<Integer>();
+		
+		public boolean execute(int value) {
+	      this.result.add(value);
+	      return true;
+	    }
+		
+		ArrayList<Integer> getResult() {
+			return this.result;
+		}
+	}
+	
 
 	public static void main(String[] args) {
 		PathSegmentGraph psg = new PathSegmentGraph();

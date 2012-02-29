@@ -30,7 +30,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 		<spatial.test.shp.version>20100819</spatial.test.shp.version>
 		<bundle.namespace>org.life.sl</bundle.namespace>
 		<build.plugins.plugin.version>1.0</build.plugins.plugin.version>
-		<development-dir>/Users/bb/dev/JMapMatching/JMapMatchingGUI</development-dir>
+		<development-dir>/Users/besn/git/JMapMatching/JMapMatchingGUI</development-dir>
 
 	</properties>
 
@@ -134,6 +134,14 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 	</licenses>
 
 	<dependencies>
+		<dependency>
+			<groupId>jump.core</groupId>
+			<artifactId>jump.core</artifactId>
+			<version>1.2</version>
+			<scope>system</scope>
+			<systemPath>${development-dir}/non-maven-jars/jump-core-1.2.jar</systemPath>
+		</dependency>
+		
 		<dependency>
 			<groupId>commons-logging</groupId>
 			<artifactId>commons-logging</artifactId>
