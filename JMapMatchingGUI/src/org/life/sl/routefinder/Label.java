@@ -50,6 +50,7 @@ import org.opengis.feature.simple.SimpleFeatureType;
 
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.LineString;
+import com.vividsolutions.jts.operation.linemerge.LineMergeEdge;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.Edge;
 import com.vividsolutions.jts.planargraph.Node;
@@ -64,7 +65,6 @@ public class Label implements Comparable<Label> {
 	/**
 	 * Comparator comparing only the last edge of two labels
 	 * @author bb
-	 *
 	 */
 	public static class LastEdgeComparator implements Comparator<Label> {
 		RouteFinder.LabelTraversal sortOrder;
@@ -78,7 +78,17 @@ public class Label implements Comparable<Label> {
 			return r;
 		}	
 	}
-	
+
+	/**
+	 * Comparator comparing the length of two labels
+	 * @author bb
+	 */
+	public static class LengthComparator implements Comparator<Label> {
+		public int compare(Label arg0, Label arg1) {
+			return arg0.compareTo_length(arg1);
+		}	
+	}
+
 	private Label parent;			///> The parent of the Label
 	private Node node;				///> The node associated with this Label
 	private DirectedEdge backEdge;	///> The GeoEdge leading back to the node associated with the parent Label
@@ -182,6 +192,19 @@ public class Label implements Comparable<Label> {
 				}
 			}
 		}
+		return r;
+	}
+	
+	/**
+	 * Comparison method using the route length
+	 * @param arg0 the other object to compare this to
+	 * @return 1 if this object is larger (longer) than the other, -1 if smaller (shorter), 0 if equal
+	 */
+	public int compareTo_length(Label arg0) {
+		int r = 0;
+		double ov = arg0.getLength();
+		if (this.length > ov) r = 1;
+		else if (this.length < ov) r = -1;
 		return r;
 	}
 
@@ -323,6 +346,25 @@ public class Label implements Comparable<Label> {
 	}
 
 	/**
+	 * Given a directed edge, this method calculates how many times the undirected parent edge has been visited by the route
+	 * represented by this Label - alternative to getOccurrencesOfEdge().
+	 * @param dirEdge The directed edge we are querying about.
+	 * @return An int value indicating the degree of overlap for the edge. Counting occurrences in both directions (direction independent).
+	 */
+	public int getOccurrencesOfEdge_2(DirectedEdge dirEdge, boolean useDir) {
+		int n = 0;
+		edgeList = getRouteAsEdges();
+		for (DirectedEdge e : edgeList) {
+			if (useDir) {	// consider direction
+				if (dirEdge == e) n++;
+			} else {	// direction independent
+				if (dirEdge.getEdge() == e.getEdge()) n++;	// important: compare the undirected edges!
+			}
+		}
+		return n;
+	}
+
+	/**
 	 * Given a node, this method calculates how many times that node has been visited by the route
 	 * represented by this Label.
 	 * @param node The node we are querying about.
@@ -336,6 +378,44 @@ public class Label implements Comparable<Label> {
 			label = label.getParent();
 		}
 		return n;
+	}
+	
+	/**
+	 * Calculate the overlap factor, a value in [0...1]: 0 means no overlap, 1 means the whole route is contained in lbl0.
+	 * See also: E. Frejinger, M. Bierlaire, M. Ben-Akiva: Expanded Path Size Attribute, March 2009 
+	 * @param lbl0 the other label (route) to compare this one to
+	 * @param useDir if true, the edge direction is considered, if not, the overlap is computed independent of the edge direction 
+	 * @return the overlap factor [0...1]
+	 */
+	public double getOverlap(Label lbl0, boolean useDir) {
+		double ps = 0;
+		for (DirectedEdge e : this.getRouteAsEdges()) {
+			if (lbl0.getOccurrencesOfEdge_2(e, useDir) != 0) {	// direction independent
+				ps += ((LineMergeEdge)e.getEdge()).getLine().getLength();	// add length of this edge
+			}
+		}
+		ps /= getLength();
+		return ps;
+	}
+	
+	/**
+	 * Calculate the overlap factor of this label and all routes in a given set of labels. 
+	 * @param labels a list of labels
+	 * @param useDir if true, the edge direction is considered, if not, the overlap is computed independent of the edge direction
+	 * @param maxOverlap threshold: if > 0, the comparison is only performed until an overlap factor above this threshold is found (to improve performance) 
+	 * @return the maximum overlap factor [0...1] between this route and all those in the given set of labels (unless maxOverlap is given)
+	 */
+	public double getOverlapWithSet(List<Label> labels, boolean useDir, double maxOverlap) {
+		double ps = 0;
+		for (Label l : labels) {
+			ps = Math.max(ps, getOverlap(l, useDir));
+			if (maxOverlap > 0 && ps > maxOverlap) break;	// speed things up if we only check for a threshold
+			// TODO: extend that by doing a two-way comparison?
+			ps = Math.max(ps, l.getOverlap(this, useDir));	// ??
+			if (maxOverlap > 0 && ps > maxOverlap) break;
+		}
+//		System.out.print(".");
+		return ps;
 	}
 
 	/**
