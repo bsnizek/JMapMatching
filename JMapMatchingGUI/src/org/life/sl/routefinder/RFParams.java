@@ -59,7 +59,8 @@ public class RFParams {
 		EdgeOverlap,			///< maximum number of overlaps in an edge for a valid route
 		BridgeOverlap,			///< maximum number of overlaps in a bridge for a valid route
 		MinimumLength,			///< minimum length of a valid route; length is defined as the sum of weights over edges in the route 
-		MaximumLength,			///< maximum length of a valid route; length is defined as the sum of weights over edges in the route 
+		MaximumLength,			///< maximum length of a valid route; length is defined as the sum of weights over edges in the route
+		MaxPSOverlap,			///< maximum allowed overlap parameter (Path Size Attribute)
 		ShowProgressDetail,		///< how much detail regarding the progress is shown ("progress bar"): 0, 1, 2
 	}
 
@@ -221,6 +222,7 @@ public class RFParams {
 			if (map2Int(iniMap, "BridgeOverlap", Type.BridgeOverlap)) r++;
 			if (map2Double(iniMap, "MinimumLength", Type.MinimumLength)) r++;
 			if (map2Double(iniMap, "MaximumLength", Type.MaximumLength)) r++;
+			if (map2Double(iniMap, "MaxPSOverlap", Type.MaxPSOverlap)) r++;
 			if (map2Double(iniMap, "DistanceFactor", Type.DistanceFactor)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize", Type.NetworkBufferSize)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize2", Type.NetworkBufferSize2)) r++;

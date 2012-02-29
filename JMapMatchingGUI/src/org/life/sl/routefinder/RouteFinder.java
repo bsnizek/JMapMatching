@@ -95,6 +95,7 @@ public class RouteFinder {
 	private long numLabels_rejected = 0;	///< number of labels (states) that have been rejected due to constraints
 	private long rejectedLabelsLimit = 0;	///< limit for number of labels (states) that have been rejected
 	private long numLabels_overlap = 0;		///< number of labels that have overlapping nodes 
+	private long numLabels_psOverlap = 0;
 	private long maxLabels = 0;				///< maximum number of labels to compute
 	private double maxRuntime = 0;			///< maximum computation time per route, in seconds
 	private int nGenBack = 0;
@@ -103,6 +104,7 @@ public class RouteFinder {
 	
 	private double gpsPathLength = 0.;
 	private double maxPathLength = 0.;
+	private double maxPSOverlap = 0.;
 	private EdgeStatistics edgeStatistics = null;
 
 	ArrayList<Label> results = null;
@@ -151,6 +153,7 @@ public class RouteFinder {
 		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);		///< how much the route may deviate from the shortest possible
 		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///< minimum route length
 		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
+		rfParams.setDouble(RFParams.Type.MaxPSOverlap, .8);			///< maximum allowed overlap between routes
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize2, 0.);	///< initial buffer size in meters (!)
 		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
 		rfParams.setInt(RFParams.Type.RejectedLabelsLimit, 0);		///< limit for unsuccessful labels
@@ -218,6 +221,7 @@ public class RouteFinder {
 		this.iShowProgressDetail = rfParams.getInt(RFParams.Type.ShowProgressDetail);
 		// precalculate the minimum path length, for use as a constraint in label expansion:
 		maxPathLength = gpsPathLength * rfParams.getDouble(RFParams.Type.DistanceFactor);
+		maxPSOverlap = rfParams.getDouble(RFParams.Type.MaxPSOverlap);
 		// if there was a problem, use the given maximum length constraint:
 		double minDist = this.startNode.getCoordinate().distance(this.endNode.getCoordinate());	// compare to Euclidian distance
 		if (maxPathLength < minDist) {
@@ -230,6 +234,7 @@ public class RouteFinder {
 		stats.trackLength = gpsPathLength;
 		stats.ODDist = minDist;
 		stats.maxLength = maxPathLength;
+		stats.maxPSOverlap = maxPSOverlap;
 		stats.network_edges = network.getSize_Edges();
 		stats.network_nodes = network.getSize_Nodes();
 		stats.network_meanDegree = network.getMeanDegree();
@@ -368,6 +373,7 @@ public class RouteFinder {
 		stats.nRoutes = results.size();
 		stats.nRejected_length = numLabels_rejected - numLabels_overlap;
 		stats.nRejected_overlap = numLabels_overlap;
+		stats.nRejected_psOverlap = numLabels_psOverlap;
 		stats.nDeadEnds = numDeadEnds;
 		
 		return results;
@@ -379,11 +385,17 @@ public class RouteFinder {
 	 * @return true if the route is valid 
 	 */
 	private boolean isValidRoute(Label label) {
-		return (	
+		boolean b = (
 			label.getNode() == this.endNode &&
 			label.getLength() >= rfParams.getDouble(RFParams.Type.MinimumLength) &&
 			label.getLength() <= rfParams.getDouble(RFParams.Type.MaximumLength)
 		);
+		// check for overlap constraint:
+		if (b && maxPSOverlap > 0) {
+			b = (label.getOverlapWithSet(results, true, maxPSOverlap) <= maxPSOverlap);
+		}
+
+		return b;
 	}
 
 	/**
@@ -484,7 +496,7 @@ public class RouteFinder {
 					continue;	// don't consider this label
 				}
 //			}
-
+				
 			// no constraints broken:
 			newLabel.calcScore(edgeStatistics);	// shall we do this here and sort the list in findRoutes(), or shall we rather shuffle?
 			expansion.add(newLabel);	// store new label (i.e., it is a valid expansion)

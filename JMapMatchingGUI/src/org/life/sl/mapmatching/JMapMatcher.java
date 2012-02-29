@@ -235,8 +235,13 @@ public class JMapMatcher {
 			if (!labels.isEmpty() && !repeat) {	// finished
 				// first check if we have labels stored from a previous run:
 				//if (labels0.size() > 0) labels.addAll(labels0);
-				// loop over all result routes, store them together with their score: 
-				Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
+				// loop over all result routes, store them together with their score:
+				if (cfg.sortRoutes == JMMConfig.RouteSorting.LENGTH) {
+					Label.LengthComparator lengthComp = new Label.LengthComparator();
+					Collections.sort(labels, lengthComp);	// sort labels (result routes) by their score: shortest comes first
+				} else {
+					Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
+				}
 		
 				int nOK = saveData(labels, fromNode, toNode, eStat);
 				

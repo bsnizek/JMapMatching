@@ -17,8 +17,11 @@ import org.ini4j.InvalidFileFormatException;
  * @see <a href="https://github.com/bsnizek/JMapMatching/wiki/JMapMatcherIniFile">JMapMatcherIniFile in the Wiki</a>
  */
 public class JMMConfig {
+	public enum RouteSorting { MATCHSCORE, LENGTH };
+	
 	// configuration parameters and default values:
 	public int nRoutesToWrite = 10;
+	public RouteSorting sortRoutes = RouteSorting.MATCHSCORE;
 	public boolean bWriteChoices = true;
 	public int iFixedNodeChoices = 0;
 	public boolean bWriteTrafficLights = true;
