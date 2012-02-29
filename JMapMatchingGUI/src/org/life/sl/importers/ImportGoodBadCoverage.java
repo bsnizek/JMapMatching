@@ -18,12 +18,13 @@ FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
 You should have received a copy of the GNU General Public License along with 
 this program; if not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -51,18 +52,23 @@ import com.vividsolutions.jts.geom.MultiLineString;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.LineString;
 
+/*
+ * Imports a shapefile (to be defined in the main method) into the database. Remember to empty tables 
+ * sourcepoint and sourceroute.
+ */
+
 public class ImportGoodBadCoverage {
 
 	private Session session;
-	
+
 	private com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
-	
+
 	public ImportGoodBadCoverage(String directory) {
 		// TODO: loop over files.
 	}
-	
+
 	public ImportGoodBadCoverage(File file) throws IOException {
-		
+
 		setUp();
 
 		Map<String,Serializable> connectParameters = new HashMap<String,Serializable>();
@@ -94,93 +100,99 @@ public class ImportGoodBadCoverage {
 				fieldnames.add(ln);
 			}
 		}
-		
+
 		int counter = 0;
-		
+
 		try {
 			while (iterator.hasNext()) {
 				System.out.print("=");
-				
+
 				SimpleFeature feature = iterator.next();
 				Geometry geometry = (Geometry) feature.getDefaultGeometry();
-				
- 				MultiLineString ls = (MultiLineString) geometry;
- 				
- 				Coordinate[] cs = ls.getCoordinates();
- 				
- 				int lngth = cs.length;
 
- 				int length = 25;
- 				
- 				double shootOver = 0;
- 				
- 				SourceRoute sr = new SourceRoute();
- 				Double d =  (Double) feature.getAttribute("rspdid");
- 				long srid = (new Double(d)).longValue();
- 				sr.setRespondentid((int) srid);
- 				sr.setId(counter);
- 				counter++;
- 				session.save(sr);
- 				
- 				for (int i=1; i<lngth; i++) {
- 					System.out.print(".");
- 					Coordinate pt0 = cs[i-1];
- 					Coordinate pt1 = cs[i];
- 					double deltaX = pt1.x - pt0.x;
- 					double deltaY = pt1.y - pt0.y;
- 					
- 					double distance = pt0.distance(pt1);
- 					
- 					double step = length/distance;
- 					
- 					double l = 0;
- 					while (l < 1) {
- 						
- 						double newX = pt0.x + l*deltaX;
- 						double newY = pt0.y + l*deltaY;
- 						
- 						SourcePoint sp = new SourcePoint();
- 						Point pnt = fact.createPoint(new Coordinate(newX,newY));
- 						sp.setGeometry(pnt);
- 						sp.setSourcerouteid((int) counter);
- 						session.save(sp);
- 						l = l + step;
- 					}
- 					
- 					
- 					
- 					session.getTransaction().commit();
- 					setUp();
- 					
- 				}
- 				System.out.println(" ");
+				MultiLineString ls = (MultiLineString) geometry;
+
+				Coordinate[] cs = ls.getCoordinates();
+
+				int lngth = cs.length;
+
+				int length = 25;
+
+				double shootOver = 0;
+
+				SourceRoute sr = new SourceRoute();
+				Double d =  (Double) feature.getAttribute("rspid");
+				long srid = (new Double(d)).longValue();
+				sr.setRespondentid((int) srid);
+				sr.setId(counter);
+
+				session.save(sr);
+
+				Date date = new Date();
+
+				for (int i=1; i<lngth; i++) {
+					System.out.print(".");
+					Coordinate pt0 = cs[i-1];
+					Coordinate pt1 = cs[i];
+					double deltaX = pt1.x - pt0.x;
+					double deltaY = pt1.y - pt0.y;
+
+					double distance = pt0.distance(pt1);
+
+					double step = length/distance;
+
+					double l = 0;
+					while (l < 1) {
+
+						date.setSeconds(date.getSeconds()+1);
+
+						double newX = pt0.x + l*deltaX;
+						double newY = pt0.y + l*deltaY;
+
+						SourcePoint sp = new SourcePoint();
+						Point pnt = fact.createPoint(new Coordinate(newX,newY));
+						sp.setGeometry(pnt);
+						sp.setSourcerouteid((int) counter);
+						sp.setT(date);
+						session.save(sp);
+						l = l + step;
+					}
+
+
+
+					session.getTransaction().commit();
+					setUp();
+
+				}
+				counter++;
+				System.out.println(" ");
 
 			}
-			
+
 		}
 		finally {
 			if( iterator != null ){
 				// YOU MUST CLOSE THE ITERATOR!
 				iterator.close();
-				
+
 			}
 		}
 		session.getTransaction().commit();
 		System.out.println("saved");
 	}
-	
+
 	public void setUp() {
 		session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 	}
-	
+
 	public static void main(String[] args) throws IllegalDataException, IOException {
-		String filename = "geodata/GoodBad/PolylinesHanddrawn.shp";
+		String filename = "/Users/besn/Dropbox/Bikeability/CopenhagenExperiencePoints/2-RoutesClippedToMunicpalityBorder/poly.shp";
 		@SuppressWarnings("unused")
 		ImportGoodBadCoverage gfi = new ImportGoodBadCoverage(new File(filename));
 		System.out.println("Shapefile imported !");
 	}
 
-	
-	
+
+
 }
