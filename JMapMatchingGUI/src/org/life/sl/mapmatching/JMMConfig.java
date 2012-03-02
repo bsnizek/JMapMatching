@@ -17,7 +17,19 @@ import org.ini4j.InvalidFileFormatException;
  * @see <a href="https://github.com/bsnizek/JMapMatching/wiki/JMapMatcherIniFile">JMapMatcherIniFile in the Wiki</a>
  */
 public class JMMConfig {
-	public enum RouteSorting { MATCHSCORE, LENGTH };
+	public enum RouteSorting {
+		MATCHSCORE, LENGTH;
+		
+		public static RouteSorting toRouteSorting(String sArg) {
+			RouteSorting defaultSorting = RouteSorting.MATCHSCORE;
+			if(sArg == null) return defaultSorting;
+			  
+			String s = sArg.toUpperCase();
+			if(s.equals("MATCHSCORE")) return RouteSorting.MATCHSCORE; 
+			if(s.equals("LENGTH")) return RouteSorting.LENGTH; 
+			return defaultSorting;
+		}
+	};
 	
 	// configuration parameters and default values:
 	public int nRoutesToWrite = 10;
@@ -62,6 +74,7 @@ public class JMMConfig {
 			if (iniMap.containsKey("WriteNBest")) iWriteNBest = Integer.parseInt(iniMap.get("WriteNBest"));
 			if (iniMap.containsKey("WriteNWorst")) iWriteNWorst = Integer.parseInt(iniMap.get("WriteNWorst"));
 			if (iniMap.containsKey("WriteChoices")) bWriteChoices = Boolean.parseBoolean(iniMap.get("WriteChoices"));
+			if (iniMap.containsKey("SortRoutes")) sortRoutes = RouteSorting.toRouteSorting(iniMap.get("SortRoutes"));
 			if (iniMap.containsKey("WriteTrafficLights")) bWriteTrafficLights = Boolean.parseBoolean(iniMap.get("WriteTrafficLights"));
 			if (iniMap.containsKey("FixedNodeChoices")) iFixedNodeChoices = Integer.parseInt(iniMap.get("FixedNodeChoices"));
 			if (iniMap.containsKey("WriteToShapefiles")) bWriteToShapefiles = Boolean.parseBoolean(iniMap.get("WriteToShapefiles"));

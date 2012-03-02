@@ -36,6 +36,7 @@ import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.Respondent;
 import org.life.sl.orm.ResultRoute;
@@ -58,6 +59,8 @@ import com.vividsolutions.jts.geom.LineString;
  */
 
 public class ImportGoodBadCoverage {
+
+	private static final int LENGTH = 10;
 
 	private Session session;
 
@@ -116,7 +119,7 @@ public class ImportGoodBadCoverage {
 
 				int lngth = cs.length;
 
-				int length = 25;
+				int length = LENGTH;
 
 				double shootOver = 0;
 
@@ -191,6 +194,7 @@ public class ImportGoodBadCoverage {
 		@SuppressWarnings("unused")
 		ImportGoodBadCoverage gfi = new ImportGoodBadCoverage(new File(filename));
 		System.out.println("Shapefile imported !");
+		PathSegmentGraph psg = new PathSegmentGraph();
 	}
 
 

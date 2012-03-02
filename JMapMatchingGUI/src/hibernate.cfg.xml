@@ -28,7 +28,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 
 		<!-- Database connection settings -->
 		<property name="connection.driver_class">org.postgresql.Driver</property>
-		<property name="connection.url">jdbc:postgresql://localhost/bikeability</property>
+		<property name="connection.url">jdbc:postgresql://localhost/goodbad</property>
 		<property name="connection.username">biker</property>
 		<property name="connection.password">bike2011</property>
 

@@ -266,7 +266,8 @@ public class PathSegmentGraph {
         Coordinate[] tc = {resultcoord, toCoord};
         
         
-        // TODO: make a nice id here
+        // TODO: generate nice edge ids here
+        // replace straight lines with lines including vertices
         addLineString(fact.createLineString(fc), -1);
         addLineString(fact.createLineString(tc), -2);
         System.out.println("Graph split @ " + resultcoord);
