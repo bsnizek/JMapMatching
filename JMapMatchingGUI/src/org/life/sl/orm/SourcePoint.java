@@ -20,16 +20,15 @@ You should have received a copy of the GNU General Public License along with
 this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
-import java.util.Date;
-
 import com.vividsolutions.jts.geom.Point;
+import java.sql.Timestamp;
 
 public class SourcePoint {
 	
 	private int id;
 	private Point geometry;
 	private int sourcerouteid;
-	private Date t;
+	private	Timestamp t;
 	/*private int ts; // timestamp ? 
 	
 	public int getTs() {
@@ -40,11 +39,11 @@ public class SourcePoint {
 		this.ts = ts;
 	}*/
 
-	public Date getT() {
+	public Timestamp getT() {
 		return t;
 	}
 
-	public void setT(Date t) {
+	public void setT(Timestamp t) {
 		this.t = t;
 	}
 

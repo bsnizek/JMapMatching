@@ -23,6 +23,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -131,7 +132,10 @@ public class ImportGoodBadCoverage {
 
 				session.save(sr);
 
-				Date date = new Date();
+				Date t = new Date();
+				int pcounter = 0;
+				
+				long timestamp0 = t.getTime();
 				
 				Coordinate c0 = null;
 				Coordinate c1 = null;
@@ -151,8 +155,12 @@ public class ImportGoodBadCoverage {
 
 					
 					while (l <= distance) {
-
-						date.setSeconds(date.getSeconds()+1);
+						
+						// date.setTime();    // setTime expects miliseconds!
+						// System.out.println(date.getTime());
+						pcounter++;
+						
+						// date.setSeconds(date.getSeconds()+1);
 
 						double newX = pt0.x + l*deltaX;
 						double newY = pt0.y + l*deltaY;
@@ -163,7 +171,8 @@ public class ImportGoodBadCoverage {
 						Point pnt = fact.createPoint(c1);
 						sp.setGeometry(pnt);
 						sp.setSourcerouteid((int) counter);
-						sp.setT(date);
+						sp.setT(new Timestamp(timestamp0 + pcounter*10000));
+						pcounter++;
 						session.save(sp);
 						l = l + length;
 						
