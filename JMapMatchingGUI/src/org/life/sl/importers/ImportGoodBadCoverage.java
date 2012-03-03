@@ -132,36 +132,51 @@ public class ImportGoodBadCoverage {
 				session.save(sr);
 
 				Date date = new Date();
-
+				
+				Coordinate c0 = null;
+				Coordinate c1 = null;
+				
+				double l = 0;
+				
 				for (int i=1; i<lngth; i++) {
 					System.out.print(".");
 					Coordinate pt0 = cs[i-1];
 					Coordinate pt1 = cs[i];
-					double deltaX = pt1.x - pt0.x;
-					double deltaY = pt1.y - pt0.y;
-
 					double distance = pt0.distance(pt1);
+					double deltaX = (pt1.x - pt0.x)/distance;
+					double deltaY = (pt1.y - pt0.y)/distance;
 
-					double step = length/distance;
 
-					double l = 0;
-					while (l < 1) {
+//					double step = length/distance;
+
+					
+					while (l <= distance) {
 
 						date.setSeconds(date.getSeconds()+1);
 
 						double newX = pt0.x + l*deltaX;
 						double newY = pt0.y + l*deltaY;
 
+						c1 = new Coordinate(newX,newY);
+						
 						SourcePoint sp = new SourcePoint();
-						Point pnt = fact.createPoint(new Coordinate(newX,newY));
+						Point pnt = fact.createPoint(c1);
 						sp.setGeometry(pnt);
 						sp.setSourcerouteid((int) counter);
 						sp.setT(date);
 						session.save(sp);
-						l = l + step;
+						l = l + length;
+						
+						/*if (c0!=null) {
+							System.out.println(c0.distance(c1));
+						}*/
+						
+						c0 = c1;
 					}
+					
+					l = l - distance;
 
-
+					// System.out.println("***");
 
 					session.getTransaction().commit();
 					setUp();
