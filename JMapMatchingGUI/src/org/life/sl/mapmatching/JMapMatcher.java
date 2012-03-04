@@ -242,7 +242,7 @@ public class JMapMatcher {
 				//if (labels0.size() > 0) labels.addAll(labels0);
 				// loop over all result routes, store them together with their score:
 				if (cfg.sortRoutes == JMMConfig.RouteSorting.LENGTH) {
-					Label.LengthComparator lengthComp = new Label.LengthComparator();
+					Label.UniversalComparator lengthComp = new Label.UniversalComparator(cfg.sortRoutesLMSWeight);
 					Collections.sort(labels, lengthComp);	// sort labels (result routes) by their score: shortest comes first
 				} else {
 					Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
