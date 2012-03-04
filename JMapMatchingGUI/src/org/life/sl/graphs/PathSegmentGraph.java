@@ -117,6 +117,8 @@ import com.vividsolutions.jump.algorithm.PointPairDistance;
  */
 public class PathSegmentGraph {
 
+	private static final double SPLITSNAPDISTANCE = 1f;
+
 	private float kNearestEdgeDistance = 50.f;	// the larger, the slower
 	
 	private double xMin,xMax,yMin,yMax;
@@ -248,7 +250,8 @@ public class PathSegmentGraph {
 		// get the projected point on the nearest edge
 		
 		PointPairDistance ppd = new PointPairDistance(); 
-		EuclideanDistanceToPoint.computeDistance((LineString)((HashMap)nearestEdge.getData()).get("geom"), c, ppd); 
+		LineString nearestLineString = (LineString)((HashMap)nearestEdge.getData()).get("geom");
+		EuclideanDistanceToPoint.computeDistance(nearestLineString, c, ppd); 
 
         Coordinate resultcoord = null;
         
@@ -259,17 +262,57 @@ public class PathSegmentGraph {
             }
         } 
         
-        Coordinate fromCoord = nearestEdge.getDirEdge(0).getFromNode().getCoordinate();
-        Coordinate toCoord = nearestEdge.getDirEdge(0).getToNode().getCoordinate();
+        // let us loop through the vertices
         
-        Coordinate[] fc = {fromCoord, resultcoord};
-        Coordinate[] tc = {resultcoord, toCoord};
+        Coordinate[] nearestLineStringCoordinates = nearestLineString.getCoordinates();
+        
+        ArrayList<Coordinate> fromVertices = new ArrayList<Coordinate>();
+        ArrayList<Coordinate> toVertices = new ArrayList<Coordinate>();
+        fromVertices.add(nearestLineStringCoordinates[0]);
+        boolean isAfter = false;
+        
+        for (int i=1; i<nearestLineStringCoordinates.length; i++) {
+        	Coordinate pt0 = nearestLineStringCoordinates[i-1];
+			Coordinate pt1 = nearestLineStringCoordinates[i];
+			
+			// let us build a segment between 2 nodes
+			
+			Coordinate[] segmentCoords = {pt0,pt1};
+			LineString segment = fact.createLineString(segmentCoords);
+			
+			// let us check whether the projected point (resultcoord) is on the node
+			
+			if (fact.createPoint(resultcoord).distance(segment) < SPLITSNAPDISTANCE) {
+				// point within, let us split 
+				fromVertices.add(resultcoord);
+				toVertices.add(resultcoord);
+				isAfter = true;
+			} else {
+				if (!isAfter) {
+					fromVertices.add(nearestLineStringCoordinates[i]);
+				} else {
+					toVertices.add(nearestLineStringCoordinates[i]);
+				}	
+			}	
+        } 
+        //if (nearestLineStringCoordinates.length==2) {
+        	toVertices.add(nearestLineStringCoordinates[nearestLineStringCoordinates.length-1]);
+        //}
         
         
         // TODO: generate nice edge ids here
         // replace straight lines with lines including vertices
-        addLineString(fact.createLineString(fc), -1);
-        addLineString(fact.createLineString(tc), -2);
+        Coordinate[] fromArray = new Coordinate[fromVertices.size()];
+        Coordinate[] toArray = new Coordinate[toVertices.size()];
+        
+        fromVertices.toArray(fromArray);
+        toVertices.toArray(toArray);
+
+        addLineString(fact.createLineString(fromArray), -1);
+        addLineString(fact.createLineString(toArray), -2);
+        
+        this.removeEdge(nearestEdge);
+        
         System.out.println("Graph split @ " + resultcoord);
 	}
 	
