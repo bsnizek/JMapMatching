@@ -35,12 +35,9 @@ import org.geotools.data.DataStoreFinder;
 import org.geotools.data.FeatureSource;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
-import org.hibernate.Query;
 import org.hibernate.Session;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
-import org.life.sl.orm.Respondent;
-import org.life.sl.orm.ResultRoute;
 import org.life.sl.orm.SourcePoint;
 import org.life.sl.orm.SourceRoute;
 import org.opengis.feature.simple.SimpleFeature;
@@ -51,8 +48,6 @@ import org.openstreetmap.josm.io.IllegalDataException;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.MultiLineString;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.LineString;
 
 /*
  * Imports a shapefile (to be defined in the main method) into the database. Remember to empty tables 
@@ -118,78 +113,50 @@ public class ImportGoodBadCoverage {
 
 				Coordinate[] cs = ls.getCoordinates();
 
-				int lngth = cs.length;
-
+				int nCoord = cs.length;	// number of coordinates
 				int length = LENGTH;
-
-				double shootOver = 0;
 
 				SourceRoute sr = new SourceRoute();
 				Double d =  (Double) feature.getAttribute("rspid");
-				long srid = (new Double(d)).longValue();
+				long srid = d.longValue();
 				sr.setRespondentid((int) srid);
-				sr.setId(counter);
+				sr.setId(counter);	// the new sourcerouteID
 
 				session.save(sr);
 
-				Date t = new Date();
-				int pcounter = 0;
-				
+				Date t = new Date();	// current date as base for the increasing timestamp
 				long timestamp0 = t.getTime();
+				int pcounter = 0;		// point counter
 				
-				Coordinate c0 = null;
-				Coordinate c1 = null;
+				double l = 0;			// length on the current polyline segment
 				
-				double l = 0;
-				
-				for (int i=1; i<lngth; i++) {
+				for (int i=1; i<nCoord; i++) {
 					System.out.print(".");
 					Coordinate pt0 = cs[i-1];
 					Coordinate pt1 = cs[i];
 					double distance = pt0.distance(pt1);
-					double deltaX = (pt1.x - pt0.x)/distance;
-					double deltaY = (pt1.y - pt0.y)/distance;
-
-
-//					double step = length/distance;
-
+					double deltaX = (pt1.x - pt0.x) / distance;
+					double deltaY = (pt1.y - pt0.y) / distance;
 					
-					while (l <= distance) {
-						
-						// date.setTime();    // setTime expects miliseconds!
-						// System.out.println(date.getTime());
+					while (l <= distance) {	// loop up to the end of the current segment
 						pcounter++;
-						
-						// date.setSeconds(date.getSeconds()+1);
 
 						double newX = pt0.x + l*deltaX;
 						double newY = pt0.y + l*deltaY;
-
-						c1 = new Coordinate(newX,newY);
+						Coordinate c1 = new Coordinate(newX, newY);
 						
 						SourcePoint sp = new SourcePoint();
-						Point pnt = fact.createPoint(c1);
-						sp.setGeometry(pnt);
-						sp.setSourcerouteid((int) counter);
-						sp.setT(new Timestamp(timestamp0 + pcounter*10000));
+						sp.setGeometry(fact.createPoint(c1));
+						sp.setSourcerouteid(counter);
+						sp.setT(new Timestamp(timestamp0 + pcounter*1000));	// increment timestamp (1 point per second)
 						pcounter++;
 						session.save(sp);
-						l = l + length;
-						
-						/*if (c0!=null) {
-							System.out.println(c0.distance(c1));
-						}*/
-						
-						c0 = c1;
+						l += length;
 					}
-					
-					l = l - distance;
-
-					// System.out.println("***");
+					l -= distance;	// = remaining distance on the next segment 
 
 					session.getTransaction().commit();
-					setUp();
-
+					setUp();	// re-open database session
 				}
 				counter++;
 				System.out.println(" ");
@@ -201,7 +168,6 @@ public class ImportGoodBadCoverage {
 			if( iterator != null ){
 				// YOU MUST CLOSE THE ITERATOR!
 				iterator.close();
-
 			}
 		}
 		session.getTransaction().commit();

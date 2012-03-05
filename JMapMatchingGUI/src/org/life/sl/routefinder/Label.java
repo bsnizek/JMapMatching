@@ -89,6 +89,21 @@ public class Label implements Comparable<Label> {
 		}	
 	}
 
+	/**
+	 * A more universal Comparator considering the length AND the match score of two labels
+	 * @author bb
+	 */
+	public static class UniversalComparator implements Comparator<Label> {
+		private double l_ms_weight = 0;	// weighting factor
+		
+		public UniversalComparator(double l_ms_weight) {
+			this.l_ms_weight = l_ms_weight;
+		}
+		public int compare(Label arg0, Label arg1) {
+			return arg0.compareTo_lengthMS(arg1, l_ms_weight);
+		}	
+	}
+
 	private Label parent;			///> The parent of the Label
 	private Node node;				///> The node associated with this Label
 	private DirectedEdge backEdge;	///> The GeoEdge leading back to the node associated with the parent Label
@@ -205,6 +220,23 @@ public class Label implements Comparable<Label> {
 		double ov = arg0.getLength();
 		if (this.length > ov) r = 1;
 		else if (this.length < ov) r = -1;
+		return r;
+	}
+	
+	/**
+	 * Comparison method using both the route length and the match score;
+	 * shorter length and higher match score mean "smaller" (meaning "better" in natural order sorting)
+	 * @param arg0 the other object to compare this to
+	 * @param l_ms_weight weighting factor: 0 = consider only the match score, 1 = consider only the length
+	 * @return 1 if this object is larger (longer) than the other, -1 if smaller (shorter), 0 if equal
+	 */
+	public int compareTo_lengthMS(Label arg0, double l_ms_weight) {
+		double r_ms = Math.abs(arg0.score / this.score);			// > 1 ... this > arg0
+		double r_l = Math.abs(this.length / arg0.length);			// > 1 ... this > arg0
+		double f = r_ms * (1. - l_ms_weight) + r_l * l_ms_weight;	// the weighted combination of both factors
+		int r = 0;
+		if (f > 1) r = 1;
+		else if (f < 1) r = -1;
 		return r;
 	}
 

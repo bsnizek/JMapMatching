@@ -250,6 +250,7 @@ public class PathSegmentGraph {
 		// get the projected point on the nearest edge
 		
 		PointPairDistance ppd = new PointPairDistance(); 
+		@SuppressWarnings("rawtypes")
 		LineString nearestLineString = (LineString)((HashMap)nearestEdge.getData()).get("geom");
 		EuclideanDistanceToPoint.computeDistance(nearestLineString, c, ppd); 
 
@@ -686,7 +687,7 @@ public class PathSegmentGraph {
 	
 
 	public static void main(String[] args) {
-		PathSegmentGraph psg = new PathSegmentGraph();
+		new PathSegmentGraph();
 	}
 
 }

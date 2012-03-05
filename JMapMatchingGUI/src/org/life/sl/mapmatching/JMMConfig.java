@@ -34,6 +34,7 @@ public class JMMConfig {
 	// configuration parameters and default values:
 	public int nRoutesToWrite = 10;
 	public RouteSorting sortRoutes = RouteSorting.MATCHSCORE;
+	public double sortRoutesLMSWeight = 0;	// default: sort only by match score
 	public boolean bWriteChoices = true;
 	public int iFixedNodeChoices = 0;
 	public boolean bWriteTrafficLights = true;
@@ -75,6 +76,7 @@ public class JMMConfig {
 			if (iniMap.containsKey("WriteNWorst")) iWriteNWorst = Integer.parseInt(iniMap.get("WriteNWorst"));
 			if (iniMap.containsKey("WriteChoices")) bWriteChoices = Boolean.parseBoolean(iniMap.get("WriteChoices"));
 			if (iniMap.containsKey("SortRoutes")) sortRoutes = RouteSorting.toRouteSorting(iniMap.get("SortRoutes"));
+			if (iniMap.containsKey("SortRoutesLMSWeight")) sortRoutesLMSWeight = Double.parseDouble(iniMap.get("SortRoutesLMSWeight"));
 			if (iniMap.containsKey("WriteTrafficLights")) bWriteTrafficLights = Boolean.parseBoolean(iniMap.get("WriteTrafficLights"));
 			if (iniMap.containsKey("FixedNodeChoices")) iFixedNodeChoices = Integer.parseInt(iniMap.get("FixedNodeChoices"));
 			if (iniMap.containsKey("WriteToShapefiles")) bWriteToShapefiles = Boolean.parseBoolean(iniMap.get("WriteToShapefiles"));

@@ -22,6 +22,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 
 import com.vividsolutions.jts.geom.Point;
 import java.sql.Timestamp;
+import java.util.Date;
 
 public class SourcePoint {
 	
@@ -45,6 +46,10 @@ public class SourcePoint {
 
 	public void setT(Timestamp t) {
 		this.t = t;
+	}
+	
+	public void setDateTime(Date dt) {
+		this.t = new Timestamp(dt.getTime());
 	}
 
 	public int getSourcerouteid() {

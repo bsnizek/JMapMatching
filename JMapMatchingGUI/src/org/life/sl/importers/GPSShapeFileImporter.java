@@ -149,6 +149,7 @@ public class GPSShapeFileImporter {
 				sp.setGeometry((Point) geometry.reverse());
 				sp.setSourcerouteid(route_id);
 				sp.setT((Timestamp) date_time);
+				sp.setDateTime(date_time);
 				session.save(sp);
 				if (nPoints % batchSize == 0) {
 					session.flush();
