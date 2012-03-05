@@ -23,6 +23,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -147,7 +148,7 @@ public class GPSShapeFileImporter {
 				SourcePoint sp = new SourcePoint();
 				sp.setGeometry((Point) geometry.reverse());
 				sp.setSourcerouteid(route_id);
-				sp.setT(date_time);
+				sp.setT((Timestamp) date_time);
 				session.save(sp);
 				if (nPoints % batchSize == 0) {
 					session.flush();
