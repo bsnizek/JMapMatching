@@ -616,7 +616,27 @@ public class JMapMatcher {
 
 			Query result;
 			String query = "from SourceRoute";
-			if (args.length == 0 && !cfg.sourcerouteIDs.trim().isEmpty()) query += " WHERE id IN ("+cfg.sourcerouteIDs+")";
+			
+			System.out.println(cfg.sourcerouteIDs);
+			
+			if (cfg.sourcerouteIDs.contains("-")) {	
+				
+				String ids = "";
+				
+				String[] fromTo = cfg.sourcerouteIDs.trim().split("-");
+				int cntr = new Integer(fromTo[0]);
+				int to = new Integer(fromTo[1]);
+				while (cntr <= to) {
+					ids +=cntr + ",";
+					cntr++;
+				}
+				query += " WHERE id IN ("+ids.substring(0, ids.length()-1)+")";
+				
+				
+			} else 
+			{
+				if (args.length == 0 && !cfg.sourcerouteIDs.trim().isEmpty()) query += " WHERE id IN ("+cfg.sourcerouteIDs+")";
+			}
 			if (args.length == 1) query += " WHERE id="+args[0];
 			if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
 			query += " ORDER BY id";
