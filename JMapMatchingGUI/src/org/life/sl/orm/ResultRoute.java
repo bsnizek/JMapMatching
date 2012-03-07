@@ -97,6 +97,10 @@ public class ResultRoute {
 	private Label label;			///< the corresponding label from the map matching algorithm
 	GPSTrack gpsPoints;
 
+	public ResultRoute() {
+		
+	}
+	
 	public ResultRoute(int sourceRouteID, int respondentID, boolean isChoice, Label label, GPSTrack gpsPoints, boolean calcTrafficLights) {
 		this.sourceRouteID = sourceRouteID;
 		this.respondentID = respondentID;
