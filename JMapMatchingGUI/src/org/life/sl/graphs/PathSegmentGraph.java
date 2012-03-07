@@ -119,7 +119,7 @@ public class PathSegmentGraph {
 
 	private static final double SPLITSNAPDISTANCE = 1f;
 
-	private float kNearestEdgeDistance = 50.f;	// the larger, the slower
+	private float kNearestEdgeDistance = 100.f;	// the larger, the slower
 	
 	private double xMin,xMax,yMin,yMax;
 	private int sourceRouteID;
