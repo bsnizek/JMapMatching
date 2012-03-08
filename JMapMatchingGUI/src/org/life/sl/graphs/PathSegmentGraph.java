@@ -618,7 +618,9 @@ public class PathSegmentGraph {
 	 * removes an edge 
 	 */
 	public void removeEdge(Edge edge) {
-		getLineMergeGraphH4cked().remove(edge);
+		if (!edge.isRemoved()) {
+			getLineMergeGraphH4cked().remove(edge);
+		}
 	}
 	
 	
