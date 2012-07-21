@@ -117,10 +117,16 @@ public class LineStringReader extends AbstractGeometryDataReader {
     			// handle MultiLineString -> LineString
     			if(geometry.getClass() == MultiLineString.class) {
     				// geometry is MultiLineString
-    				// get the first LineString
-    				geometry = geometry.getGeometryN(0);
-    				if(geometry.getNumGeometries() > 1) {
-    					// TODO: ErrorHandler.getInstance().error("Found more than one linestring in MultiLineString", 2);
+    				int nGeom = geometry.getNumGeometries();
+    				if(nGeom == 0) {
+    					// TODO: ErrorHandler.getInstance().error("Found no linestring in MultiLineString", 2);
+    					System.err.println("Found no linestring in MultiLineString");
+    				} else {
+        				// get the first LineString
+        				geometry = geometry.getGeometryN(0);
+        				if(nGeom > 1) {
+        					// TODO: ErrorHandler.getInstance().error("Found more than one linestring in MultiLineString", 2);
+        				}
     				}
     			}
     			if(geometry.getClass() == LineString.class) {
@@ -131,15 +137,15 @@ public class LineStringReader extends AbstractGeometryDataReader {
     					continue;
     				}
     			}
-    			// read data from the row
-    			HashMap<String, Object> attributes = new HashMap<String, Object>();
-    			for (String fn : fieldnames) {
-    				attributes.put(fn, feature.getAttribute(fn));
-    				
-    			}
-    			attributes.put("geometry", geometry);
-    			lineString.setUserData(attributes);
-				lineStrings.add(lineString);                
+	    		if (lineString != null) {	// read data from the row
+	    			HashMap<String, Object> attributes = new HashMap<String, Object>();
+	    			for (String fn : fieldnames) {
+	    				attributes.put(fn, feature.getAttribute(fn));
+	    			}
+	    			attributes.put("geometry", geometry);
+	    			lineString.setUserData(attributes);
+					lineStrings.add(lineString);
+	    		}
             }
         }
         finally {

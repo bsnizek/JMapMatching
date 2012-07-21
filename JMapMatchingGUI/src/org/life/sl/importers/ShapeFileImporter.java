@@ -216,7 +216,8 @@ public class ShapeFileImporter {
 
 	public static void main(String[] args) throws IOException {
 //		ShapeFileImporter oSMPI = new ShapeFileImporter("geodata/CopenhagenOSM/CPH_OSM_Bikeability.shp");
-		ShapeFileImporter oSMPI = new ShapeFileImporter("testdata/CopenhagenTest/OSMTest.shp");
+//		ShapeFileImporter oSMPI = new ShapeFileImporter("testdata/CopenhagenTest/OSMTest.shp");
+		ShapeFileImporter oSMPI = new ShapeFileImporter("testdata/CPH2/OSM_Network_ver2.shp");
 		oSMPI.dumpToPostgresql();
 		System.out.println("Finished");
 	}
