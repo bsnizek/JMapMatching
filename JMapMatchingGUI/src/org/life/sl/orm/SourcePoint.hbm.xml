@@ -40,6 +40,7 @@
         </property>
         <property name="sourcerouteid" ></property>
         <property name="t" type="timestamp"></property>
+        <property name="v" type="float"></property>
         <!--<property name="ts" ></property>-->
 
     </class>

@@ -71,7 +71,7 @@ public class ShapeFileImporter {
 		logger.info("Deleted " + nDel + " records from OSMEdge");
 
 		logger.info("Writing nodes...");
-		Integer batchSize = Integer.getInteger(new Configuration().getProperty("hibernate.jdbc.batch_size"), 30);
+		Integer batchSize = Integer.getInteger(new Configuration().getProperty("hibernate.jdbc.batch_size"), 50);
 		logger.info("Database batch size: " + batchSize);
 
 		Timer timer = new Timer();
@@ -121,7 +121,7 @@ public class ShapeFileImporter {
 			HashMap<String, Object> data2 = (HashMap<String, Object>) e.getData();
 			Object geom = data2.get("geometry");
 
-			Object bctyp_s = data2.get("BICYCLETYP");
+			/*Object bctyp_s = data2.get("BICYCLETYP");
 			if (bctyp_s != null) {
 				Integer bint = new Integer((Integer) bctyp_s);
 				Short bicycle = bint.shortValue();
@@ -160,7 +160,7 @@ public class ShapeFileImporter {
 			if (roadname_o != null) {
 				String roadname = (String) roadname_o;
 				osmEdge.setRoadname(roadname);
-			}
+			}*/
 
 			// The HSP-specific stuff
 
@@ -217,7 +217,7 @@ public class ShapeFileImporter {
 	public static void main(String[] args) throws IOException {
 //		ShapeFileImporter oSMPI = new ShapeFileImporter("geodata/CopenhagenOSM/CPH_OSM_Bikeability.shp");
 //		ShapeFileImporter oSMPI = new ShapeFileImporter("testdata/CopenhagenTest/OSMTest.shp");
-		ShapeFileImporter oSMPI = new ShapeFileImporter("testdata/CPH2/OSM_Network_ver2.shp");
+		ShapeFileImporter oSMPI = new ShapeFileImporter("testdata/CPH2/OSM_Network_ver3.shp");
 		oSMPI.dumpToPostgresql();
 		System.out.println("Finished");
 	}

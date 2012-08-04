@@ -30,6 +30,7 @@ public class SourcePoint {
 	private Point geometry;
 	private int sourcerouteid;
 	private	Timestamp t;
+	private	float v;
 	/*private int ts; // timestamp ? 
 	
 	public int getTs() {
@@ -68,7 +69,6 @@ public class SourcePoint {
 		this.id = id;
 	}
 
-	
 	public Point getGeometry() {
 		return geometry;
 	}
@@ -77,5 +77,7 @@ public class SourcePoint {
 		this.geometry = geometry;
 	}
 	
+	public float getV() { return v; }
+	public void setV(float v) { this.v = v; }
 }
     

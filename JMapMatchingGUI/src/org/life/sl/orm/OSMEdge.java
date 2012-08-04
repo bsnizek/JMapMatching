@@ -42,10 +42,10 @@ public class OSMEdge {
 	private Short segregatedtype;	///< if road is segregated or not - see segregatedtype table
 
 	// HSP specific attributes:
-	private Short envtype;	///< type of environment surrounding the edge - see envType table
-	private Short cyktype;	///< type of bicycle facility - see cykType table
-	private float groenpct;	///< percentage of the edge running through a green environment; GroenM = shape_length * GroenPct
-	private float groenm;	///< length [m] of the edge running thorough a green environment; GroenM = shape_length * GroenPct
+	private Short envtype;			///< type of environment surrounding the edge - see envType table
+	private Short cyktype;			///< type of bicycle facility - see cykType table
+	private float groenpct;			///< percentage of the edge running through a green environment; GroenM = shape_length * GroenPct
+	private float groenm;			///< length [m] of the edge running thorough a green environment; GroenM = shape_length * GroenPct
 
 	public int getId() {
 		return id;

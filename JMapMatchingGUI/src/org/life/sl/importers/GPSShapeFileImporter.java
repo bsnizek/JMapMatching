@@ -24,6 +24,8 @@ import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Timestamp;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -36,6 +38,7 @@ import org.geotools.data.DataStoreFinder;
 import org.geotools.data.FeatureSource;
 import org.geotools.feature.FeatureCollection;
 import org.geotools.feature.FeatureIterator;
+//import org.h2.java.lang.System;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.hibernate.cfg.Configuration;
@@ -61,7 +64,7 @@ public class GPSShapeFileImporter {
 	}
 	
 	public GPSShapeFileImporter(File file) throws IOException {
-		Integer batchSize = Integer.getInteger(new Configuration().getProperty("hibernate.jdbc.batch_size"), 30);
+		Integer batchSize = Integer.getInteger(new Configuration().getProperty("hibernate.jdbc.batch_size"), 50);
 		logger.info("Database batch size: " + batchSize);
 		setUp();
 
@@ -96,7 +99,7 @@ public class GPSShapeFileImporter {
 		}
 
 		Map<Integer, Integer> routeIDs = new HashMap<Integer,Integer>();
-		Map<Integer, Integer> respondentIDs = new HashMap<Integer,Integer>();
+		//Map<Integer, Integer> respondentIDs = new HashMap<Integer,Integer>();
 		int nPoints =0;
 		int numberPoints = collection.size();
 		try {
@@ -116,16 +119,27 @@ public class GPSShapeFileImporter {
 					attributes.put(fn, feature.getAttribute(fn));
 				}
 				
-				int route_id = (Integer) attributes.get("tripstay");
+				//if (attributes.containsKey("tripstay2"))
+				int route_id = (Integer) attributes.get("tripstay2");
 				int respondent_id = (Integer) attributes.get("RespID");
-				Date date_time = (Date) attributes.get("DATE_TIME");
+				Timestamp ts = new Timestamp((Integer) attributes.get("TS"));
+				String dtText = (String) attributes.get("DTText");
+				SimpleDateFormat dateFmt = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss");
+				Date date_time;
+				try {
+					date_time = dateFmt.parse(dtText);
+				} catch (ParseException e) {
+					System.out.println("Error in route " + route_id + ": " + e);
+					date_time = (Date)ts;
+				} 
+				float speed = ((Integer) attributes.get("SPEED")).floatValue();
 				
 				// check if route_id was already handled:
 				if (!routeIDs.containsKey(route_id)) {
 					routeIDs.put(route_id, respondent_id);
 					// if not, check if it exists in the database:
 					Query result = session.createQuery("from SourceRoute WHERE id=" + route_id);
-					if (result.list().size() == 0) {	// if not, add the SourceRoute
+					if (result.list().size() == 0) {	// if not, add the SourceRoute to the database
 						SourceRoute r = new SourceRoute();
 						r.setId(route_id);
 						r.setRespondentid(respondent_id);
@@ -133,30 +147,33 @@ public class GPSShapeFileImporter {
 					}
 				}
 				
-				// check if route_id was already handled:
-				if (!routeIDs.containsKey(respondent_id)) {
-					routeIDs.put(respondent_id, route_id);
+				// check if respondent_id was already handled:
+				if (!routeIDs.containsValue(respondent_id)) {
+					routeIDs.put(route_id, respondent_id);
 					// if not, check if it exists in the database:
 					Query result2 = session.createQuery("from Respondent WHERE id=" + respondent_id);
-					if (result2.list().size() == 0) {	// if not, add the Respondent
+					if (result2.list().size() == 0) {	// if not, add the Respondent to the database
 						Respondent r = new Respondent();
 						r.setId(respondent_id);
 						session.save(r);
 					}
 				}
 				
+				// store attribute values in new SourcePoint:
 				SourcePoint sp = new SourcePoint();
 				sp.setGeometry((Point) geometry.reverse());
 				sp.setSourcerouteid(route_id);
-				sp.setT((Timestamp) date_time);
+				sp.setT(ts);//new Timestamp(date_time.getTime()));
 				sp.setDateTime(date_time);
+				sp.setV(speed);
 				session.save(sp);
+				
 				if (nPoints % batchSize == 0) {
 					session.flush();
 					session.clear();
 					System.out.print(".");
 				}
-				if (nPoints % 1000 == 0) {
+				if (nPoints % (numberPoints/25 + 1) == 0) {
 					System.out.printf("%2.2f%% finished (%d/%d)\n", ((double)nPoints/(double)numberPoints)*100., nPoints, numberPoints);
 				//	session.getTransaction().commit();
 				//	setUp();
@@ -190,6 +207,7 @@ public class GPSShapeFileImporter {
 
 //		String filename = "geodata/CopenhagenGPS/BiCycleTrips.shp";
 //		String filename = "testdata/CopenhagenTEst/TripTest.shp";
+//		String filename = "testdata/CPH2/GPS_Bikeability_ver4_long_date.shp";
 		String filename = "testdata/CPH2/GPS_Bikeability_ver4.shp";
 
 		@SuppressWarnings("unused")
