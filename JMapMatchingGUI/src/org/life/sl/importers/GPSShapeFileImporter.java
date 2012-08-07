@@ -63,10 +63,11 @@ public class GPSShapeFileImporter {
 		// TODO: loop over files.
 	}
 	
-	public GPSShapeFileImporter(File file) throws IOException {
+	public GPSShapeFileImporter(File file, boolean delOld) throws IOException {
 		Integer batchSize = Integer.getInteger(new Configuration().getProperty("hibernate.jdbc.batch_size"), 50);
 		logger.info("Database batch size: " + batchSize);
 		setUp();
+		if (delOld) deleteTracks();
 
 		Map<String,Serializable> connectParameters = new HashMap<String,Serializable>();
 		connectParameters.put("url", file.toURI().toURL());
@@ -203,18 +204,25 @@ public class GPSShapeFileImporter {
 		session.beginTransaction();
 	}
 	
+	public void deleteTracks() {
+		// first, empty the database table:
+		int nDel = session.createQuery("delete SourcePoint").executeUpdate();
+		session.flush();
+		logger.info("Deleted " + nDel + " records from table SourcePoint");
+		nDel = session.createQuery("delete SourceRoute").executeUpdate();
+		session.flush();
+		logger.info("Deleted " + nDel + " records from table SourceRoute");
+	}
+	
 	public static void main(String[] args) throws IllegalDataException, IOException {
 
 //		String filename = "geodata/CopenhagenGPS/BiCycleTrips.shp";
 //		String filename = "testdata/CopenhagenTEst/TripTest.shp";
 //		String filename = "testdata/CPH2/GPS_Bikeability_ver4_long_date.shp";
-		String filename = "testdata/CPH2/GPS_Bikeability_ver4.shp";
+		String filename = "testdata/CPH2/GPS_Bikeability_ver5.shp";
 
 		@SuppressWarnings("unused")
-		GPSShapeFileImporter gfi = new GPSShapeFileImporter(new File(filename));
+		GPSShapeFileImporter gfi = new GPSShapeFileImporter(new File(filename), true);
 		System.out.println("Shapefile imported !");
 	}
-
-	
-	
 }
