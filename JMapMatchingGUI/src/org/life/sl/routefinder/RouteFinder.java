@@ -240,7 +240,7 @@ public class RouteFinder {
 		stats.network_meanDegree = network.getMeanDegree();
 		stats.network_maxRoutesEst = Math.pow(stats.network_meanDegree-1., (double)stats.network_nodes/2.);
 		logger.info("Euclidian GPS Path length = " + gpsPathLength + ", path length limit = " + maxPathLength + "; O-D-Distance = " + minDist);
-		logger.info("Network size (edges): " + stats.network_edges);
+		logger.info("Network size: " + stats.network_edges + " edges, " + stats.network_nodes + " nodes");
 		logger.info("Graph: max. route estimate: " + stats.network_maxRoutesEst +  " / " + network.getNCombinations());
 
 		System.gc();	// can't hurt...

@@ -631,10 +631,7 @@ public class JMapMatcher {
 					cntr++;
 				}
 				query += " WHERE id IN ("+ids.substring(0, ids.length()-1)+")";
-				
-				
-			} else 
-			{
+			} else {
 				if (args.length == 0 && !cfg.sourcerouteIDs.trim().isEmpty()) query += " WHERE id IN ("+cfg.sourcerouteIDs+")";
 			}
 			if (args.length == 1) query += " WHERE id="+args[0];
