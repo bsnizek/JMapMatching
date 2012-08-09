@@ -222,12 +222,12 @@ public class PathSegmentGraph {
 	 * @param p point for which to calculate the nearest edge
 	 * @return the nearest edge to the point
 	 */
-	public Edge findNearestEdge(Coordinate c) {
+	public Edge findNearestEdge(Coordinate c, float nearestDist) {
 		Point p = fact.createPoint(c);
 		com.infomatiq.jsi.Point pp = new com.infomatiq.jsi.Point((float) p.getX(), (float) p.getY());
 
 		ReturnArray r = new ReturnArray();
-		this.si.nearestNUnsorted(pp, r, 8, kNearestEdgeDistance);	// TODO: decide how to choose value for furthestDistance? 10 meters is just a guess.
+		this.si.nearestNUnsorted(pp, r, 8, nearestDist);	// TODO: decide how to choose value for furthestDistance? 10 meters is just a guess.
 		double dMin = Double.MAX_VALUE, d = 0;
 		Edge e0 = null;
 		for (Integer i : r.getResult()) {
@@ -246,7 +246,15 @@ public class PathSegmentGraph {
 	}
 	
 	public void splitGraphAtPoint(Coordinate c) {
-		Edge nearestEdge = findNearestEdge(c);
+		Edge nearestEdge = null;
+		float nearestDist = kNearestEdgeDistance;
+		while (nearestEdge == null) {
+			nearestEdge = findNearestEdge(c, nearestDist);
+			if (nearestEdge == null) {
+				nearestDist *= 2.;
+				logger.info("Increasing kNearestEdgeDistance: " + nearestDist);
+			}
+		}
 		// get the projected point on the nearest edge
 		
 		PointPairDistance ppd = new PointPairDistance(); 
