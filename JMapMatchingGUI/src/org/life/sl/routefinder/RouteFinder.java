@@ -97,7 +97,7 @@ public class RouteFinder {
 	private long numLabels_overlap = 0;		///< number of labels that have overlapping nodes 
 	private long numLabels_psOverlap = 0;
 	private long maxLabels = 0;				///< maximum number of labels to compute
-	private double maxRuntime = 0;			///< maximum computation time per route, in seconds
+	private double maxRuntime = 0, maxRuntime2 = 0;	///< maximum computation time per route, in seconds
 	private int nGenBack = 0;
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
@@ -329,7 +329,7 @@ public class RouteFinder {
 				if (iShowProgressDetail > 0) {	// some log output?
 					if (iShowProgressDetail > 1 && numLabels%50000 == 0) System.out.print(".");
 					if (numLabels%5000000 == 0) {
-						System.out.printf("[%d] dead ends: %d - overlaps: %d - rejected: %d\n", network.getSourceRouteID(), numDeadEnds, numLabels_overlap, numLabels_rejected);
+						System.out.printf("[%d] dead ends: %d - overlaps: %d - PSOverlap: %d - rejected: %d\n", network.getSourceRouteID(), numDeadEnds, numLabels_overlap, numLabels_psOverlap, numLabels_rejected);
 						String s = "lbl: " + numLabels;
 						if (iShowProgressDetail > 1) s += " - l: " + (expandingLabel.getLength() / gpsPathLength);
 						s += " - exp: " + numExpansions + " - res: " + results.size();
@@ -393,6 +393,7 @@ public class RouteFinder {
 		// check for overlap constraint:
 		if (b && maxPSOverlap > 0) {
 			b = (label.getOverlapWithSet(results, true, maxPSOverlap) <= maxPSOverlap);
+			if (!b) numLabels_psOverlap++;
 		}
 
 		return b;

@@ -41,14 +41,17 @@ public class RFParams {
 		NetworkBufferSize,		///< size of the buffer around the track, when selecting a network section, in meters(!)
 		NetworkBufferSize2,		///< buffer size for optional second run
 		DistanceFactor,			///< this is a multiplicative factor to use with the euclidean distance heuristics of the algorithm
+		DistanceFactor2,		///< like DistanceFactor, but for the second run and relative to the shortest route
 		LabelTraversal,			///< type of label traversal (RouteFinder.LabelTraversal)
 		LabelTraversal2,		///< type of label traversal for optional second run (RouteFinder.LabelTraversal)
 		MaximumNumberOfRoutes,	///< if this number of routes have been found, the algorithm should terminate
 		MaximumNumberOfRoutes2,	///< the same for a second run
+		RoutesUsedFromFirstRun,	///< the number of routes to keep from the first run (only relevant if 2 strategies are used)
 		ShuffleResetNBack,		///< number of steps to step back in the search tree at a "reset"
 		ShuffleResetExtraRoutes,	///< number of extra "BestFirstDR" routes to compute if LabelTraversal==ShuffleReset
 		MaxLabels,				///< maximum number of labels to create/evaluate
 		MaxRuntime,				///< maximum computation time per run in seconds
+		MaxRuntime2,			///< maximum computation time for the second run in seconds
 		MaxRuntimeTotal,		///< maximum computation time for multiple runs in seconds
 		RejectedLabelsLimit,	///< limit for the number of unsuccessful labels (no routes, only rejected labels)
 		NoLabelsResizeNetwork,	///< factor to resize the network if no routes have been found
@@ -61,6 +64,7 @@ public class RFParams {
 		MinimumLength,			///< minimum length of a valid route; length is defined as the sum of weights over edges in the route 
 		MaximumLength,			///< maximum length of a valid route; length is defined as the sum of weights over edges in the route
 		MaxPSOverlap,			///< maximum allowed overlap parameter (Path Size Attribute)
+		MaxPSOverlap2,			///< maximum allowed overlap parameter (Path Size Attribute), for the second run
 		ShowProgressDetail,		///< how much detail regarding the progress is shown ("progress bar"): 0, 1, 2
 	}
 
@@ -216,6 +220,7 @@ public class RFParams {
 			r = 0;
 			if (map2Int(iniMap, "MaximumNumberOfRoutes", Type.MaximumNumberOfRoutes)) r++;
 			if (map2Int(iniMap, "MaximumNumberOfRoutes2", Type.MaximumNumberOfRoutes2)) r++;
+			if (map2Int(iniMap, "RoutesUsedFromFirstRun", Type.RoutesUsedFromFirstRun)) r++;
 			if (map2Int(iniMap, "NodeOverlap", Type.NodeOverlap)) r++;
 			if (map2Int(iniMap, "ArticulationPointOverlap", Type.ArticulationPointOverlap)) r++;
 			if (map2Int(iniMap, "EdgeOverlap", Type.EdgeOverlap)) r++;
@@ -223,13 +228,16 @@ public class RFParams {
 			if (map2Double(iniMap, "MinimumLength", Type.MinimumLength)) r++;
 			if (map2Double(iniMap, "MaximumLength", Type.MaximumLength)) r++;
 			if (map2Double(iniMap, "MaxPSOverlap", Type.MaxPSOverlap)) r++;
+			if (map2Double(iniMap, "MaxPSOverlap2", Type.MaxPSOverlap2)) r++;
 			if (map2Double(iniMap, "DistanceFactor", Type.DistanceFactor)) r++;
+			if (map2Double(iniMap, "DistanceFactor2", Type.DistanceFactor2)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize", Type.NetworkBufferSize)) r++;
 			if (map2Double(iniMap, "NetworkBufferSize2", Type.NetworkBufferSize2)) r++;
 			if (map2Int(iniMap, "RejectedLabelsLimit", Type.RejectedLabelsLimit)) r++;
 			if (map2Double(iniMap, "NoLabelsResizeNetwork", Type.NoLabelsResizeNetwork)) r++;
 			if (map2Int(iniMap, "MaxLabels", Type.MaxLabels)) r++;
 			if (map2Double(iniMap, "MaxRuntime", Type.MaxRuntime)) r++;
+			if (map2Double(iniMap, "MaxRuntime2", Type.MaxRuntime2)) r++;
 			if (map2Double(iniMap, "MaxRuntimeTotal", Type.MaxRuntimeTotal)) r++;
 			if (map2Double(iniMap, "NetworkBufferSizeMax", Type.NetworkBufferSizeMax)) r++;
 			if (map2String(iniMap, "LabelTraversal", Type.LabelTraversal)) r++;

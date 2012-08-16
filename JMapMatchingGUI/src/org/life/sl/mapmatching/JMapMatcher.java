@@ -191,14 +191,16 @@ public class JMapMatcher {
 		boolean useSecondStrategy = (bs2 > 0.);
 		ArrayList<Label> labels0 = new ArrayList<Label>();
 		boolean repeat = false;
-		boolean secondRun = false;
+		int nthRun = 1;
+		double gpsTrackLength = gpsPoints.getTrackLength();
 		do {	// loop: will be repeated if network buffer is resized
 			rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);	// reinit buffer size
 			stats = null;
 			if (graph == null || repeat) {	// create a new graph enveloping the GPS track
 				graph = loadGraphFromDB(gpsPoints);
 			}
-					
+			
+			// Split the graph near the start and end point in order to create the start and end node: 
 			graph.splitGraphAtPoint(gpsPoints.getCoordinate(0));
 			graph.splitGraphAtPoint(gpsPoints.getCoordinate(-1));
 			
@@ -214,59 +216,62 @@ public class JMapMatcher {
 			logger.info("Origin:      " + fromNode.getCoordinate());
 			logger.info("Destination: " + toNode.getCoordinate());
 			double t_0 = timer.getRunTime(true, "++ graph loaded");
-
+			
+			// initialize the RouteFinder:
 			RouteFinder rf = new RouteFinder(graph, rfParams, labels0);	// perform the actual route finding procedure on the PathSegmentGraph
 			rf.calculateNearest();	// calculate nearest edges to all data points (needed for edges statistics)
 			// Prepare the evaluation (assigning score to labels):
 			EdgeStatistics eStat = new EdgeStatistics(rf, gpsPoints);
 			double t_2 = timer.getRunTime(true, "++ Edge statistics created");
-
-			ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsPoints.getTrackLength());	///< list containing all routes that were found (still unsorted)
+			
+			// do the actual route finding:
+			ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsTrackLength);	///< list containing all routes that were found (still unsorted!)
 			stats = rf.getStats();
 			
 			double t_1 = timer.getRunTime(true, "++ Routefinding finished");
 			t_1_tot += t_1;
 			double t_3 = 0;
 			
-			// check if we need to resize the buffer:
+			// check if we need to resize the buffer, or start a second run:
 			repeat = false;
 			double bsf = rfParams.getDouble(RFParams.Type.NoLabelsResizeNetwork);	// if > 1, buffer resizing is active
 			int minRoutes = rfParams.getInt(RFParams.Type.ShuffleResetExtraRoutes);	// buffer will be resized if less than this number of routes has been found
-			if ((bsf > 1. && minRoutes > 0 && labels.size() < minRoutes) || (useSecondStrategy && !secondRun)) {
+			if ((bsf > 1. && minRoutes > 0 && labels.size() < minRoutes)			// not enough routes found yet 
+					|| (useSecondStrategy && nthRun < 2)) {							// second run is specified
 				repeat = true;
 			}
 			if (t_1_totMax > 0 && t_1_tot > t_1_totMax) repeat = false;	// if the maximum run time is consumed, break out in any case
-			if (!labels.isEmpty()) stats.srStatus = MatchStats.SourceRouteStatus.OK;	// set sourceroute status: some routes were found after all
-			if (!labels.isEmpty() && !repeat) {	// finished
+
+			// set sourceroute status: some routes were found after all, so we set status "OK"
+			if (!labels.isEmpty()) stats.srStatus = MatchStats.SourceRouteStatus.OK;
+			
+			if (!labels.isEmpty() && !repeat) {	// we are finished
 				// first check if we have labels stored from a previous run:
 				//if (labels0.size() > 0) labels.addAll(labels0);
 				// loop over all result routes, store them together with their score:
-				if (cfg.sortRoutes == JMMConfig.RouteSorting.LENGTH) {
-					Label.UniversalComparator lengthComp = new Label.UniversalComparator(cfg.sortRoutesLMSWeight);
-					Collections.sort(labels, lengthComp);	// sort labels (result routes) by their score: shortest comes first
-				} else {
-					Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
-				}
-		
+				sortLabels(labels, cfg.sortRoutes);
+				
 				int nOK = saveData(labels, fromNode, toNode, eStat);
 				
 				t_3 = timer.getRunTime(true, "++ " + nOK + " routes stored");
 				logger.info("++ load graph: " + t_0 + "s");
 				logger.info("++ findRoutes: " + t_1 + "s");
 				logger.info("++ saveRoutes: " + t_3 + "s");
-			} else {	// not yet - no or not enough labels found, or switch to final ShuffleReset run
+			} else {	// not yet - no or not enough labels found, or switch to the second (final) run (ShuffleReset)
+				// !!! THIS IS A REALLY UGLY WAY OF DOING THIS, SORRY !!!
 				// log message and status parameters:
 				if (labels.isEmpty()) {	// no routes at all were found
-					logger.warn("No labels found");
+					logger.warn("No labels found at all");
 					stats.status = MatchStats.Status.NOROUTES;
 					stats.srStatus = MatchStats.SourceRouteStatus.NOROUTES;
-				} else if (!useSecondStrategy || (useSecondStrategy && !secondRun)) { 	// not enough routes were found, so we repeat nevertheless
-					logger.warn("Not enough labels found yet");
+				//} else if (!useSecondStrategy || (useSecondStrategy && !secondRun)) { 	// not enough routes were found, so we repeat nevertheless
+				} else if (repeat && nthRun < 2) { 	// not enough routes were found, so we repeat nevertheless
+					logger.warn("Not enough labels found yet ("+labels.size()+"/"+minRoutes+")");
 				} else {
-					logger.warn("Starting second run");
+					logger.warn("Starting second run ("+rfParams.getString(RFParams.Type.LabelTraversal2)+")");
 				}
 				
-				// resize buffer: check if resizing is allowed:
+				// resize buffer: check if resizing is allowed: (this happens in the first and the second run)
 				if (bsf > 1.) {	
 					bs *= bsf;
 					repeat = (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax));	// we can increase the buffer size
@@ -274,16 +279,33 @@ public class JMapMatcher {
 				
 				if (useSecondStrategy && (labels.size() >= minRoutes || !repeat)) {	// either minRoutes have been found, or NetworkBufferSizeMax was reached
 					// switch to ShuffleReset strategy:
-					bs = bs2;	// additional run's buffer size
+					bs = bs2;	// additional run's buffer size - initialize for the second run
 					rfParams.set(RFParams.Type.LabelTraversal, rfParams.getString(RFParams.Type.LabelTraversal2));
-					rfParams.setInt(RFParams.Type.ShuffleResetExtraRoutes, 0);	// for the next run, we don't need the extra routes, we should start with ShuffleReset immediately
+					double rt2 = rfParams.getDouble(RFParams.Type.MaxRuntime2);
+					if (rt2 > 0) rfParams.set(RFParams.Type.MaxRuntime, rt2);
+					rfParams.setInt(RFParams.Type.ShuffleResetExtraRoutes, 0);	// for the next run, we don't need the extra routes, instead we should start with ShuffleReset immediately
 					repeat = true;
-					secondRun = true;
+					nthRun = 2;	// we start the second run now
+					logger.info("Starting second run ("+rfParams.getString(RFParams.Type.LabelTraversal2)+")");
+
 					// save labels for later:
 					labels0.addAll(labels);
+					sortLabels(labels0, JMMConfig.RouteSorting.MATCHSCORE);	// sort them, in order to get the shortest one
+					// optionally, keep only a number of routes from the first run in the result list:
+					int nKeep = rfParams.getInt(RFParams.Type.RoutesUsedFromFirstRun);
+					if (nKeep > 0 && nKeep < labels0.size()) labels0.subList(nKeep, labels0.size()).clear();
+					// adjust length limit for next call of findRoutes:
+					double trackLength2 = labels0.get(0).getLength();
+					double df = rfParams.getDouble(RFParams.Type.DistanceFactor2);
+					if (df <= 0.) df = rfParams.getDouble(RFParams.Type.DistanceFactor);
+					df *= trackLength2 / gpsTrackLength;	// dirty trick: df refers now to the shortest route length, not the euclidean GPS track length
+					if (df > 0) rfParams.set(RFParams.Type.DistanceFactor, df);
+					logger.info("New DistanceFactor: " + df);
+					
 					// for the next run, we have to consider that routes are already saved:
 					int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes2);
 					rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, nMaxRoutes);
+					rfParams.setDouble(RFParams.Type.MaxPSOverlap, rfParams.getDouble(RFParams.Type.MaxPSOverlap2));
 				}
 
 				if (repeat) {
@@ -307,6 +329,19 @@ public class JMapMatcher {
 		} while (repeat);
 		
 		return stats;
+	}
+	
+	/**
+	 * Sorts the list of Labels according to the specified strategy
+	 * @param labels
+	 */
+	private void sortLabels(ArrayList<Label> labels, JMMConfig.RouteSorting sortCrit) {
+		if (sortCrit == JMMConfig.RouteSorting.LENGTH) {
+			Label.UniversalComparator lengthComp = new Label.UniversalComparator(cfg.sortRoutesLMSWeight);
+			Collections.sort(labels, lengthComp);	// sort labels (result routes) by their score: shortest comes first
+		} else {
+			Collections.sort(labels, Collections.reverseOrder());	// sort labels (result routes) by their score in reverse order, so that the best (highest score) comes first
+		}
 	}
 	
 	/**
