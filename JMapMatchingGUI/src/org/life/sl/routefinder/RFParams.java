@@ -57,6 +57,8 @@ public class RFParams {
 		NoLabelsResizeNetwork,	///< factor to resize the network if no routes have been found
 		NetworkBufferSizeMax,	///< maximum network buffer size
 		SwapOD,					///< swap origin and destination
+		BothDirections,			///< use both directions to create greater variability
+		BothDirections2,		///< use both directions to create greater variability (second run)
 		NodeOverlap,			///< maximum number of overlaps in a node for a valid route
 		ArticulationPointOverlap,	///< Maximum number of overlaps in an articulation point for a valid route
 		EdgeOverlap,			///< maximum number of overlaps in an edge for a valid route
@@ -246,6 +248,8 @@ public class RFParams {
 			if (map2Int(iniMap, "ShuffleResetNBack", Type.ShuffleResetNBack)) r++;
 			if (map2Int(iniMap, "ShowProgressDetail", Type.ShowProgressDetail)) r++;
 			if (map2Bool(iniMap, "SwapOD", Type.SwapOD)) r++;
+			if (map2Bool(iniMap, "BothDirections", Type.BothDirections)) r++;
+			if (map2Bool(iniMap, "BothDirections2", Type.BothDirections2)) r++;
 		} catch (InvalidFileFormatException e) {
 			Logger.getRootLogger().error("Invalid file format");
 		} catch (IOException e) {

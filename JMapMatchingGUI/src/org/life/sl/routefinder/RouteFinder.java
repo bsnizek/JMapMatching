@@ -97,7 +97,7 @@ public class RouteFinder {
 	private long numLabels_overlap = 0;		///< number of labels that have overlapping nodes 
 	private long numLabels_psOverlap = 0;
 	private long maxLabels = 0;				///< maximum number of labels to compute
-	private double maxRuntime = 0, maxRuntime2 = 0;	///< maximum computation time per route, in seconds
+	private double maxRuntime = 0;			///< maximum computation time per route, in seconds
 	private int nGenBack = 0;
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;

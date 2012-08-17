@@ -237,7 +237,6 @@ public class ResultRoute {
 			// get node ID from database:
 			int nodeID = 0;
 			String s = " from OSMEdge where id=" + edgeID;
-			//s = "from OSMNode where id in ( (select fromnode"+s+"), (select tonode"+s+") )";	// this sometimes yields only 1 record instead of 2!?!
 			s = "from OSMNode where (id = (select fromnode"+s+") or id = (select tonode"+s+"))";
 			Query nodeRes = session.createQuery(s);
 			// TODO: make this more efficient using a PostGIS spatial query with indexing?
@@ -259,7 +258,7 @@ public class ResultRoute {
 		for (int i = 0; i < n; i++) {
 			s1 += "," + nodeIDs[i];
 		}
-		String s = "select count(\"nodeid\") from trafficlight where \"nodeid\" in ("+s1+")";
+		String s = "select count(distinct \"nodeid\") from trafficlight where \"nodeid\" in ("+s1+")";	// important: only count distinct trafficlights, there may be >1 at one node!
 		Query res = session.createSQLQuery(s);
 		BigInteger ntl = (BigInteger)res.uniqueResult();
 		this.nTrafficLights = ntl.shortValue();

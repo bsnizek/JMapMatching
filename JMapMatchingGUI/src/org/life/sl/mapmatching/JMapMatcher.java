@@ -47,6 +47,7 @@ import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
 import org.life.sl.routefinder.MatchStats;
+import org.life.sl.routefinder.RouteFinder.LabelTraversal;
 import org.life.sl.utils.BestNAverageStat;
 import org.life.sl.utils.MathUtil;
 import org.life.sl.utils.Timer;
@@ -226,6 +227,7 @@ public class JMapMatcher {
 			
 			// do the actual route finding:
 			ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsTrackLength);	///< list containing all routes that were found (still unsorted!)
+			// TODO: repeat with SwapOD? (BothDirections)
 			stats = rf.getStats();
 			
 			double t_1 = timer.getRunTime(true, "++ Routefinding finished");
@@ -303,7 +305,15 @@ public class JMapMatcher {
 					logger.info("New DistanceFactor: " + df);
 					
 					// for the next run, we have to consider that routes are already saved:
-					int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes) + rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes2);
+					int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes2);
+					LabelTraversal itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal2));
+					if (itLabelOrder == LabelTraversal.ShuffleReset || itLabelOrder == LabelTraversal.Shuffle) {
+						nMaxRoutes = cfg.nRoutesToWrite;	// if we randomize anyway, we can limit to the minimum required number of routes
+					} else {
+						if (nMaxRoutes <= 0) nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
+					}
+					//nMaxRoutes = nMaxRoutes - labels0.size();	// routes left for second run
+					System.out.println("+++ looking for "+nMaxRoutes+" routes in the second run");
 					rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, nMaxRoutes);
 					rfParams.setDouble(RFParams.Type.MaxPSOverlap, rfParams.getDouble(RFParams.Type.MaxPSOverlap2));
 				}

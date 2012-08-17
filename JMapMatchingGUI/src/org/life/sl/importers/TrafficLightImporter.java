@@ -22,9 +22,9 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 
 import java.io.FileInputStream;
 import java.io.IOException;
-
 import javax.xml.parsers.ParserConfigurationException;
 
+import org.hibernate.Query;
 import org.hibernate.Session;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.Trafficlight;
@@ -49,26 +49,28 @@ import org.xml.sax.SAXException;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Point;
 
-
 public class TrafficLightImporter {
 
 	public TrafficLightImporter() {
-
 		//		http://download.bbbike.org/osm/bbbike/Copenhagen/
 		// 		2011-Sep-29 14:13:52
-
-
 	}
 
 	public void read(String filename) throws IllegalDataException, IOException, FactoryException, ParserConfigurationException, SAXException, TransformException, XMLStreamException, FactoryConfigurationError {
 		//readOSMFilefromStream(filename);
 		readOSMFileWithStax(filename);
-
 	}
 
+	private void clearTrafficlights() {
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+
+		int nDel = session.createQuery("delete Trafficlight").executeUpdate();
+		session.flush();
+		System.out.println("Deleted " + nDel + " records from OSMNode");
+	}
+	
 	private void readOSMFileWithStax(String filename) throws XMLStreamException, FactoryConfigurationError, IOException, FactoryException, TransformException {
-
-
 		com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 
 		ProjectionUtil pu = new ProjectionUtil();
@@ -92,7 +94,7 @@ public class TrafficLightImporter {
 		String id_string = null;
 		boolean hasSignal = false;
 
-		int counter = 0;
+		int counter = 0, nTot = 0;
 		
 		for (int event = staxXmlReader.next(); event != XMLStreamConstants.END_DOCUMENT; event = staxXmlReader.next()) {
 			switch (event) {
@@ -115,7 +117,6 @@ public class TrafficLightImporter {
 					}
 				}
 
-
 				break;
 			case XMLStreamConstants.END_ELEMENT:
 				// System.out.println("End element " + staxXmlReader.getLocalName());
@@ -126,7 +127,6 @@ public class TrafficLightImporter {
 
 						Float lat = Float.valueOf(lat_string);
 						Float lon = Float.valueOf(lon_string);
-
 
 						Coordinate c = new Coordinate(lon, lat); // z = 0, no elevation
 						Coordinate coord_transformed = ct.transform(c);
@@ -140,17 +140,16 @@ public class TrafficLightImporter {
 
 						System.out.print(".");
 						session.save(l);
+						nTot++;
 						
 						counter++;
-						if (counter == 20) {
+						if (counter == 40) {
 							session.getTransaction().commit();
 							session = HibernateUtil.getSessionFactory().getCurrentSession();
 							session.beginTransaction();
 							counter = 0;
 							System.out.println("flushed");
 						}
-						
-					
 					}
 					hasSignal = false;
 				}
@@ -158,21 +157,55 @@ public class TrafficLightImporter {
 			default:
 				break;
 			}
-	
-			
 		}
-		
+		if (session.getTransaction().isActive()) session.getTransaction().commit();
+		System.out.println("imported " + nTot+ " traffic lights");		
 		System.out.println("import finished");
-
-
-
+	}
+	
+	/**
+	 * get the number of trafficlights in the database that are not associated to OSMNodes
+	 * @param session the current database session (must be opened before)
+	 * @return number of trafficlights without OSMNodes
+	 */
+	private Long getLightsWithoutNodes(Session session) {
+		String s = "select count(*) from Trafficlight where nodeid=0 or nodeid is null";
+		Query n1 = session.createQuery(s);
+		return (Long)n1.uniqueResult();
 	}
 
+	/**
+	 * assign OSMNode IDs to the trafficlights
+	 */
+	private void assignOSMNodes() {
+		// get the IDs of the OSMNodes at the trafficlight coordinates:
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
+
+		// check the number of empty nodes:
+		System.out.println(getLightsWithoutNodes(session) + " unassigned nodes");
+		// update them:
+		double tlDist = 40.0;	// radius around an OSMNode inside which a trafficlight must be in order to be associated with the node
+		String sUpd = "update Trafficlight set nodeid=(select id from OSMNode where (ST_DWithin(OSMNode.geom, Trafficlight.geom, "+tlDist+")) limit 1) where (nodeid=0) or (nodeid is null)";
+		//System.out.println(sUpd);
+		long nUpd = session.createSQLQuery(sUpd).executeUpdate();
+		session.flush();
+		System.out.println("assigned " + nUpd + " node IDs");
+		// check again:
+		System.out.println(getLightsWithoutNodes(session) + " unassigned nodes");
+		
+		// commit the transaction!
+		session.getTransaction().commit();
+	}
+	
 	public static void main(String[] args) throws IllegalDataException, IOException, FactoryException, ParserConfigurationException, SAXException, TransformException, XMLStreamException, FactoryConfigurationError {
-
 		TrafficLightImporter tli = new TrafficLightImporter();
+
+		// first, empty the trafficlight table:
+		tli.clearTrafficlights();
+		// then, read the new data:
 		tli.read("geodata/CopenhagenTrafficlights/Copenhagen.osm");
-
+		// finally, assign node IDs:
+		tli.assignOSMNodes();
 	}
-
 }
