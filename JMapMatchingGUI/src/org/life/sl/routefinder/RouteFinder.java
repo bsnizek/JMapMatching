@@ -392,7 +392,7 @@ public class RouteFinder {
 		);
 		// check for overlap constraint:
 		if (b && maxPSOverlap > 0) {
-			b = (label.getOverlapWithSet(results, true, maxPSOverlap) <= maxPSOverlap);
+			b = (label.getOverlapWithSet(results, false, maxPSOverlap) <= maxPSOverlap);	// TODO: better control of useDir!!
 			if (!b) numLabels_psOverlap++;
 		}
 

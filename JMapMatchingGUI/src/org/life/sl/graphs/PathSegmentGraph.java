@@ -248,7 +248,7 @@ public class PathSegmentGraph {
 	public void splitGraphAtPoint(Coordinate c) {
 		Edge nearestEdge = null;
 		float nearestDist = kNearestEdgeDistance;
-		while (nearestEdge == null) {
+		while (nearestEdge == null && nearestDist/kNearestEdgeDistance < 20.) {
 			nearestEdge = findNearestEdge(c, nearestDist);
 			if (nearestEdge == null) {
 				nearestDist *= 2.;
@@ -386,39 +386,42 @@ public class PathSegmentGraph {
 				coords[i] = p.getCoordinate();
 				i++;
 			}
-			
-			LineString l = fact.createLineString(coords);
-			
-	        Criteria testCriteria = session.createCriteria(OSMEdge.class);
-			if (bufferSize > 0.) {	// ... build a buffer ...
-				Geometry buffer = l.buffer(bufferSize);
-//				testCriteria.add(SpatialRestrictions.within("geometry", buffer));
-				testCriteria.add(SpatialRestrictions.intersects("geometry", buffer));
-			}
-			@SuppressWarnings("unchecked")
-			List<OSMEdge> result = testCriteria.list();
-			
-			logger.info("Spatial query selected " + result.size() + " edges");
-			
-			Iterator<OSMEdge> iter = result.iterator();
-			i = 0;
-			while (iter.hasNext() ) {
-				i++;
-				OSMEdge  o = iter.next();
-				LineString g = o.getGeometry();
-				addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype(), o.getGroenm());
-				// let us add this thing to the spatial index
-				addOSMEdgeToSpatialIndex(o);
-			}
-			
-			// if required, dump the graph to a shapefile:
-			if (dumpFile != "") {
-				try {
-					this.dumpBuffer(result, dumpFile);
-					logger.info("buffer dumped");
-				} catch (Exception e) {
-					logger.error("error dumping buffer: " + e);
+			if (i > 1) {
+				LineString l = fact.createLineString(coords);
+				
+		        Criteria testCriteria = session.createCriteria(OSMEdge.class);
+				if (bufferSize > 0.) {	// ... build a buffer ...
+					Geometry buffer = l.buffer(bufferSize);
+	//				testCriteria.add(SpatialRestrictions.within("geometry", buffer));
+					testCriteria.add(SpatialRestrictions.intersects("geometry", buffer));
 				}
+				@SuppressWarnings("unchecked")
+				List<OSMEdge> result = testCriteria.list();
+				
+				logger.info("Spatial query selected " + result.size() + " edges");
+				
+				Iterator<OSMEdge> iter = result.iterator();
+				i = 0;
+				while (iter.hasNext() ) {
+					i++;
+					OSMEdge  o = iter.next();
+					LineString g = o.getGeometry();
+					addLineString(g, o.getId(), o.getEnvtype(), o.getCyktype(), o.getGroenm());
+					// let us add this thing to the spatial index
+					addOSMEdgeToSpatialIndex(o);
+				}
+				
+				// if required, dump the graph to a shapefile:
+				if (dumpFile != "") {
+					try {
+						this.dumpBuffer(result, dumpFile);
+						logger.info("buffer dumped");
+					} catch (Exception e) {
+						logger.error("error dumping buffer: " + e);
+					}
+				}
+			} else {
+				logger.error("error: track has <2 coordinates");
 			}
 		}
 		

@@ -21,6 +21,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 */
 
 import java.math.BigInteger;
+import java.sql.Timestamp;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -53,7 +54,8 @@ public class ResultRoute {
 	private float trackLength;
 	private float lengthR;
 	private int sourceRouteID;
-	private int nodeID;
+	private Timestamp timestamp;
+	//private int nodeID;
 
 	private int respondentID;
 	private long nAlternatives;
@@ -108,6 +110,7 @@ public class ResultRoute {
 		this.label = label;
 		this.gpsPoints = gpsPoints;
 		this.trackLength = (float)gpsPoints.getTrackLength();
+		this.timestamp = new Timestamp((new java.util.Date()).getTime());
 		calcData(calcTrafficLights);
 	}
 	
@@ -301,6 +304,14 @@ public class ResultRoute {
 		this.respondentID = respondentID;
 	}
 
+	public Timestamp getTimestamp() {
+		return timestamp;
+	}
+
+	public void setTimestamp(Timestamp timestamp) {
+		this.timestamp = timestamp;
+	}
+
 	public int getId() {
 		return id;
 	}
@@ -438,13 +449,13 @@ public class ResultRoute {
 		this.nTrafficLights = nTrafficLights;
 	}
 	
-	public int getNodeID() {
+	/*public int getNodeID() {
 		return nodeID;
 	}
 
 	public void setNodeID(int nodeID) {
 		this.nodeID = nodeID;
-	}
+	}*/
 	
 	// this is extremely inelegant, but I don't know a better solution...
 	public float getEnvAttr00() { return envAttr00; }

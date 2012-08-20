@@ -187,10 +187,11 @@ public class JMapMatcher {
 		rfParams = initConstraints();
 		double t_1_tot = 0;
 		double t_1_totMax = rfParams.getDouble(RFParams.Type.MaxRuntimeTotal);
+		boolean bTimeout = false; 
 		double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize);
 		double bs2 = rfParams.getDouble(RFParams.Type.NetworkBufferSize2);
 		boolean useSecondStrategy = (bs2 > 0.);
-		ArrayList<Label> labels0 = new ArrayList<Label>();
+		ArrayList<Label> labels0 = new ArrayList<Label>();	// container for the final results
 		boolean repeat = false;
 		int nthRun = 1;
 		double gpsTrackLength = gpsPoints.getTrackLength();
@@ -199,6 +200,11 @@ public class JMapMatcher {
 			stats = null;
 			if (graph == null || repeat) {	// create a new graph enveloping the GPS track
 				graph = loadGraphFromDB(gpsPoints);
+			}
+			if (graph == null || graph.getSize_Edges() < 2) {
+				logger.error("Graph has no edges");
+				stats = new MatchStats(sourcerouteID, MatchStats.Status.NETERROR);
+				break;
 			}
 			
 			// Split the graph near the start and end point in order to create the start and end node: 
@@ -227,7 +233,13 @@ public class JMapMatcher {
 			
 			// do the actual route finding:
 			ArrayList<Label> labels = rf.findRoutes(fromNode, toNode, gpsTrackLength);	///< list containing all routes that were found (still unsorted!)
-			// TODO: repeat with SwapOD? (BothDirections)
+			// rf has been created with labels0 as persistent container, so labels contains all routes found so far (?)
+			// repeat the route finding with swapped O and D, if required (BothDirections):
+			if ((nthRun == 1 && rfParams.getBool(RFParams.Type.BothDirections)) || (nthRun > 1 && rfParams.getBool(RFParams.Type.BothDirections2))) {
+				logger.info("switching direction: D>O (routes so far: " + labels.size() + ")");
+				rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 2*rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes));
+				labels = rf.findRoutes(toNode, fromNode, gpsTrackLength);	///< list containing all routes that were found (still unsorted!)
+			}
 			stats = rf.getStats();
 			
 			double t_1 = timer.getRunTime(true, "++ Routefinding finished");
@@ -242,7 +254,8 @@ public class JMapMatcher {
 					|| (useSecondStrategy && nthRun < 2)) {							// second run is specified
 				repeat = true;
 			}
-			if (t_1_totMax > 0 && t_1_tot > t_1_totMax) repeat = false;	// if the maximum run time is consumed, break out in any case
+			bTimeout = (t_1_totMax > 0 && t_1_tot > t_1_totMax);
+			if (bTimeout) repeat = false;	// if the maximum run time is consumed, break out in any case
 
 			// set sourceroute status: some routes were found after all, so we set status "OK"
 			if (!labels.isEmpty()) stats.srStatus = MatchStats.SourceRouteStatus.OK;
@@ -273,49 +286,54 @@ public class JMapMatcher {
 					logger.warn("Starting second run ("+rfParams.getString(RFParams.Type.LabelTraversal2)+")");
 				}
 				
-				// resize buffer: check if resizing is allowed: (this happens in the first and the second run)
-				if (bsf > 1.) {	
-					bs *= bsf;
-					repeat = (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax));	// we can increase the buffer size
-				}
-				
-				if (useSecondStrategy && (labels.size() >= minRoutes || !repeat)) {	// either minRoutes have been found, or NetworkBufferSizeMax was reached
-					// switch to ShuffleReset strategy:
-					bs = bs2;	// additional run's buffer size - initialize for the second run
-					rfParams.set(RFParams.Type.LabelTraversal, rfParams.getString(RFParams.Type.LabelTraversal2));
-					double rt2 = rfParams.getDouble(RFParams.Type.MaxRuntime2);
-					if (rt2 > 0) rfParams.set(RFParams.Type.MaxRuntime, rt2);
-					rfParams.setInt(RFParams.Type.ShuffleResetExtraRoutes, 0);	// for the next run, we don't need the extra routes, instead we should start with ShuffleReset immediately
-					repeat = true;
-					nthRun = 2;	// we start the second run now
-					logger.info("Starting second run ("+rfParams.getString(RFParams.Type.LabelTraversal2)+")");
-
-					// save labels for later:
-					labels0.addAll(labels);
-					sortLabels(labels0, JMMConfig.RouteSorting.MATCHSCORE);	// sort them, in order to get the shortest one
-					// optionally, keep only a number of routes from the first run in the result list:
-					int nKeep = rfParams.getInt(RFParams.Type.RoutesUsedFromFirstRun);
-					if (nKeep > 0 && nKeep < labels0.size()) labels0.subList(nKeep, labels0.size()).clear();
-					// adjust length limit for next call of findRoutes:
-					double trackLength2 = labels0.get(0).getLength();
-					double df = rfParams.getDouble(RFParams.Type.DistanceFactor2);
-					if (df <= 0.) df = rfParams.getDouble(RFParams.Type.DistanceFactor);
-					df *= trackLength2 / gpsTrackLength;	// dirty trick: df refers now to the shortest route length, not the euclidean GPS track length
-					if (df > 0) rfParams.set(RFParams.Type.DistanceFactor, df);
-					logger.info("New DistanceFactor: " + df);
-					
-					// for the next run, we have to consider that routes are already saved:
-					int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes2);
-					LabelTraversal itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal2));
-					if (itLabelOrder == LabelTraversal.ShuffleReset || itLabelOrder == LabelTraversal.Shuffle) {
-						nMaxRoutes = cfg.nRoutesToWrite;	// if we randomize anyway, we can limit to the minimum required number of routes
-					} else {
-						if (nMaxRoutes <= 0) nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
+				if (!bTimeout) {
+					// resize buffer: check if resizing is allowed: (this happens in the first and the second run)
+					if (bsf > 1.) {	
+						bs *= bsf;
+						repeat = (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax));	// we can increase the buffer size
 					}
-					//nMaxRoutes = nMaxRoutes - labels0.size();	// routes left for second run
-					System.out.println("+++ looking for "+nMaxRoutes+" routes in the second run");
-					rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, nMaxRoutes);
-					rfParams.setDouble(RFParams.Type.MaxPSOverlap, rfParams.getDouble(RFParams.Type.MaxPSOverlap2));
+					
+					if (useSecondStrategy && (labels.size() >= minRoutes || !repeat)) {	// either minRoutes have been found, or NetworkBufferSizeMax was reached
+						// switch to ShuffleReset strategy:
+						bs = bs2;	// additional run's buffer size - initialize for the second run
+						rfParams.set(RFParams.Type.LabelTraversal, rfParams.getString(RFParams.Type.LabelTraversal2));
+						double rt2 = rfParams.getDouble(RFParams.Type.MaxRuntime2);
+						if (rt2 > 0) rfParams.set(RFParams.Type.MaxRuntime, rt2);
+						rfParams.setInt(RFParams.Type.ShuffleResetExtraRoutes, 0);	// for the next run, we don't need the extra routes, instead we should start with ShuffleReset immediately
+						repeat = true;
+						nthRun = 2;	// we start the second run now
+						logger.info("Starting second run ("+rfParams.getString(RFParams.Type.LabelTraversal2)+")");
+	
+						// save labels for later:
+						labels0.addAll(labels);
+						sortLabels(labels0, JMMConfig.RouteSorting.MATCHSCORE);	// sort them, in order to get the shortest one
+						// optionally, keep only a number of routes from the first run in the result list:
+						int nKeep = rfParams.getInt(RFParams.Type.RoutesUsedFromFirstRun);
+						if (nKeep > 0 && nKeep < labels0.size()) labels0.subList(nKeep, labels0.size()).clear();
+						// adjust length limit for next call of findRoutes:
+						if (!labels0.isEmpty()) {
+							double trackLength2 = labels0.get(0).getLength();
+							double df = rfParams.getDouble(RFParams.Type.DistanceFactor2);
+							if (df <= 0.) df = rfParams.getDouble(RFParams.Type.DistanceFactor);
+							df *= trackLength2 / gpsTrackLength;	// dirty trick: df refers now to the shortest route length, not the euclidean GPS track length
+							if (df > 0) rfParams.set(RFParams.Type.DistanceFactor, df);
+							logger.info("New DistanceFactor: " + df);
+						}
+						
+						// for the next run, we have to consider that routes are already saved:
+						int nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes2);
+						LabelTraversal itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal2));
+						if (itLabelOrder == LabelTraversal.ShuffleReset || itLabelOrder == LabelTraversal.Shuffle) {
+							nMaxRoutes = cfg.nRoutesToWrite;	// if we randomize anyway, we can limit to the minimum required number of routes
+						} else {
+							if (nMaxRoutes <= 0) nMaxRoutes = rfParams.getInt(RFParams.Type.MaximumNumberOfRoutes);
+						}
+						//nMaxRoutes = nMaxRoutes - labels0.size();	// routes left for second run
+						System.out.println("+++ looking for "+nMaxRoutes+" routes in the second run");
+						if (rfParams.getBool(RFParams.Type.BothDirections2)) nMaxRoutes = (nMaxRoutes + 1) / 2;
+						rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, nMaxRoutes);
+						rfParams.setDouble(RFParams.Type.MaxPSOverlap, rfParams.getDouble(RFParams.Type.MaxPSOverlap2));
+					}
 				}
 
 				if (repeat) {
@@ -386,7 +404,7 @@ public class JMapMatcher {
 		// write data for matched routes (1 record per matched route):
 		int nNonChoice = 0;
 		int nOK = 0;
-		boolean first = true;
+		boolean isFirst = true;
 		int nLabels = labels.size();
 		int nRoutes = Math.min(cfg.nRoutesToWrite, nLabels);
 		ArrayList<Integer> selRoutes = new ArrayList<Integer>(nRoutes); 
@@ -402,7 +420,7 @@ public class JMapMatcher {
 			Label curLabel = labels.get(j);
 			
 			if (cfg.bWriteToDatabase) {
-				if (writeLabelToDatabase(curLabel, first, respondentID, fromNode, toNode, eStat)) {
+				if (writeLabelToDatabase(curLabel, isFirst, respondentID, fromNode, toNode, eStat)) {
 					nOK++;
 				} else {
 					logger.error("ERROR storing route!!");
@@ -411,8 +429,8 @@ public class JMapMatcher {
 			
 			if (cfg.bWriteToShapefiles) {
 				try {
-					if (first) {	// the first route is the "choice" (best score) ...
-						first = false;
+					if (isFirst) {	// the first route is the "choice" (best score) ...
+						isFirst = false;
 						outFileName = kOutputDir + "Best.shp";
 					} else {	// ... the other routes are "non-choices"+
 						outFileName = String.format("%s%03d%s", kOutputDir + "NonChoice", nNonChoice, ".shp");
@@ -426,7 +444,7 @@ public class JMapMatcher {
 				}
 			}
 			
-			first = false;	// remaining routes are non-choices
+			isFirst = false;	// remaining routes are non-choices
 		}
 
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
@@ -663,24 +681,17 @@ public class JMapMatcher {
 			String query = "from SourceRoute";
 			
 			System.out.println(cfg.sourcerouteIDs);
-			
-			if (cfg.sourcerouteIDs.contains("-")) {	
-				
-				String ids = "";
-				
-				String[] fromTo = cfg.sourcerouteIDs.trim().split("-");
-				int cntr = new Integer(fromTo[0]);
-				int to = new Integer(fromTo[1]);
-				while (cntr <= to) {
-					ids +=cntr + ",";
-					cntr++;
+			if (args.length == 0) {	// command line arguments have the highest priority; consider cfg.sourcerouteIDs only if there are none
+				if (cfg.sourcerouteIDs.contains("-")) {	
+					String[] fromTo = cfg.sourcerouteIDs.trim().split("-");
+					query += " WHERE id>="+fromTo[0]+" AND id<="+fromTo[1];
+				} else {
+					if (args.length == 0 && !cfg.sourcerouteIDs.trim().isEmpty()) query += " WHERE id IN ("+cfg.sourcerouteIDs+")";
 				}
-				query += " WHERE id IN ("+ids.substring(0, ids.length()-1)+")";
-			} else {
-				if (args.length == 0 && !cfg.sourcerouteIDs.trim().isEmpty()) query += " WHERE id IN ("+cfg.sourcerouteIDs+")";
 			}
-			if (args.length == 1) query += " WHERE id="+args[0];
-			if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
+			else if (args.length == 1) query += " WHERE id="+args[0];
+			else if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
+
 			query += " ORDER BY id";
 			result = session.createQuery(query);
 			@SuppressWarnings("unchecked")

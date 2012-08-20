@@ -31,7 +31,7 @@
 		</property>
 		<property name="sourceRouteID"></property>
 		<property name="respondentID"></property>
-		<property type="int" name="nodeID"></property>
+		<property name="timestamp"></property>
 		
 		<property type="boolean" name="selected"></property>
 		<property type="float" name="length"></property>
