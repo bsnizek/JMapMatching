@@ -524,16 +524,17 @@ public class JMapMatcher {
 				int i = 0;	// counter
 				float[] edgeLengths = route.getEdgeLengths();
 				DirectedEdge lastEdge = null;
+				int[] nodeIDs = route.getNodeIDs();
 				List<DirectedEdge> edges = label.getRouteAsEdges();
 				for (DirectedEdge e : edges) {		// for each node along the route:
-					@SuppressWarnings("unchecked")
+					/*@SuppressWarnings("unchecked")
 					HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
-					Integer edgeID = (Integer)ed.get("id");
+					Integer edgeID = (Integer)ed.get("id");*/
 					
 					Node node = e.getFromNode();	// node at beginning of edge
 					Coordinate c_n = node.getCoordinate();
 
-					// get node ID from database:
+					/*// get node ID from database:
 					int nodeID = 0;
 					String s = " from OSMEdge where id=" + edgeID;
 					//s = "from OSMNode where id in ( (select fromnode"+s+"), (select tonode"+s+") )";	// this sometimes yields only 1 record instead of 2!?!
@@ -550,7 +551,8 @@ public class JMapMatcher {
 							break;
 						}								
 					}	// now, nodeID is either 0 or the database ID of the corresponding node
-					choice.setNodeID(nodeID);
+					choice.setNodeID(nodeID);*/
+					choice.setNodeID(nodeIDs[i]);
 					choice.setI(i);
 					choice.setDist((float)(dist / label.getLength()));	// distance along the route as fraction of the whole route
 					
@@ -602,8 +604,9 @@ public class JMapMatcher {
 							session.save(choice.clone());	// save 1 choice/nonchoice for each outEdge!
 						}
 					}
-					dist += edgeLengths[i++];
+					dist += edgeLengths[i];
 					lastEdge = e;	// save for next comparison
+					i++;
 				}
 				
 			}

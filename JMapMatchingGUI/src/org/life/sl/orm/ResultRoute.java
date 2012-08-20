@@ -116,7 +116,7 @@ public class ResultRoute {
 	
 	public void calcData(boolean calcTrafficLights) {
 		int i;
-		List<Label> labels = label.getLabels();
+		List<Label> labels = label.getLabels();	// all nodes on this label up to here
 		int nNodes = labels.size();
 		nEdges = nNodes - 1;
 		length = (float)label.getLength();
@@ -221,8 +221,8 @@ public class ResultRoute {
 		setCykAttr03(cykAttr[3]);
 		setCykAttr04(cykAttr[4]);
 	}
-
-	public int getNumberOfTrafficLights() {
+	
+	public void calcNodeIDs() {
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		List<Node> nodes = label.getNodes();
@@ -256,7 +256,15 @@ public class ResultRoute {
 			}	// now, nodeID is either 0 or the database ID of the corresponding node
 			nodeIDs[n++] = nodeID;
 		}
+		//session.getTransaction().commit();
+	}
+
+	public int getNumberOfTrafficLights() {
+		getNodeIDs();
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		session.beginTransaction();
 		
+		int n = nodeIDs.length;
 		String s1 = String.valueOf(nodeIDs[0]);
 		for (int i = 0; i < n; i++) {
 			s1 += "," + nodeIDs[i];
@@ -457,6 +465,11 @@ public class ResultRoute {
 		this.nodeID = nodeID;
 	}*/
 	
+	public int[] getNodeIDs() {
+		if (nodeIDs == null || nodeIDs.length == 0) calcNodeIDs();
+		return nodeIDs;
+	}
+
 	// this is extremely inelegant, but I don't know a better solution...
 	public float getEnvAttr00() { return envAttr00; }
 	public void setEnvAttr00(float envAttr) { this.envAttr00 = envAttr; }
