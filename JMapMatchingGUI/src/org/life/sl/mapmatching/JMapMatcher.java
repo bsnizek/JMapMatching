@@ -710,12 +710,13 @@ public class JMapMatcher {
 			HashMap<Integer, Integer> stat = new HashMap<Integer,Integer>(sRoutes.size());
 			for (int i=0; i<sRoutes.size(); i++) {
 				Integer route = sRoutes.get(i);
-				logger.info("--- Matching track " + route + "...");
+				String sCount = "(" + (i+1) + "/" + sRoutes.size() + ")";
+				logger.info("--- Matching track " + route + "... " + sCount);
 				jmm.clearGraph();	// clear the graph, so that a new one enveloping the current track is loaded
 				MatchStats stats = jmm.match(route);
 				stats.save(kOutputDir+kStatFileName, i==0);
 				
-				logger.info("--- Track " + route + " matched.");
+				logger.info("--- Track " + route + " matched " + sCount);
 			}
 			for (Integer r : stat.keySet()) System.out.println(r + "\t" + stat.get(r));
 		}
