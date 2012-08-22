@@ -429,11 +429,12 @@ public class JMapMatcher {
 			
 			if (cfg.bWriteToShapefiles) {
 				try {
+					String s = (sourcerouteID != 0 ? sourcerouteID + "_" : "");
 					if (isFirst) {	// the first route is the "choice" (best score) ...
 						isFirst = false;
-						outFileName = kOutputDir + "Best.shp";
+						outFileName = kOutputDir + s + "Best.shp";
 					} else {	// ... the other routes are "non-choices"+
-						outFileName = String.format("%s%03d%s", kOutputDir + "NonChoice", nNonChoice, ".shp");
+						outFileName = String.format("%s%03d%s", kOutputDir + s + "NonChoice", nNonChoice, ".shp");
 						nNonChoice++;
 					}
 					curLabel.dumpToShapeFile(outFileName);	// write result route to file
