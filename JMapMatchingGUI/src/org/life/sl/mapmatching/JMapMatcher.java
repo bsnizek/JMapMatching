@@ -36,7 +36,6 @@ import org.hibernate.Session;
 import org.life.sl.graphs.GraphParams;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
-import org.life.sl.orm.OSMNode;
 import org.life.sl.orm.Respondent;
 import org.life.sl.orm.ResultMetaData;
 import org.life.sl.orm.ResultRoute;

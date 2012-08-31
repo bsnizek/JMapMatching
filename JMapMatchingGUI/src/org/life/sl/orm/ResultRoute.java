@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 
+import org.apache.log4j.Logger;
 import org.hibernate.Query;
 import org.hibernate.Session;
 import org.life.sl.mapmatching.GPSTrack;
@@ -46,6 +47,8 @@ public class ResultRoute {
 
 	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///< limits determining when a change in angle is counted as a left/right/front/back turn, in radians
 	public final double kCoordEps = 1.e0;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+	public final int kMaxCykAttr = 4;			///< maximum index of the cykAttr (0...kMaxCykAttr)
+	public final int kMaxEnvAttr = 8;			///< maximum index of the envAttr (0...kMaxCykAttr)
 	
 	private int id;
 	private LineString geometry;
@@ -99,6 +102,8 @@ public class ResultRoute {
 	private Label label;			///< the corresponding label from the map matching algorithm
 	GPSTrack gpsPoints;
 
+	private Logger logger = Logger.getLogger("RouteFinder");
+
 	public ResultRoute() {
 		
 	}
@@ -137,9 +142,9 @@ public class ResultRoute {
 		nBackTurns = 0;
 		edgeLengths = new float[nNodes];
 		// initialize attributes arrays:
-		envAttr = new float[9];
+		envAttr = new float[kMaxEnvAttr+1];
 		for (i = 0; i < envAttr.length; i++) envAttr[i] = 0;
-		cykAttr = new float[5];
+		cykAttr = new float[kMaxCykAttr+1];
 		for (i = 0; i < cykAttr.length; i++) cykAttr[i] = 0;
 		DirectedEdge backEdge;
 
@@ -176,8 +181,19 @@ public class ResultRoute {
 	
 				@SuppressWarnings("unchecked")
 				HashMap<String, Object> userdata = (HashMap<String, Object>) backEdge.getEdge().getData();	// the user data object of the Edge
-				envAttr[(Short)userdata.get("et")] += lel;
-				cykAttr[(Short)userdata.get("ct")] += lel;
+				Integer edgeID = (Integer)userdata.get("id");
+				Short et = (Short)userdata.get("et");
+				try {
+					envAttr[(Short)userdata.get("et")] += lel;
+				} catch(Exception e) {
+					logger.error("Illegal envAttr value at edge ID "+edgeID+": "+et+" (must be <= "+kMaxEnvAttr+")");
+				}
+				Short ct = (Short)userdata.get("ct");
+				try {
+					cykAttr[(Short)userdata.get("ct")] += lel;
+				} catch(Exception e) {
+					logger.error("Illegal cykAttr value at edge ID "+edgeID+": "+ct+" (must be <= "+kMaxCykAttr+")");
+				}
 				groenM += ((Double)userdata.get("gm")).floatValue();
 			} else {
 				angle_rel[i] = 0.f;
@@ -206,20 +222,20 @@ public class ResultRoute {
 	
 	public void transferEnvParams() {
 		setEnvAttr00(envAttr[0]);
-		setEnvAttr01(envAttr[1]);
-		setEnvAttr02(envAttr[2]);
-		setEnvAttr03(envAttr[3]);
-		setEnvAttr04(envAttr[4]);
-		setEnvAttr05(envAttr[5]);
-		setEnvAttr06(envAttr[6]);
-		setEnvAttr07(envAttr[7]);
-		setEnvAttr08(envAttr[8]);
+		if (kMaxEnvAttr >= 1) setEnvAttr01(envAttr[1]);
+		if (kMaxEnvAttr >= 2) setEnvAttr02(envAttr[2]);
+		if (kMaxEnvAttr >= 3) setEnvAttr03(envAttr[3]);
+		if (kMaxEnvAttr >= 4) setEnvAttr04(envAttr[4]);
+		if (kMaxEnvAttr >= 5) setEnvAttr05(envAttr[5]);
+		if (kMaxEnvAttr >= 6) setEnvAttr06(envAttr[6]);
+		if (kMaxEnvAttr >= 7) setEnvAttr07(envAttr[7]);
+		if (kMaxEnvAttr >= 8) setEnvAttr08(envAttr[8]);
 
 		setCykAttr00(cykAttr[0]);
-		setCykAttr01(cykAttr[1]);
-		setCykAttr02(cykAttr[2]);
-		setCykAttr03(cykAttr[3]);
-		setCykAttr04(cykAttr[4]);
+		if (kMaxCykAttr >= 1) setCykAttr01(cykAttr[1]);
+		if (kMaxCykAttr >= 2) setCykAttr02(cykAttr[2]);
+		if (kMaxCykAttr >= 3) setCykAttr03(cykAttr[3]);
+		if (kMaxCykAttr >= 4) setCykAttr04(cykAttr[4]);
 	}
 	
 	public void calcNodeIDs() {
