@@ -281,13 +281,12 @@ public class RouteFinder {
 					// is label a new valid route?
 					boolean bStoreRoute = isValidRoute(currentLabel);
 					if (bStoreRoute)	{	// valid route means: it ends in the destination node and fulfills the length constraints
-						if (itLabelOrder == LabelTraversal.ShuffleReset) {	// reset search:
-							// check if this route already exists:
+						// for the ShuffleReset strategy: check if this route already exists:
+						if (itLabelOrder == LabelTraversal.ShuffleReset) {
 							for (Label l : results) {
-								if (currentLabel.equals(l)) { bStoreRoute = false; break; }
+								if (currentLabel.equals(l)) { bStoreRoute = false; break; }	// don't store the route if identical to any existing 
 							}
-							if (bStoreRoute) results.add(currentLabel);
-						} //else without comparison - labels are all different due to search strategy
+						} // else perform no comparison,, since the labels are all different due to the search strategy
 						if (bStoreRoute) results.add(currentLabel);	// add the valid route to list of routes
 						
 						// check for shuffleResetExtraRoutes and switch to ShuffleReset mode, if applicable:
