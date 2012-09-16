@@ -113,6 +113,7 @@ public class Label implements Comparable<Label> {
 	private short scoreCount = -1;	///> the unweighted score of the label (nearest points-count)
 	//private double lastScore = 0.;	///> the same but considering only the last edge	
 	private short lastScoreCount = 0;
+	private double pathSizeAttr = 0;	///> the Path Size Attribute (in a global context)
 	
 	private List<Node> nodeList = null;
 	private List<DirectedEdge> edgeList = null;
@@ -449,6 +450,24 @@ public class Label implements Comparable<Label> {
 //		System.out.print(".");
 		return ps;
 	}
+	
+	/**
+	 * Calculate the Path Size in a global context.
+	 * See also: E. Frejinger, M. Bierlaire, M. Ben-Akiva: Expanded Path Size Attribute, March 2009 
+	 * @param weights a HashMap containing the number of occurrences of all Edges 
+	 * @return the Path Size Attribute
+	 */
+	public double getPathSize_global(HashMap<Edge, Integer> weights) {
+		double ps = 0;
+		for (DirectedEdge de : this.getRouteAsEdges()) {
+			Edge e = de.getEdge();
+			ps += ((LineMergeEdge)e).getLine().getLength() / weights.get(e);	// add length of this edge, divided by number of uses
+		}
+		pathSizeAttr = ps / getLength();	// store in class variable
+		return pathSizeAttr;
+	}
+	
+	public double getPathSizeAttr() { return pathSizeAttr; } 
 
 	/**
 	 * Create a list of all the directed edges along this route, starting at the origin;

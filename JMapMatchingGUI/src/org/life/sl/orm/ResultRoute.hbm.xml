@@ -44,6 +44,7 @@
 		<property type="float" name="matchLengthR"></property>
 		<property type="float" name="noMatchLengthR"></property>
 		<property type="float" name="matchScore"></property>
+		<property type="float" name="pathSizeAttr"></property>
 
 		<property type="short" name="nLeftTurns"></property>
 		<property type="short" name="nRightTurns"></property>

@@ -42,6 +42,7 @@ import org.life.sl.orm.ResultRoute;
 import org.life.sl.orm.ResultNodeChoice;
 import org.life.sl.orm.SourceRoute;
 import org.life.sl.readers.shapefile.PointFileReader;
+import org.life.sl.routefinder.PathSizeSet;
 import org.life.sl.routefinder.RFParams;
 import org.life.sl.routefinder.Label;
 import org.life.sl.routefinder.RouteFinder;
@@ -398,7 +399,10 @@ public class JMapMatcher {
 		
 			Respondent resp = Respondent.getForSourceRouteID(sourcerouteID);
 			respondentID = resp.getId();
-		}	
+		}
+		
+		// prepare labels: compute Path Size Attribute
+		PathSizeSet myPSASet = new PathSizeSet(labels);	// (the constructor invokes the computation)
 
 		// write data for matched routes (1 record per matched route):
 		int nNonChoice = 0;

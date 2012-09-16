@@ -69,6 +69,7 @@ public class ResultRoute {
 	private float matchLengthR;
 	private float noMatchLengthR;	///< (relative) length of the route not matched to GPS points
 	private float matchScore;
+	private float pathSizeAttr;
 
 	private short nLeftTurns;
 	private short nRightTurns;
@@ -126,6 +127,7 @@ public class ResultRoute {
 		nEdges = nNodes - 1;
 		length = (float)label.getLength();
 		lengthR = length / trackLength;
+		pathSizeAttr = (float)label.getPathSizeAttr();
 		
 		// initialize values:
 		int scoreCount = 0;
@@ -406,6 +408,14 @@ public class ResultRoute {
 
 	public void setMatchScore(double matchScore) {
 		this.matchScore = (float)matchScore;
+	}
+
+	public float getPathSizeAttr() {
+		return pathSizeAttr;
+	}
+
+	public void setPathSizeAttr(double pathSizeAttr) {
+		this.pathSizeAttr = (float)pathSizeAttr;
 	}
 
 	public float getMatchLengthR() {
