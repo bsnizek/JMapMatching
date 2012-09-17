@@ -245,7 +245,12 @@ public class PathSegmentGraph {
 		return edgeId__edge.get(edgeId);
 	}
 	
-	public void splitGraphAtPoint(Coordinate c) {
+	/**
+	 * Split the graph by splitting an Edge at a point into 2 Edges
+	 * @param c coordinates at which to split the graph 
+	 * @param iSplit split index (the i-th split point, used to create the new edge IDs)
+	 */
+	public void splitGraphAtPoint(Coordinate c, int iSplit) {
 		Edge nearestEdge = null;
 		float nearestDist = kNearestEdgeDistance;
 		while (nearestEdge == null && nearestDist/kNearestEdgeDistance < 20.) {
@@ -310,6 +315,8 @@ public class PathSegmentGraph {
         
         
         // TODO: generate nice edge ids here
+        int id1 = -2*iSplit - 1;
+        int id2 = -2*iSplit - 2;
         // replace straight lines with lines including vertices
         Coordinate[] fromArray = new Coordinate[fromVertices.size()];
         Coordinate[] toArray = new Coordinate[toVertices.size()];
@@ -317,8 +324,8 @@ public class PathSegmentGraph {
         fromVertices.toArray(fromArray);
         toVertices.toArray(toArray);
 
-        addLineString(fact.createLineString(fromArray), -1);
-        addLineString(fact.createLineString(toArray), -2);
+        addLineString(fact.createLineString(fromArray), id1);
+        addLineString(fact.createLineString(toArray), id2);
         
         this.removeEdge(nearestEdge);
         

@@ -10,7 +10,7 @@ import com.vividsolutions.jts.planargraph.Edge;
 public class PathSizeSet {
 
 	private ArrayList<Label> labels;
-	private HashMap<Edge, Integer> edgeOccurrences = new HashMap<Edge, Integer>();
+	private HashMap<Integer, Integer> edgeOccurrences = new HashMap<Integer, Integer>();
 	
 	public PathSizeSet(ArrayList<Label> labels0) {
 		labels = labels0;
@@ -25,8 +25,13 @@ public class PathSizeSet {
 			List<DirectedEdge> edges = label.getRouteAsEdges();
 			for (DirectedEdge de : edges) {
 				Edge e = de.getEdge();
-				if (edgeOccurrences.containsKey(e)) edgeOccurrences.put(e, edgeOccurrences.get(e) + 1);
-				else edgeOccurrences.put(e, 1);
+				// use the edge ID as key for the HashMap 
+				// (this is better than using the Edge itself, because these change between runs (due to SplitGraphAtPoint etc.)):
+				@SuppressWarnings("unchecked")
+				HashMap<String, Object> userdata = (HashMap<String, Object>) e.getData();	// the user data object of the Edge
+				Integer edgeID = (Integer)userdata.get("id");
+				if (edgeOccurrences.containsKey(edgeID)) edgeOccurrences.put(edgeID, edgeOccurrences.get(edgeID) + 1);
+				else edgeOccurrences.put(edgeID, 1);
 			}
 		}
 		// now we have a HashMap containing the Edges as keys and the number of their occurrence as values

@@ -208,8 +208,8 @@ public class JMapMatcher {
 			}
 			
 			// Split the graph near the start and end point in order to create the start and end node: 
-			graph.splitGraphAtPoint(gpsPoints.getCoordinate(0));
-			graph.splitGraphAtPoint(gpsPoints.getCoordinate(-1));
+			graph.splitGraphAtPoint(gpsPoints.getCoordinate(0), 0);
+			graph.splitGraphAtPoint(gpsPoints.getCoordinate(-1), 1);
 			
 			Node fromNode = graph.findClosestNode(gpsPoints.getCoordinate(0));	// first node (Origin)
 			Node toNode   = graph.findClosestNode(gpsPoints.getCoordinate(-1));	// last node in GPS route (Destination) 
@@ -400,17 +400,15 @@ public class JMapMatcher {
 			Respondent resp = Respondent.getForSourceRouteID(sourcerouteID);
 			respondentID = resp.getId();
 		}
-		
-		// prepare labels: compute Path Size Attribute
-		PathSizeSet myPSASet = new PathSizeSet(labels);	// (the constructor invokes the computation)
 
 		// write data for matched routes (1 record per matched route):
 		int nNonChoice = 0;
 		int nOK = 0;
 		boolean isFirst = true;
+		// select routes to write out (a part of all found routes)
 		int nLabels = labels.size();
 		int nRoutes = Math.min(cfg.nRoutesToWrite, nLabels);
-		ArrayList<Integer> selRoutes = new ArrayList<Integer>(nRoutes); 
+		ArrayList<Label> selRoutes = new ArrayList<Label>(nRoutes); 
 		int j;
 		for (int i = 0; i < nRoutes; i++) {
 			if (i < cfg.iWriteNBest || i >= nRoutes - cfg.iWriteNWorst || nRoutes == nLabels) {	// write those without randomization
@@ -418,9 +416,16 @@ public class JMapMatcher {
 			} else {	// select random route
 				do {
 					j = Math.min((int)(Math.random() * nLabels + .5), nLabels - 1);
-				} while (selRoutes.contains(j));
+				} while (selRoutes.contains(labels.get(j)));
 			}
-			Label curLabel = labels.get(j);
+			selRoutes.add(labels.get(j));
+		}
+		
+		// prepare labels: compute Path Size Attribute
+		@SuppressWarnings("unused")
+		PathSizeSet myPSASet = new PathSizeSet(selRoutes);	// (the constructor invokes the computation)
+
+		for (Label curLabel : selRoutes) {
 			
 			if (cfg.bWriteToDatabase) {
 				if (writeLabelToDatabase(curLabel, isFirst, respondentID, fromNode, toNode, eStat)) {

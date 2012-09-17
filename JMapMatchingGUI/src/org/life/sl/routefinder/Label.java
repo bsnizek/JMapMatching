@@ -457,13 +457,20 @@ public class Label implements Comparable<Label> {
 	 * @param weights a HashMap containing the number of occurrences of all Edges 
 	 * @return the Path Size Attribute
 	 */
-	public double getPathSize_global(HashMap<Edge, Integer> weights) {
+	public double getPathSize_global(HashMap<Integer, Integer> weights) {
 		double ps = 0;
 		for (DirectedEdge de : this.getRouteAsEdges()) {
 			Edge e = de.getEdge();
-			ps += ((LineMergeEdge)e).getLine().getLength() / weights.get(e);	// add length of this edge, divided by number of uses
+			// the edge ID is used as key for the HashMap 
+			@SuppressWarnings("unchecked")
+			HashMap<String, Object> userdata = (HashMap<String, Object>) e.getData();	// the user data object of the Edge
+			Integer edgeID = (Integer)userdata.get("id");
+			Integer ne = (weights.containsKey(edgeID) ? weights.get(edgeID) : 1);
+			//System.out.print(ne + "\t");
+			ps += ((LineMergeEdge)e).getLine().getLength() / (double)ne;	// add length of this edge, divided by number of uses
 		}
 		pathSizeAttr = ps / getLength();	// store in class variable
+		//System.out.println("\n" + getLength() + " ps: " + ps);
 		return pathSizeAttr;
 	}
 	
