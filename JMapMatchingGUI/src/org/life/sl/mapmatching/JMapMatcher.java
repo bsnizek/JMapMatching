@@ -428,7 +428,7 @@ public class JMapMatcher {
 		for (Label curLabel : selRoutes) {
 			
 			if (cfg.bWriteToDatabase) {
-				if (writeLabelToDatabase(curLabel, isFirst, respondentID, fromNode, toNode, eStat)) {
+				if (writeLabelToDatabase(curLabel, isFirst, respondentID, fromNode, toNode, eStat, selRoutes.size())) {
 					nOK++;
 				} else {
 					logger.error("ERROR storing route!!");
@@ -478,6 +478,7 @@ public class JMapMatcher {
 		BestNAverageStat noMatchEdgeAvgs = new BestNAverageStat(nBest);
 		for (int i=0; i < Math.min(100, nLabels); i++) {
 			//matchScoreAvgs.add(labels.get(i).getScore());
+			// create a route, but only for the statistics, not for saving to the database:
 			ResultRoute route = new ResultRoute(sourcerouteID, respondentID, i==0, labels.get(i), gpsPoints, false);
 			matchScoreAvgs.add(route.getMatchScore());
 			matchLengthAvgs.add(route.getMatchLengthR());
@@ -505,7 +506,7 @@ public class JMapMatcher {
 	 * @param toNode destination D
 	 * @return true if no error occurred during writing the data
 	 */
-	private boolean writeLabelToDatabase(Label label, boolean isChoice, int respondentID, Node fromNode, Node toNode, EdgeStatistics eStat) {
+	private boolean writeLabelToDatabase(Label label, boolean isChoice, int respondentID, Node fromNode, Node toNode, EdgeStatistics eStat, long nAlternatives) {
 		boolean ok = false;
 		
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
@@ -513,6 +514,7 @@ public class JMapMatcher {
 		
 		// set up entry for route table:
 		ResultRoute route = new ResultRoute(sourcerouteID, respondentID, isChoice, label, gpsPoints, cfg.bWriteTrafficLights);
+		route.setnAlternatives(nAlternatives);
 		// set remaining route parameters:
 		// get node list to create the lineString representing the route:
 		//Coordinate[] coordinates = label.getCoordinates();
