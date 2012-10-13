@@ -5,11 +5,9 @@ package org.life.sl.mapmatching;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -21,16 +19,11 @@ import org.hibernate.Session;
 import org.hibernatespatial.criterion.SpatialRestrictions;
 import org.life.sl.graphs.PathSegmentGraph;
 import org.life.sl.orm.HibernateUtil;
-import org.life.sl.orm.OSMEdge;
 import org.life.sl.orm.SourcePoint;
 import org.life.sl.orm.SourceRoute;
-import org.life.sl.routefinder.MatchStats;
-import org.life.sl.routefinder.RFParams;
 
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.planargraph.Edge;
-import com.vividsolutions.jts.operation.linemerge.LineMergeDirectedEdge;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
 import com.vividsolutions.jts.planargraph.DirectedEdgeStar;
 import com.vividsolutions.jts.planargraph.Node;
@@ -48,7 +41,7 @@ public class AlternativeMapMatcher {
 	private static Logger logger = Logger.getLogger("JMapMatcher");
 	private GPSTrack gpsPoints;
 	private int sourcerouteID = 0;
-	private RFParams rfParams = null;		///< parameters for the route finding algorithm
+	//private RFParams rfParams = null;		///< parameters for the route finding algorithm
 	private PathSegmentGraph graph;
 	Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 
@@ -89,18 +82,18 @@ public class AlternativeMapMatcher {
 
 	}
 
-	class ValueComparator implements Comparator {
+	class ValueComparator implements Comparator<Object> {
 
-		Map base;
-		public ValueComparator(Map base) {
+		Map<DirectedEdge, Integer> base;
+		public ValueComparator(Map<DirectedEdge, Integer> base) {
 			this.base = base;
 		}
 
 		public int compare(Object a, Object b) {
 
-			if((Integer)base.get(a) < (Integer)base.get(b)) {
+			if(base.get(a) < base.get(b)) {
 				return 1;
-			} else if((Integer)base.get(a) == (Integer)base.get(b)) {
+			} else if(base.get(a) == base.get(b)) {
 				return 0;
 			} else {
 				return -1;
@@ -123,22 +116,24 @@ public class AlternativeMapMatcher {
 		Node toNode   = graph.findClosestNode(gpsPoints.getCoordinate(-1));	// last node in GPS route (Destination) 
 		currentNode = fromNode;
 
-		ArrayList<Integer> visitedEdges = new ArrayList();
+		ArrayList<Integer> visitedEdges = new ArrayList<Integer>();
 
 		while (currentNode.equals(toNode) == false) {
 			// 1. Get Star
 			DirectedEdgeStar star = currentNode.getOutEdges();
+			@SuppressWarnings("unchecked")
 			List<Object> outEdges = star.getEdges();
 			System.out.println("# out edges: " + outEdges.size());
-			HashMap<DirectedEdge, Integer> hm = new HashMap();
+			HashMap<DirectedEdge, Integer> hm = new HashMap<DirectedEdge, Integer>();
 			for (Object ee: outEdges) {
 				DirectedEdge e = (DirectedEdge) ee;
-				Integer eId = (Integer)((HashMap) e.getEdge().getData()).get("id");
-				Geometry l = (LineString)((HashMap) e.getEdge().getData()).get("geom");
+				Integer eId = (Integer)((HashMap<?, ?>) e.getEdge().getData()).get("id");
+				Geometry l = (LineString)((HashMap<?, ?>) e.getEdge().getData()).get("geom");
 				Geometry buffer = l.buffer(BUFFERDISTANCE);
 				Criteria testCriteria = session.createCriteria(SourcePoint.class);
 				testCriteria.add(SpatialRestrictions.within("geometry", buffer));
 				testCriteria.add(SpatialRestrictions.intersects("geometry", buffer));
+				@SuppressWarnings("unchecked")
 				List<SourcePoint> result = testCriteria.list();
 				if (visitedEdges.contains(eId) == false) {
 					hm.put(e, result.size());
@@ -147,14 +142,14 @@ public class AlternativeMapMatcher {
 
 			// let us find the edge with the most points
 			ValueComparator bvc =  new ValueComparator(hm);
-			TreeMap<DirectedEdge,Integer> sorted_map = new TreeMap(bvc);
+			TreeMap<DirectedEdge,Integer> sorted_map = new TreeMap<DirectedEdge, Integer>(bvc);
 
 			sorted_map.putAll(hm);
 
 			if (sorted_map.size()>0) {
 
 				DirectedEdge de = sorted_map.lastKey();
-				Integer EdgeId = (Integer) ((HashMap) de.getEdge().getData()).get("id");
+				Integer EdgeId = (Integer) ((HashMap<?, ?>) de.getEdge().getData()).get("id");
 				System.out.println("EDGE ID: " + EdgeId);
 
 				Node fn = de.getFromNode();
@@ -177,8 +172,8 @@ public class AlternativeMapMatcher {
 	 * Main method
 	 */
 	public static void main(String[] args) {
-		PathSegmentGraph g = null;
-		g = new PathSegmentGraph(1);
+		//PathSegmentGraph g = null;
+		//g = new PathSegmentGraph(1);
 
 		org.hibernate.classic.Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();

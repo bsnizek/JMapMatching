@@ -184,6 +184,7 @@ public class ImportGoodBadCoverage {
 		@SuppressWarnings("unused")
 		ImportGoodBadCoverage gfi = new ImportGoodBadCoverage(new File(filename));
 		System.out.println("Shapefile imported !");
+		@SuppressWarnings("unused")
 		PathSegmentGraph psg = new PathSegmentGraph();
 	}
 

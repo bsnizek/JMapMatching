@@ -226,7 +226,7 @@ public class AllPairsShortestPath {
 	
 	private class DistInnerLoop implements Callable<Integer> {
 		private int idx_i, idx_j0, idx_j1;
-		private int nNodes;
+		//private int nNodes;
 		private Node node1 = null;
 		private Node[] nodesA;
 		
@@ -236,7 +236,7 @@ public class AllPairsShortestPath {
 			idx_j1 = j1;
 			node1 = node10;
 			nodesA = nodesA0;
-			nNodes = nodesA.length;
+			//nNodes = nodesA.length;
 		}
 		public Integer call() {
 			Integer n = 0;
@@ -287,7 +287,7 @@ public class AllPairsShortestPath {
 		return dist[ni[0]][ni[1]];
 	}
 	
-	private void setDistance(Node node1, Node node2, float distance) {
+	/*private void setDistance(Node node1, Node node2, float distance) {
 		//(distances.get(node1)).put(node2, distance);
 		int[] ni = getNodeIndex2(node1, node2);
 		dist[ni[0]][ni[1]] = distance;
@@ -302,7 +302,7 @@ public class AllPairsShortestPath {
 			}
 		}
 		return idx;
-	}
+	}*/
 	private int[] getNodeIndex2(Node node1, Node node2) {
 		int[] idx = { -1, -1 };
 		for (int i = 0; (i < nodesA.length) && (idx[0] < 0 || idx[1] < 0); i++) {

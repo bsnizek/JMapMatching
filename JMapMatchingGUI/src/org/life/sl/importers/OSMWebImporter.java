@@ -115,16 +115,11 @@ public class OSMWebImporter {
 
 		}
 
-
-
-
 	}
 
 	public static void main(String[] args) throws IllegalDataException, IOException, URISyntaxException, FactoryException, TransformException {
+		@SuppressWarnings("unused")
 		OSMWebImporter osmw = new OSMWebImporter(12158);
-
 	}
-
-
 
 }

@@ -50,6 +50,7 @@ public class ProjectionUtil {
 	        while((s = reader.readLine()) != null) {
 	            sb.append(s);
 	        }
+	        reader.close();
 	       
 	    } finally {}
 	    return CRS.parseWKT(sb.toString());

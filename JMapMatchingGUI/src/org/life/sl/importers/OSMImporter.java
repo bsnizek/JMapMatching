@@ -118,6 +118,7 @@ public class OSMImporter {
 		
 		HashMap<String, Short> bicycletype = new HashMap<String, Short>();	
 		Query q1 = session.createQuery("from Bicycletype");
+		@SuppressWarnings("unchecked")
 		Iterator<Bicycletype> i1 = q1.iterate();
 		while (i1.hasNext()) {
 			Bicycletype bt = (Bicycletype) i1.next();
@@ -128,6 +129,7 @@ public class OSMImporter {
 		
 		HashMap<String, Short> cyclewaytype = new HashMap<String, Short>();
 		Query q2 = session.createQuery("from Cyclewaytype");
+		@SuppressWarnings("unchecked")
 		Iterator<Cyclewaytype> i2= q2.iterate();
 		while (i2.hasNext()) {
 			Cyclewaytype cwt = (Cyclewaytype) i2.next();
@@ -138,6 +140,7 @@ public class OSMImporter {
 		
 		HashMap<String, Short> foottype = new HashMap<String, Short>();
 		Query q3 = session.createQuery("from Foottype");
+		@SuppressWarnings("unchecked")
 		Iterator<Foottype> i3 = q3.iterate();
 		while (i3.hasNext()) {
 			Foottype ftt = (Foottype) i3.next();
@@ -148,6 +151,7 @@ public class OSMImporter {
 		
 		HashMap<String, Short> segregatedtype = new HashMap<String, Short>();
 		Query q4 = session.createQuery("from Segregatedtype");
+		@SuppressWarnings("unchecked")
 		Iterator<Segregatedtype> i4 = q4.iterate();
 		while (i4.hasNext()) {
 			Segregatedtype stt = (Segregatedtype) i4.next();
@@ -158,6 +162,7 @@ public class OSMImporter {
 		
 		HashMap<String, Short> highwaytype = new HashMap<String, Short>();
 		Query q5 = session.createQuery("from Highwaytype");
+		@SuppressWarnings("unchecked")
 		Iterator<Highwaytype> i5 = q5.iterate();
 		while (i5.hasNext()) {
 			Highwaytype ht = (Highwaytype) i5.next();

@@ -34,9 +34,9 @@ import org.life.sl.orm.OSMNode;
 import org.life.sl.orm.ShortestPathLength;
 import org.life.sl.utils.Timer;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.planargraph.Edge;
-import com.vividsolutions.jts.planargraph.Node;
+//import com.vividsolutions.jts.geom.Coordinate;
+//import com.vividsolutions.jts.planargraph.Edge;
+//import com.vividsolutions.jts.planargraph.Node;
 
 public class CalculateODMatrix {
 
@@ -143,7 +143,7 @@ public class CalculateODMatrix {
 
 	}
 
-	private int getOSMNodeIDForNode(Node n1) {
+	/*private int getOSMNodeIDForNode(Node n1) {
 		int osmID = -1;
 
 		Edge e = psg.getSingleEdgeAtNode(n1);	// get one edge connected to Node n2
@@ -174,7 +174,7 @@ public class CalculateODMatrix {
 			//System.out.printf("%f\t%f\t%f\t%d\n", on1coord.x, on2coord.x, y, osmID);
 		}
 		return osmID;
-	}
+	}*/
 
 	public HashMap<Integer, OSMEdge> loadEdgesFromOSM() {
 
