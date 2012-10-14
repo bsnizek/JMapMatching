@@ -104,7 +104,7 @@ public class AlternativeMapMatcher {
 
 	private void match() {
 
-		org.hibernate.classic.Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 
 		Node currentNode = null;
@@ -175,7 +175,7 @@ public class AlternativeMapMatcher {
 		//PathSegmentGraph g = null;
 		//g = new PathSegmentGraph(1);
 
-		org.hibernate.classic.Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 
 		Query result;

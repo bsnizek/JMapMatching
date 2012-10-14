@@ -25,16 +25,37 @@ import org.hibernate.cfg.Configuration;
 
 public class HibernateUtil {
 	
-	private static final SessionFactory sessionFactory = buildSessionFactory();
-
+	private static SessionFactory sessionFactory = buildSessionFactory();
+	
 	private static SessionFactory buildSessionFactory() {
 		try {
 			return new Configuration().configure().buildSessionFactory();
 		}
 		catch (Throwable ex) {
+            System.err.println("Initial SessionFactory creation failed." + ex);
 			throw new ExceptionInInitializerError(ex);
 		}
 	}
+
+	/* for Hibernate 4 we will need:
+	private static SessionFactory sessionFactory = buildSessionFactory();
+	private static ServiceRegistry serviceRegistry;
+
+	private static SessionFactory buildSessionFactory() {
+		try {
+		    Configuration configuration = new Configuration();
+		    configuration.configure();
+		    serviceRegistry = new ServiceRegistryBuilder().applySettings(configuration.getProperties()).buildServiceRegistry();        
+		    sessionFactory = configuration.buildSessionFactory(serviceRegistry);
+		    return sessionFactory;
+			//return new Configuration().configure().buildSessionFactory();
+		}
+		catch (Throwable ex) {
+            System.err.println("Initial SessionFactory creation failed." + ex);
+			throw new ExceptionInInitializerError(ex);
+		}
+	}
+	*/
 	
 	public static SessionFactory getSessionFactory() {
 		return sessionFactory;
