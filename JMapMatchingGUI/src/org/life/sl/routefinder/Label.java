@@ -33,12 +33,13 @@ import java.util.Map;
 import org.geotools.data.DataUtilities;
 import org.geotools.data.DefaultTransaction;
 import org.geotools.data.Transaction;
+import org.geotools.data.collection.ListFeatureCollection;
 import org.geotools.data.shapefile.ShapefileDataStore;
 import org.geotools.data.shapefile.ShapefileDataStoreFactory;
 import org.geotools.data.simple.SimpleFeatureCollection;
 import org.geotools.data.simple.SimpleFeatureSource;
 import org.geotools.data.simple.SimpleFeatureStore;
-import org.geotools.feature.FeatureCollections;
+//import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.SchemaException;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
@@ -619,16 +620,17 @@ public class Label implements Comparable<Label> {
 				);
 
 		// 1. build a feature
+		ArrayList<SimpleFeature> features = new ArrayList<SimpleFeature>();
 		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(TYPE);
-		SimpleFeatureCollection collection = FeatureCollections.newCollection();
 		for (DirectedEdge l : this.getRouteAsEdges()) {
 			@SuppressWarnings("unchecked")
 			HashMap<String, Object> data = (HashMap<String, Object>) l.getEdge().getData();
 			LineString ls = (LineString) data.get("geometry");
 			SimpleFeature feature = featureBuilder.buildFeature(null);	
 			feature.setDefaultGeometry(ls);
-			collection.add(feature);
+			features.add(feature);
 		}
+		SimpleFeatureCollection collection = new ListFeatureCollection(TYPE, features);//FeatureCollections.newCollection();
 		
 		// 2. write to a shapefile
         System.out.println("Writing to shapefile " + filename);
