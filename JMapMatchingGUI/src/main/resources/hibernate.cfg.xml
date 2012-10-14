@@ -54,7 +54,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 		<!-- enable use of JDBC2 batch processing -->
 		<property name="hibernate.jdbc.batch_size">100</property>
 
-		<mapping package="org.life.sl.orm" />
+		<!-- <mapping package="org.life.sl.orm" /> -->
 
 		<mapping resource="org/life/sl/orm/OSMNode.hbm.xml" />
 		<mapping resource="org/life/sl/orm/OSMEdge.hbm.xml" />
@@ -73,11 +73,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 		<mapping resource="org/life/sl/orm/Highwaytype.hbm.xml" />
 
 		<mapping resource="org/life/sl/orm/Trafficlight.hbm.xml" />
-		
-
-         
+		         
 	</session-factory>
-
-
 
 </hibernate-configuration>
