@@ -28,6 +28,7 @@ import java.util.Map;
 import org.apache.log4j.Logger;
 import org.ini4j.Ini;
 import org.ini4j.InvalidFileFormatException;
+import org.life.sl.routefinder.RouteFinder.LabelTraversal;
 
 /**
  * Container for the configuration parameters of the routefinding algorithm;
@@ -49,6 +50,7 @@ public class RFParams {
 		RoutesUsedFromFirstRun,	///< the number of routes to keep from the first run (only relevant if 2 strategies are used)
 		ShuffleResetNBack,		///< number of steps to step back in the search tree at a "reset"
 		ShuffleResetExtraRoutes,	///< number of extra "BestFirstDR" routes to compute if LabelTraversal==ShuffleReset
+		ODDirectionLimit,		///< parameter for weighted direction
 		MaxLabels,				///< maximum number of labels to create/evaluate
 		MaxRuntime,				///< maximum computation time per run in seconds
 		MaxRuntime2,			///< maximum computation time for the second run in seconds
@@ -100,6 +102,29 @@ public class RFParams {
 	public RFParams(HashMap<Type, Integer> ic, HashMap<Type, Double> dc) {
 		c_int = ic;
 		c_double = dc;
+	}
+	
+	/**
+	 * initialize the parameters with some default values
+	 */
+	public void initDefaults() {
+		setInt(Type.MaximumNumberOfRoutes, 1000);	///< maximum number of routes to find (or 0 for infinite)
+		setInt(Type.BridgeOverlap, 1);
+		setInt(Type.EdgeOverlap, 1);		///< how often each edge may be used
+//		constraints.setInt(Constraints.Type.ArticulationPointOverlap, 2);
+		setInt(Type.NodeOverlap, 1);		///< how often each single node may be crossed
+		setDouble(Type.DistanceFactor, 1.1);		///< how much the route may deviate from the shortest possible
+		setDouble(Type.MinimumLength, 0.0);		///< minimum route length
+		setDouble(Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
+		setDouble(Type.MaxPSOverlap, .8);			///< maximum allowed overlap between routes
+		setDouble(Type.NetworkBufferSize2, 0.);	///< initial buffer size in meters (!)
+		setDouble(Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
+		setDouble(Type.ODDirectionLimit, 0.);		///< limit for last edge to fit the OD direction (only for Shuffle(Reset) strategy)
+		setInt(Type.RejectedLabelsLimit, 0);		///< limit for unsuccessful labels
+		setInt(Type.NoLabelsResizeNetwork, 0);	///< factor to resize network buffer if no routes were found
+		set(Type.LabelTraversal, LabelTraversal.BestFirst.toString());		///< way of label traversal
+		set(Type.LabelTraversal2, LabelTraversal.ShuffleReset.toString());		///< way of label traversal
+		setInt(Type.ShowProgressDetail, 2);		///< how often each edge may be used
 	}
 
 	/**
@@ -246,6 +271,7 @@ public class RFParams {
 			if (map2String(iniMap, "LabelTraversal2", Type.LabelTraversal2)) r++;
 			if (map2Int(iniMap, "ShuffleResetExtraRoutes", Type.ShuffleResetExtraRoutes)) r++;
 			if (map2Int(iniMap, "ShuffleResetNBack", Type.ShuffleResetNBack)) r++;
+			if (map2Double(iniMap, "ODDirectionLimit", Type.ODDirectionLimit)) r++;
 			if (map2Int(iniMap, "ShowProgressDetail", Type.ShowProgressDetail)) r++;
 			if (map2Bool(iniMap, "SwapOD", Type.SwapOD)) r++;
 			if (map2Bool(iniMap, "BothDirections", Type.BothDirections)) r++;

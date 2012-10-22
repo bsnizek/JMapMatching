@@ -99,6 +99,7 @@ public class RouteFinder {
 	private long maxLabels = 0;				///< maximum number of labels to compute
 	private double maxRuntime = 0;			///< maximum computation time per route, in seconds
 	private int nGenBack = 0;
+	private double ODDirectionLimit = 1.;
 	private SpatialIndex si;
 	private HashMap<Integer, Edge> counter__edge;
 	
@@ -144,23 +145,7 @@ public class RouteFinder {
 	 */
 	private void initDefaults() {
 		rfParams = new RFParams();
-
-		rfParams.setInt(RFParams.Type.MaximumNumberOfRoutes, 1000);	///< maximum number of routes to find (or 0 for infinite)
-		rfParams.setInt(RFParams.Type.BridgeOverlap, 1);
-		rfParams.setInt(RFParams.Type.EdgeOverlap, 1);		///< how often each edge may be used
-//		constraints.setInt(Constraints.Type.ArticulationPointOverlap, 2);
-		rfParams.setInt(RFParams.Type.NodeOverlap, 1);		///< how often each single node may be crossed
-		rfParams.setDouble(RFParams.Type.DistanceFactor, 1.1);		///< how much the route may deviate from the shortest possible
-		rfParams.setDouble(RFParams.Type.MinimumLength, 0.0);		///< minimum route length
-		rfParams.setDouble(RFParams.Type.MaximumLength, 1.e20);		///< maximum route length (quasi no limit here)
-		rfParams.setDouble(RFParams.Type.MaxPSOverlap, .8);			///< maximum allowed overlap between routes
-		rfParams.setDouble(RFParams.Type.NetworkBufferSize2, 0.);	///< initial buffer size in meters (!)
-		rfParams.setDouble(RFParams.Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
-		rfParams.setInt(RFParams.Type.RejectedLabelsLimit, 0);		///< limit for unsuccessful labels
-		rfParams.setInt(RFParams.Type.NoLabelsResizeNetwork, 0);	///< factor to resize network buffer if no routes were found
-		rfParams.set(RFParams.Type.LabelTraversal, LabelTraversal.BestFirst.toString());		///< way of label traversal
-		rfParams.set(RFParams.Type.LabelTraversal2, LabelTraversal.ShuffleReset.toString());		///< way of label traversal
-		rfParams.setInt(RFParams.Type.ShowProgressDetail, 2);		///< how often each edge may be used
+		rfParams.initDefaults();
 	}
 	
 	/**
@@ -215,6 +200,7 @@ public class RouteFinder {
 
 		this.itLabelOrder = LabelTraversal.valueOf(rfParams.getString(RFParams.Type.LabelTraversal));
 		this.nGenBack = rfParams.getInt(RFParams.Type.ShuffleResetNBack);
+		this.ODDirectionLimit = rfParams.getDouble(RFParams.Type.ODDirectionLimit);
 		this.rejectedLabelsLimit = rfParams.getInt(RFParams.Type.RejectedLabelsLimit);
 		this.maxLabels = rfParams.getInt(RFParams.Type.MaxLabels);
 		this.maxRuntime = rfParams.getDouble(RFParams.Type.MaxRuntime);
@@ -255,6 +241,7 @@ public class RouteFinder {
 		if (itLabelOrder == LabelTraversal.ShuffleReset && shuffleResetExtraRoutes > 0) itLabelOrder = LabelTraversal.BestFirstDR; 
 		logger.info("Initial tree traversal strategy: " + itLabelOrder.toString());
 		Label.LastEdgeComparator lastEdgeComp = new Label.LastEdgeComparator(itLabelOrder);
+		Label.LastEdgeDirectionComparator lastEdgeDirComp = new Label.LastEdgeDirectionComparator(startNode, endNode);
 		
 		Timer timer = new Timer();	// timer to observe total runtime
 		timer.init();
@@ -265,7 +252,20 @@ public class RouteFinder {
 			Label expandingLabel = stack.pop();	// get last label from stack and expand it:
 			ArrayList<Label> expansion = expandLabel(expandingLabel);	// calculate the expansion of the label (continuation from last node along all available edges)
 			if (expansion.size() > 0) {
-				if (itLabelOrder == LabelTraversal.Shuffle || itLabelOrder == LabelTraversal.ShuffleReset) Collections.shuffle(expansion);				// randomize the order in which the labels are treated
+				if (itLabelOrder == LabelTraversal.Shuffle || itLabelOrder == LabelTraversal.ShuffleReset) {
+					// check for ODDirectionWeight:
+					int i = expansion.size() - 1;	// maximum index
+					if (i > 0) {
+						if (ODDirectionLimit > -1.) {
+							Collections.sort(expansion, lastEdgeDirComp);	// sort according to how it fits the OD direction
+							while (expansion.size() > 1 && i >= 0) {	// make sure that at least 1 element is retained
+								if (expansion.get(i).getODDirection() < ODDirectionLimit) expansion.remove(i);	// remove labels that lead into the wrong direction
+								i--;
+							}
+						}
+						Collections.shuffle(expansion);				// randomize the order in which the labels are treated
+					}
+				}
 				// Attention: sorting the labels affects two parts:
 				// 1. the expansion array, which is processed linearly
 				// 2. the stack, which is effectively processed in reverse order!

@@ -81,6 +81,23 @@ public class Label implements Comparable<Label> {
 	}
 
 	/**
+	 * Comparator comparing only the direction of the last edge of two labels
+	 * @author bb
+	 */
+	public static class LastEdgeDirectionComparator implements Comparator<Label> {
+		double ODAngle;
+		
+		public LastEdgeDirectionComparator(Node startNode, Node endNode) {
+			DirectedEdge e = new DirectedEdge(startNode, endNode, endNode.getCoordinate(), true);
+			ODAngle = e.getAngle();
+		}
+		public int compare(Label arg0, Label arg1) {
+			int r = arg0.compareDir_LE(arg1, ODAngle);
+			return r;
+		}	
+	}
+
+	/**
 	 * Comparator comparing the length of two labels
 	 * @author bb
 	 */
@@ -115,6 +132,7 @@ public class Label implements Comparable<Label> {
 	//private double lastScore = 0.;	///> the same but considering only the last edge	
 	private short lastScoreCount = 0;
 	private double pathSizeAttr = 0;	///> the Path Size Attribute (in a global context)
+	private double ODDirection = 0.;	///> the direction relative to the OD connection (+1 = parallel, 0 = normal, -1 = antiparallel)
 	
 	private List<Node> nodeList = null;
 	private List<DirectedEdge> edgeList = null;
@@ -213,6 +231,24 @@ public class Label implements Comparable<Label> {
 	}
 	
 	/**
+	 * Comparison method using the OD-direction of the last edge;
+	 * @param arg0 the other object to compare this to
+	 * @return 1 if this object is larger than the other, -1 if smaller, 0 if equal
+	 */
+	public int compareDir_LE(Label arg0, double ODAngle) {
+		int r = 0;
+		if (parent != null && parent.backEdge != null) {
+			/* Some notes:
+			 * - both edges should have the same parent!
+			 * - at the root node (parent=null), this comparison should not be invoked anyway
+			 */
+			if (Math.abs(this.getODDirection(ODAngle)) > Math.abs(arg0.getODDirection(ODAngle))) r = 1;
+			else r = -1;	// (larger value (more parallel to OD) is better)
+		}
+		return r;
+	}
+	
+	/**
 	 * Comparison method using the route length
 	 * @param arg0 the other object to compare this to
 	 * @return 1 if this object is larger (longer) than the other, -1 if smaller (shorter), 0 if equal
@@ -290,6 +326,16 @@ public class Label implements Comparable<Label> {
 		if (parent != null && parent.backEdge != null) {
 			return MathUtil.mapAngle_radians(backEdge.getAngle() - (parent.backEdge.getSym().getAngle() - Math.PI));
 		} else return 0;	// at the first node, we don't have a reference direction yet
+	}
+
+	public double getODDirection() {
+		return ODDirection;
+	}
+	public double getODDirection(double ODAngle) {
+		if (parent != null && parent.backEdge != null) {
+			ODDirection = 1. - MathUtil.mapAngle_radians(Math.abs(backEdge.getAngle() - ODAngle)) / Math.PI;	// should be +1 for parallel, 0 for normal, -1 for antiparallel
+		} else ODDirection = 0;	// at the first node, we don't have a reference direction yet
+		return ODDirection;
 	}
 
 	/**
