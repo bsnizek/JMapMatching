@@ -71,6 +71,8 @@
 		<!-- <property name="envAttr"></property>
 		<property name="cykAttr"></property> -->
 		<property type="float" name="groenM"></property>
+		
+		<property type="text" name="edgeIDs"></property>
 
 	</class>
 	

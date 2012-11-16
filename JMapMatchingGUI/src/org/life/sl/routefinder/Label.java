@@ -27,6 +27,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -43,7 +44,11 @@ import org.geotools.data.simple.SimpleFeatureStore;
 import org.geotools.feature.SchemaException;
 import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.hibernate.Query;
+import org.hibernate.Session;
 import org.life.sl.mapmatching.EdgeStatistics;
+import org.life.sl.orm.HibernateUtil;
+import org.life.sl.orm.OSMNode;
 import org.life.sl.routefinder.RouteFinder.LabelTraversal;
 import org.life.sl.utils.MathUtil;
 import org.opengis.feature.simple.SimpleFeature;
@@ -122,6 +127,8 @@ public class Label implements Comparable<Label> {
 		}	
 	}
 
+	private final double kCoordEps = 1.e0;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+
 	private Label parent;			///> The parent of the Label
 	private Node node;				///> The node associated with this Label
 	private DirectedEdge backEdge;	///> The GeoEdge leading back to the node associated with the parent Label
@@ -134,8 +141,10 @@ public class Label implements Comparable<Label> {
 	private double pathSizeAttr = 0;	///> the Path Size Attribute (in a global context)
 	private double ODDirection = 0.;	///> the direction relative to the OD connection (+1 = parallel, 0 = normal, -1 = antiparallel)
 	
-	private List<Node> nodeList = null;
-	private List<DirectedEdge> edgeList = null;
+	private List<Node> nodeList = null;			///< list of Nodes (not OSM database nodes!)
+	private List<DirectedEdge> edgeList = null;	///< list of Edges (not OSM database edges!)
+	private int[] nodeIDs = null;				///< list of OSMNode IDs
+	private int[] edgeIDs = null;				///< list of OSMEdge IDs
 
 	private static com.vividsolutions.jts.geom.GeometryFactory fact = new com.vividsolutions.jts.geom.GeometryFactory();
 	
@@ -237,7 +246,7 @@ public class Label implements Comparable<Label> {
 	 */
 	public int compareDir_LE(Label arg0, double ODAngle) {
 		int r = 0;
-		if (parent != null && parent.backEdge != null) {
+		if (parent != null) {// && parent.backEdge != null) {
 			/* Some notes:
 			 * - both edges should have the same parent!
 			 * - at the root node (parent=null), this comparison should not be invoked anyway
@@ -331,9 +340,14 @@ public class Label implements Comparable<Label> {
 	public double getODDirection() {
 		return ODDirection;
 	}
+	/**
+	 * compute and return ODDirection, the angle between the last edge and the connection from Origin to Destination 
+	 * @param ODAngle
+	 * @return ODDirection
+	 */
 	public double getODDirection(double ODAngle) {
-		if (parent != null && parent.backEdge != null) {
-			ODDirection = 1. - MathUtil.mapAngle_radians(Math.abs(backEdge.getAngle() - ODAngle)) / Math.PI;	// should be +1 for parallel, 0 for normal, -1 for antiparallel
+		if (parent != null) {// && parent.backEdge != null) {
+			ODDirection = 1. - 2. * MathUtil.mapAngle_radians(Math.abs(backEdge.getAngle() - ODAngle)) / Math.PI;	// should be +1 for parallel, 0 for normal, -1 for antiparallel
 		} else ODDirection = 0;	// at the first node, we don't have a reference direction yet
 		return ODDirection;
 	}
@@ -557,6 +571,71 @@ public class Label implements Comparable<Label> {
 			Collections.reverse(nodeList);	// now, the origin node is first in the list
 		}
 		return nodeList;
+	}
+
+	/**
+	 * Retrieve the database IDs of all edges
+	 * @return array with edge IDs
+	 */
+	public int[] getEdgeIDs() {
+		if (edgeIDs == null) {
+			Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+			session.beginTransaction();
+			List<DirectedEdge> edges = getRouteAsEdges();
+			edgeIDs = new int[edges.size()];
+			int n = 0;
+			for (DirectedEdge e : edges) {		// for each node along the route:
+				@SuppressWarnings("unchecked")
+				HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
+				edgeIDs[n++] = (Integer)ed.get("id");
+			}
+			//session.getTransaction().commit();
+		}
+		return edgeIDs;
+	}
+
+	/**
+	 * Retrieve the database IDs of nodes and edges
+	 * @return array with node IDs
+	 */
+	public int[] getNodeIDs() {
+		if (nodeIDs == null) {
+			Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+			session.beginTransaction();
+			List<Node> nodes = getNodes();
+			nodeIDs = new int[nodes.size()];
+			List<DirectedEdge> edges = getRouteAsEdges();
+			int n = 0;
+			for (DirectedEdge e : edges) {		// for each node along the route:
+				@SuppressWarnings("unchecked")
+				HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
+				Integer edgeID = (Integer)ed.get("id");
+	
+				Node node = e.getFromNode();	// node at beginning of edge
+				Coordinate c_n = node.getCoordinate();
+	
+				// get node ID from database:
+				int nodeID = 0;
+				String s = " from OSMEdge where id=" + edgeID;
+				s = "from OSMNode where (id = (select fromnode"+s+") or id = (select tonode"+s+"))";
+				Query nodeRes = session.createQuery(s);
+				// TODO: make this more efficient using a PostGIS spatial query with indexing?
+				// match coordinates:
+				@SuppressWarnings("unchecked")
+				Iterator<OSMNode> it = nodeRes.iterate();
+				while (it.hasNext()) {
+					OSMNode on = it.next();
+					Coordinate onc = on.getGeometry().getCoordinate();
+					if (Math.abs(c_n.x - onc.x) < kCoordEps && Math.abs(c_n.y - onc.y) < kCoordEps) {
+						nodeID = on.getId();
+						break;
+					}								
+				}	// now, nodeID is either 0 or the database ID of the corresponding node
+				nodeIDs[n++] = nodeID;
+			}
+			//session.getTransaction().commit();
+		}
+		return nodeIDs;
 	}
 
 	/**

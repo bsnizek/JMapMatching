@@ -535,34 +535,12 @@ public class JMapMatcher {
 				int i = 0;	// counter
 				float[] edgeLengths = route.getEdgeLengths();
 				DirectedEdge lastEdge = null;
-				int[] nodeIDs = route.getNodeIDs();
+				int[] nodeIDs = label.getNodeIDs();
 				List<DirectedEdge> edges = label.getRouteAsEdges();
 				for (DirectedEdge e : edges) {		// for each node along the route:
-					/*@SuppressWarnings("unchecked")
-					HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
-					Integer edgeID = (Integer)ed.get("id");*/
-					
 					Node node = e.getFromNode();	// node at beginning of edge
 					Coordinate c_n = node.getCoordinate();
 
-					/*// get node ID from database:
-					int nodeID = 0;
-					String s = " from OSMEdge where id=" + edgeID;
-					//s = "from OSMNode where id in ( (select fromnode"+s+"), (select tonode"+s+") )";	// this sometimes yields only 1 record instead of 2!?!
-					s = "from OSMNode where (id = (select fromnode"+s+") or id = (select tonode"+s+"))";
-					Query nodeRes = session.createQuery(s);
-					// match coordinates:
-					@SuppressWarnings("unchecked")
-					Iterator<OSMNode> it = nodeRes.iterate();
-					while (it.hasNext()) {
-						OSMNode on = it.next();
-						Coordinate onc = on.getGeometry().getCoordinate();
-						if (Math.abs(c_n.x - onc.x) < kCoordEps && Math.abs(c_n.x - onc.x) < kCoordEps) {
-							nodeID = on.getId();
-							break;
-						}								
-					}	// now, nodeID is either 0 or the database ID of the corresponding node
-					choice.setNodeID(nodeID);*/
 					choice.setNodeID(nodeIDs[i]);
 					choice.setI(i);
 					choice.setDist((float)(dist / label.getLength()));	// distance along the route as fraction of the whole route

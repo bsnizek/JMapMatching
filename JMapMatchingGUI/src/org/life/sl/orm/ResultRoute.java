@@ -23,7 +23,6 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -33,10 +32,8 @@ import org.life.sl.mapmatching.GPSTrack;
 import org.life.sl.routefinder.Label;
 import org.life.sl.utils.MathUtil;
 
-import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.planargraph.DirectedEdge;
-import com.vividsolutions.jts.planargraph.Node;
 
 /**
  * ORM for result route data (1 record per route)
@@ -46,9 +43,9 @@ import com.vividsolutions.jts.planargraph.Node;
 public class ResultRoute {
 
 	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///< limits determining when a change in angle is counted as a left/right/front/back turn, in radians
-	public final double kCoordEps = 1.e0;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
 	public final int kMaxCykAttr = 4;			///< maximum index of the cykAttr (0...kMaxCykAttr)
 	public final int kMaxEnvAttr = 8;			///< maximum index of the envAttr (0...kMaxCykAttr)
+	public final String kCSVSep = ",";			///< separator in fields containing CSV values
 	
 	private int id;
 	private LineString geometry;
@@ -58,7 +55,6 @@ public class ResultRoute {
 	private float lengthR;
 	private int sourceRouteID;
 	private Timestamp timestamp;
-	//private int nodeID;
 
 	private int respondentID;
 	private long nAlternatives;
@@ -94,8 +90,9 @@ public class ResultRoute {
 	private float cykAttr02;
 	private float cykAttr03;
 	private float cykAttr04;
-
 	private float groenM;
+	
+	private String edgeIDs;
 	
 	private float[] angle_rel;		///< angle relative to the global x-y coordinate system
 	private float[] edgeLengths;
@@ -207,7 +204,7 @@ public class ResultRoute {
 			i++;
 		}
 		matchScore = scoreCount / length;
-		noMatchLengthR = (float)(noMatchLength / trackLength);
+		noMatchLengthR = (float)(noMatchLength / length);
 		matchLengthR = 1.f - noMatchLengthR;
 		curviness = (float)(angle_tot / length * 1000.);	// angle / km
 		
@@ -219,6 +216,7 @@ public class ResultRoute {
 
 		pPtsOn = (float)( (double)scoreCount / (double)gpsPoints.size() );	// fraction of points on edges 
 		pPtsOff = (1.f - pPtsOn);
+		
 		if (calcTrafficLights) getNumberOfTrafficLights();
 	}
 	
@@ -240,45 +238,8 @@ public class ResultRoute {
 		if (kMaxCykAttr >= 4) setCykAttr04(cykAttr[4]);
 	}
 	
-	public void calcNodeIDs() {
-		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
-		session.beginTransaction();
-		List<Node> nodes = label.getNodes();
-		nodeIDs = new int[nodes.size()];
-		List<DirectedEdge> edges = label.getRouteAsEdges();
-		int n = 0;
-		for (DirectedEdge e : edges) {		// for each node along the route:
-			@SuppressWarnings("unchecked")
-			HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
-			Integer edgeID = (Integer)ed.get("id");
-
-			Node node = e.getFromNode();	// node at beginning of edge
-			Coordinate c_n = node.getCoordinate();
-
-			// get node ID from database:
-			int nodeID = 0;
-			String s = " from OSMEdge where id=" + edgeID;
-			s = "from OSMNode where (id = (select fromnode"+s+") or id = (select tonode"+s+"))";
-			Query nodeRes = session.createQuery(s);
-			// TODO: make this more efficient using a PostGIS spatial query with indexing?
-			// match coordinates:
-			@SuppressWarnings("unchecked")
-			Iterator<OSMNode> it = nodeRes.iterate();
-			while (it.hasNext()) {
-				OSMNode on = it.next();
-				Coordinate onc = on.getGeometry().getCoordinate();
-				if (Math.abs(c_n.x - onc.x) < kCoordEps && Math.abs(c_n.y - onc.y) < kCoordEps) {
-					nodeID = on.getId();
-					break;
-				}								
-			}	// now, nodeID is either 0 or the database ID of the corresponding node
-			nodeIDs[n++] = nodeID;
-		}
-		//session.getTransaction().commit();
-	}
-
 	public int getNumberOfTrafficLights() {
-		getNodeIDs();
+		nodeIDs = label.getNodeIDs();
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
 		
@@ -290,8 +251,8 @@ public class ResultRoute {
 		String s = "select count(distinct \"nodeid\") from trafficlight where \"nodeid\" in ("+s1+")";	// important: only count distinct trafficlights, there may be >1 at one node!
 		Query res = session.createSQLQuery(s);
 		BigInteger ntl = (BigInteger)res.uniqueResult();
-		this.nTrafficLights = ntl.shortValue();
-		return (ntl == null ? 0 : this.nTrafficLights);
+		this.nTrafficLights = (ntl == null ? 0 : ntl.shortValue());
+		return this.nTrafficLights;
 	}
 
 	public boolean isSelected() {
@@ -490,11 +451,6 @@ public class ResultRoute {
 	public void setNodeID(int nodeID) {
 		this.nodeID = nodeID;
 	}*/
-	
-	public int[] getNodeIDs() {
-		if (nodeIDs == null || nodeIDs.length == 0) calcNodeIDs();
-		return nodeIDs;
-	}
 
 	// this is extremely inelegant, but I don't know a better solution...
 	public float getEnvAttr00() { return envAttr00; }
@@ -543,5 +499,19 @@ public class ResultRoute {
 
 	public float getGroenM() {
 		return groenM;
+	}
+
+	/**
+	 * construct the list of edge IDs as CSV list
+	 * @return list of OSMEdge IDs as retrieved from the Label
+	 */
+	public String getEdgeIDs() {
+		edgeIDs = "";
+		int[] edgeIDsArr = label.getEdgeIDs();
+		for (int eID : edgeIDsArr) edgeIDs += eID + kCSVSep;
+		return edgeIDs;
+	}
+	public void setEdgeIDs(String edgeIDs) {
+		this.edgeIDs = edgeIDs;
 	}
 }
