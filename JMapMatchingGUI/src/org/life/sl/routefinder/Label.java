@@ -347,7 +347,7 @@ public class Label implements Comparable<Label> {
 	 */
 	public double getODDirection(double ODAngle) {
 		if (parent != null) {// && parent.backEdge != null) {
-			ODDirection = 1. - 2. * MathUtil.mapAngle_radians(Math.abs(backEdge.getAngle() - ODAngle)) / Math.PI;	// should be +1 for parallel, 0 for normal, -1 for antiparallel
+			ODDirection = 1. - 2. * Math.abs(MathUtil.mapAngle_radians(Math.abs(backEdge.getAngle() - ODAngle)) / Math.PI);	// should be +1 for parallel, 0 for normal, -1 for antiparallel
 		} else ODDirection = 0;	// at the first node, we don't have a reference direction yet
 		return ODDirection;
 	}
