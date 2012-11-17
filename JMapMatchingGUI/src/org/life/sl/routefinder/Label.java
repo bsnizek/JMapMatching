@@ -493,6 +493,19 @@ public class Label implements Comparable<Label> {
 	}
 	
 	/**
+	 * Check if this Label is contained in a list of Labels 
+	 * @param labels the list of labels to check
+	 * @return true, if labels contains this label
+	 */
+	public boolean isContainedIn(List<Label> labels) {
+		boolean b = false;
+		for (Label l : labels) {
+			if (this.equals(l)) { b = true; break; }	// don't store the route if identical to any existing 
+		}
+		return b;
+	}
+	
+	/**
 	 * Calculate the overlap factor of this label and all routes in a given set of labels. 
 	 * @param labels a list of labels
 	 * @param useDir if true, the edge direction is considered, if not, the overlap is computed independent of the edge direction

@@ -43,6 +43,7 @@ public class JMMConfig {
 	public boolean bRandomSelect = true;
 	public int iWriteNBest = 10;
 	public int iWriteNWorst = 1;
+	public boolean bWriteShortestPath = true;
 	public Level logLevel = Level.INFO;
 	public boolean bDumpNetwork = false;
 	public String sDumpNetworkDir = "tmp";
@@ -74,6 +75,7 @@ public class JMMConfig {
 			if (iniMap.containsKey("RandomSelect")) bRandomSelect = Boolean.parseBoolean(iniMap.get("RandomSelect"));
 			if (iniMap.containsKey("WriteNBest")) iWriteNBest = Integer.parseInt(iniMap.get("WriteNBest"));
 			if (iniMap.containsKey("WriteNWorst")) iWriteNWorst = Integer.parseInt(iniMap.get("WriteNWorst"));
+			if (iniMap.containsKey("WriteShortestPath")) bWriteShortestPath = Boolean.parseBoolean(iniMap.get("WriteShortestPath"));
 			if (iniMap.containsKey("WriteChoices")) bWriteChoices = Boolean.parseBoolean(iniMap.get("WriteChoices"));
 			if (iniMap.containsKey("SortRoutes")) sortRoutes = RouteSorting.toRouteSorting(iniMap.get("SortRoutes"));
 			if (iniMap.containsKey("SortRoutesLMSWeight")) sortRoutesLMSWeight = Double.parseDouble(iniMap.get("SortRoutesLMSWeight"));

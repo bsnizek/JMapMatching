@@ -283,9 +283,7 @@ public class RouteFinder {
 					if (bStoreRoute)	{	// valid route means: it ends in the destination node and fulfills the length constraints
 						// for the ShuffleReset strategy: check if this route already exists:
 						if (itLabelOrder == LabelTraversal.ShuffleReset) {
-							for (Label l : results) {
-								if (currentLabel.equals(l)) { bStoreRoute = false; break; }	// don't store the route if identical to any existing 
-							}
+							bStoreRoute = !currentLabel.isContainedIn(results);	// don't store the route if identical to any existing
 						} // else perform no comparison,, since the labels are all different due to the search strategy
 						if (bStoreRoute) results.add(currentLabel);	// add the valid route to list of routes
 						

@@ -32,6 +32,7 @@ import org.apache.log4j.Logger;
 import org.geotools.feature.SchemaException;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.life.sl.graphs.Dijkstra;
 //import org.geotools.util.logging.Logging;
 import org.life.sl.graphs.GraphParams;
 import org.life.sl.graphs.PathSegmentGraph;
@@ -263,6 +264,12 @@ public class JMapMatcher {
 			if (!labels.isEmpty() && !repeat) {	// we are finished
 				// first check if we have labels stored from a previous run:
 				//if (labels0.size() > 0) labels.addAll(labels0);
+				// if the shortest path is to be added, too, calculate it:
+				if (cfg.bWriteShortestPath) {
+					Dijkstra.init(graph, fromNode);
+					Label shortestPath = Dijkstra.getShortestPathTo_Label(toNode, eStat);
+					if (!labels.contains(shortestPath)) labels.add(shortestPath);
+				}
 				// loop over all result routes, store them together with their score:
 				sortLabels(labels, cfg.sortRoutes);
 				
