@@ -268,6 +268,7 @@ public class JMapMatcher {
 				if (cfg.bWriteShortestPath) {
 					Dijkstra.init(graph, fromNode);
 					Label shortestPath = Dijkstra.getShortestPathTo_Label(toNode, eStat);
+					shortestPath.setShortest(true);
 					if (!labels.contains(shortestPath)) labels.add(shortestPath);
 				}
 				// loop over all result routes, store them together with their score:
@@ -313,7 +314,8 @@ public class JMapMatcher {
 	
 						// save labels for later:
 						labels0.addAll(labels);
-						sortLabels(labels0, JMMConfig.RouteSorting.MATCHSCORE);	// sort them, in order to get the shortest one
+						sortLabels(labels0, JMMConfig.RouteSorting.MATCHSCORE);	// sort them, in order to get the best match
+						labels0.get(0).setChoice(true);	// mark the best match (chosen route)
 						// optionally, keep only a number of routes from the first run in the result list:
 						int nKeep = rfParams.getInt(RFParams.Type.RoutesUsedFromFirstRun);
 						if (nKeep > 0 && nKeep < labels0.size()) labels0.subList(nKeep, labels0.size()).clear();
@@ -412,13 +414,29 @@ public class JMapMatcher {
 		int nNonChoice = 0;
 		int nOK = 0;
 		boolean isFirst = true;
-		// select routes to write out (a part of all found routes)
+		
+		// 1. select routes to write out (a part of all found routes)
+		// we want to have:
+		// - the chosen route
+		// - the shortest path (if required)
+		// - the NBest and NWorst according to our selected sort criteria
+		// - the remaining number of routes, selected randomly
 		int nLabels = labels.size();
 		int nRoutes = Math.min(cfg.nRoutesToWrite, nLabels);
 		ArrayList<Label> selRoutes = new ArrayList<Label>(nRoutes); 
 		int j;
+		boolean bAddShortest = cfg.bWriteShortestPath;
 		for (int i = 0; i < nRoutes; i++) {
-			if (i < cfg.iWriteNBest || i >= nRoutes - cfg.iWriteNWorst || nRoutes == nLabels) {	// write those without randomization
+			if (i == 0) {
+				for (j = 0; j < nLabels; j++) if (labels.get(j).isChoice()) break;
+				if (j >= nLabels) j = 0;	// just for safety, if no chosen route was marked
+				//logger.info("Adding choice to output selection: " + j);
+			} else if (bAddShortest) {
+				bAddShortest = false;
+				for (j = 0; j < nLabels; j++) if (labels.get(j).isShortest()) break;
+				if (j >= nLabels) i--;	// if no shortest route was found, it has been selected before or was not marked
+				//logger.info("Adding shortest path to output selection: " + j);
+			} else if (i < cfg.iWriteNBest || i >= nRoutes - cfg.iWriteNWorst || nRoutes == nLabels) {	// write those without randomization
 				j = i;
 			} else {	// select random route
 				do {
@@ -428,10 +446,11 @@ public class JMapMatcher {
 			selRoutes.add(labels.get(j));
 		}
 		
-		// prepare labels: compute Path Size Attribute
+		// 2. prepare labels before output: compute Path Size Attribute
 		@SuppressWarnings("unused")
-		PathSizeSet myPSASet = new PathSizeSet(selRoutes);	// (the constructor invokes the computation)
+		PathSizeSet myPSASet = new PathSizeSet(selRoutes);	// (the constructor also invokes the computation)
 
+		// 3. write out the selected routes
 		for (Label curLabel : selRoutes) {
 			
 			if (cfg.bWriteToDatabase) {

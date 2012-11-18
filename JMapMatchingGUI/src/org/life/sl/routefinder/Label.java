@@ -129,17 +129,19 @@ public class Label implements Comparable<Label> {
 
 	private final double kCoordEps = 1.e0;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
 
-	private Label parent;			///> The parent of the Label
-	private Node node;				///> The node associated with this Label
-	private DirectedEdge backEdge;	///> The GeoEdge leading back to the node associated with the parent Label
-	private double length = 0.;		///> if the label represents a route, this is the length of the route (sum of all backEdges)
-	private double lastEdgeLength = 0.;	///> length of last backEdge
-	private double score = -1.;		///> the score of the label (evaluated according to edge statistics)
-	private short scoreCount = -1;	///> the unweighted score of the label (nearest points-count)
-	//private double lastScore = 0.;	///> the same but considering only the last edge	
+	private Label parent;				///< The parent of the Label
+	private Node node;					///< The node associated with this Label
+	private DirectedEdge backEdge;		///< The GeoEdge leading back to the node associated with the parent Label
+	private double length = 0.;			///< if the label represents a route, this is the length of the route (sum of all backEdges)
+	private double lastEdgeLength = 0.;	///< length of last backEdge
+	private double score = -1.;			///< the score of the label (evaluated according to edge statistics)
+	private short scoreCount = -1;		///< the unweighted score of the label (nearest points-count)
+	//private double lastScore = 0.;	///< the same but considering only the last edge	
 	private short lastScoreCount = 0;
-	private double pathSizeAttr = 0;	///> the Path Size Attribute (in a global context)
-	private double ODDirection = 0.;	///> the direction relative to the OD connection (+1 = parallel, 0 = normal, -1 = antiparallel)
+	private double pathSizeAttr = 0;	///< the Path Size Attribute (in a global context)
+	private double ODDirection = 0.;	///< the direction relative to the OD connection (+1 = parallel, 0 = normal, -1 = antiparallel)
+	private boolean isChoice = false;	///< true, if this is the chosen route in the choice experiment (helpful for selecting the routes to store)
+	private boolean isShortest = false;	///< true, if this Label represents the shortest path
 	
 	private List<Node> nodeList = null;			///< list of Nodes (not OSM database nodes!)
 	private List<DirectedEdge> edgeList = null;	///< list of Edges (not OSM database edges!)
@@ -406,7 +408,15 @@ public class Label implements Comparable<Label> {
 	public double getLastEdgeLength() {
 		return this.lastEdgeLength;
 	}
-	
+
+	public boolean isChoice() { return isChoice; }
+
+	public void setChoice(boolean isChoice) { this.isChoice = isChoice; }
+
+	public boolean isShortest() { return isShortest; }
+
+	public void setShortest(boolean isShortest) { this.isShortest = isShortest; }
+
 	/**
 	 * Return a parent label n generations back
 	 * @param n how far back in the history
