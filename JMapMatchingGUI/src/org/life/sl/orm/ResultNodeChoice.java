@@ -38,6 +38,7 @@ public class ResultNodeChoice {
 	private float groenM;
 	private float groenPct;
 	private short nPts;
+	private short nChoices;
 
 	public ResultNodeChoice() {}
 
@@ -73,6 +74,7 @@ public class ResultNodeChoice {
 		this.groenM = rnc.groenM;
 		this.groenPct = rnc.groenPct;
 		this.nPts = rnc.nPts;
+		this.nChoices = rnc.nChoices;
 	}
 
 	public ResultNodeChoice clone() {
@@ -190,6 +192,14 @@ public class ResultNodeChoice {
 
 	public void setnPts(short nPts) {
 		this.nPts = nPts;
+	}
+
+	public short getnChoices() {
+		return nChoices;
+	}
+
+	public void setnChoices(short nChoices) {
+		this.nChoices = nChoices;
 	}
 
 }

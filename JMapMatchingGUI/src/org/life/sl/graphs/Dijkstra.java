@@ -27,9 +27,11 @@ public class Dijkstra {
 	// all methods are defined static - TODO: check if that makes sense!
 
 	private static Logger logger = Logger.getLogger("JMapMatcher");
-	static List<Vertex> vertices = new ArrayList<Vertex>();
+	private static List<Vertex> vertices = new ArrayList<Vertex>();
+	private static PathSegmentGraph graph = null;
 	
 	public static void init(PathSegmentGraph graph) {
+		Dijkstra.graph = graph;
 		vertices.clear();
 		List<Node> nodes = graph.getNodes();
 		for (Node n : nodes) {
@@ -88,6 +90,8 @@ public class Dijkstra {
 		return null;
     }
     
+    public static boolean isInited(PathSegmentGraph g) { return Dijkstra.graph == g; }
+    
 	/**
 	 * retrieve the shortest path from source to target 
 	 * @param target the destination Node
@@ -108,7 +112,27 @@ public class Dijkstra {
 	public static List<Vertex>getShortestPathTo(Node target) {
 		return getShortestPathTo(findVertex(target));
 	}
+	
+	/**
+	 * check if there is a shortest path connecting the source and target node
+	 * @param source the source node (O)
+	 * @param target the target node (D)
+	 * @return true, if both nodes are in the path (there exists a connection)
+	 */
+	public static boolean connects(Node source, Node target) {
+		Vertex sourceV = findVertex(source);
+		Vertex targetV = findVertex(target);
+		List<Vertex> path = getShortestPathTo(target);
+		boolean b = (path.size() > 0 && path.get(0).previous.equals(sourceV) && path.contains(targetV));
+		return b;
+	}
 
+	
+	/**
+	 * retrieve the shortest path from the source node to the target node as a list of edges
+	 * @param target the target node
+	 * @return a list containing the DirectedEdges of the shortest path
+	 */
 	public static List<DirectedEdge> getShortestPathTo_Edges(Node target) {
 		List<Vertex> path = getShortestPathTo(target);
 		List<DirectedEdge> edgeList = new ArrayList<DirectedEdge>();
@@ -118,6 +142,12 @@ public class Dijkstra {
 		return edgeList;
 	}
 	
+	/**
+	 * retrieve the shortest path from the source node to the target node as a Label object
+	 * @param target the target node
+	 * @param edgeStatistics (optional) EdgeStatistics; if != null, the match score is also calculated
+	 * @return a Label representing the shortest path
+	 */
 	public static Label getShortestPathTo_Label(Node target, EdgeStatistics edgeStatistics) {
 		List<Vertex> path = getShortestPathTo(target);
 		Label label = new Label(path.get(0));

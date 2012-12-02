@@ -191,38 +191,64 @@ public class JMapMatcher {
 		boolean bTimeout = false; 
 		double bs = rfParams.getDouble(RFParams.Type.NetworkBufferSize);
 		double bs2 = rfParams.getDouble(RFParams.Type.NetworkBufferSize2);
+		double bsMax = rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax);
+		double bsConnOK = -1.;
+		Node fromNode = null, toNode = null;
 		boolean useSecondStrategy = (bs2 > 0.);
 		ArrayList<Label> labels0 = new ArrayList<Label>();	// container for the final results
 		boolean repeat = false;
 		int nthRun = 1;
 		double gpsTrackLength = gpsPoints.getTrackLength();
 		do {	// loop: will be repeated if network buffer is resized
-			rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);	// reinit buffer size
-			stats = null;
-			if (graph == null || repeat) {	// create a new graph enveloping the GPS track
-				graph = loadGraphFromDB(gpsPoints);
-			}
-			if (graph == null || graph.getSize_Edges() < 2) {
-				logger.error("Graph has no edges");
-				stats = new MatchStats(sourcerouteID, MatchStats.Status.NETERROR);
-				break;
-			}
+			bs = Math.max(bs, gpsPoints.getMinDist());	// buffer size must be at least the minimum distance?
+			// load the graph, and check if it is connected, i.e. it there exists a connection from O to D at all:
+			boolean hasConnection = false;
+			double bsfNC = rfParams.getDouble(RFParams.Type.NoConnectionResizeNetwork);	// if > 1, buffer resizing is active
+			do {
+				rfParams.setDouble(RFParams.Type.NetworkBufferSize, bs);	// reinit buffer size
+				if (graph == null || repeat) {	// create a new graph enveloping the GPS track
+					graph = loadGraphFromDB(gpsPoints);
+				}
+				stats = null;
+				if (graph == null || graph.getSize_Edges() < 2) {
+					logger.error("Graph has no edges");
+					stats = new MatchStats(sourcerouteID, MatchStats.Status.NETERROR);
+					graph = null;
+				} else {
+					// Split the graph near the start and end point in order to create the start and end node: 
+					graph.splitGraphAtPoint(gpsPoints.getCoordinate(0), 0);
+					graph.splitGraphAtPoint(gpsPoints.getCoordinate(-1), 1);
+					
+					fromNode = graph.findClosestNode(gpsPoints.getCoordinate(0));	// first node (Origin)
+					toNode   = graph.findClosestNode(gpsPoints.getCoordinate(-1));	// last node in GPS route (Destination) 
+					
+					if (fromNode == null || toNode == null) {	// nodes are not in network - error and stop:
+						logger.error("Origin and destination not in network!?");
+						stats = new MatchStats(sourcerouteID, MatchStats.Status.NETERROR);
+					} else if (bsConnOK > 0. && bs > bsConnOK) {	// do the Dijkstra check below only for the smallest network
+						hasConnection = true;	// (if it was ok for bs, it must be ok for a larger buffer size)
+					} else {	// now check for connectedness by computing the shortest path:
+						logger.info("Checking graph for connection O-D");
+						if (bsfNC > 1.) {
+							Dijkstra.init(graph, fromNode);
+							if (Dijkstra.connects(fromNode, toNode)) {
+								hasConnection = true;
+								bsConnOK = bs;	// save this for later (buffer size where the connection check was ok)
+							} else {
+								bs *= bsfNC;
+								logger.warn("Resizing graph: new buffer size = " + bs);
+								stats = new MatchStats(sourcerouteID, MatchStats.Status.NETERROR);
+								if (bs <= bsMax) graph = null;	// important, to have a new one created in the next run
+							}
+						}
+					}
+				}
+			} while (!hasConnection && (bsfNC > 1.) && (bs <= bsMax));
+			if (graph == null) break;	// break the main loop if no graph could be constructed
 			
-			// Split the graph near the start and end point in order to create the start and end node: 
-			graph.splitGraphAtPoint(gpsPoints.getCoordinate(0), 0);
-			graph.splitGraphAtPoint(gpsPoints.getCoordinate(-1), 1);
-			
-			Node fromNode = graph.findClosestNode(gpsPoints.getCoordinate(0));	// first node (Origin)
-			Node toNode   = graph.findClosestNode(gpsPoints.getCoordinate(-1));	// last node in GPS route (Destination) 
-			
-			if (fromNode == null || toNode == null) {	// nodes are not in network - error and stop:
-				logger.error("Origin and destination not in network!?");
-				stats = new MatchStats(sourcerouteID, MatchStats.Status.NETERROR);
-				break;
-			}
 			// log coordinates:
-			logger.info("Origin:      " + fromNode.getCoordinate());
-			logger.info("Destination: " + toNode.getCoordinate());
+			logger.info("Origin:      " + (fromNode != null ? fromNode.getCoordinate() : "null"));
+			logger.info("Destination: " + (toNode != null ? toNode.getCoordinate() : "null"));
 			double t_0 = timer.getRunTime(true, "++ graph loaded");
 			
 			// initialize the RouteFinder:
@@ -261,19 +287,28 @@ public class JMapMatcher {
 			// set sourceroute status: some routes were found after all, so we set status "OK"
 			if (!labels.isEmpty()) stats.srStatus = MatchStats.SourceRouteStatus.OK;
 			
-			if (!labels.isEmpty() && !repeat) {	// we are finished
-				// first check if we have labels stored from a previous run:
-				//if (labels0.size() > 0) labels.addAll(labels0);
-				// if the shortest path is to be added, too, calculate it:
-				if (cfg.bWriteShortestPath) {
-					Dijkstra.init(graph, fromNode);
-					Label shortestPath = Dijkstra.getShortestPathTo_Label(toNode, eStat);
-					shortestPath.setShortest(true);
-					if (!labels.contains(shortestPath)) labels.add(shortestPath);
+			if (labels.isEmpty()) {	// no routes at all were found
+				logger.warn("No labels found at all");
+				stats.status = MatchStats.Status.NOROUTES;
+				stats.srStatus = MatchStats.SourceRouteStatus.NOROUTES;
+			}
+
+			if ((!labels.isEmpty() && !repeat) || (labels.isEmpty() && nthRun > 1)) {	// we are finished
+				if (labels.isEmpty()) {	// we have a problem: no routes were found
+					logger.error("[" + sourcerouteID +"] - No labels found");
+				} else {
+					// first check if we have labels stored from a previous run:
+					//if (labels0.size() > 0) labels.addAll(labels0);
+					// if the shortest path is to be added, too, calculate it:
+					if (cfg.bWriteShortestPath) {
+						if (!Dijkstra.isInited(graph)) Dijkstra.init(graph, fromNode);
+						Label shortestPath = Dijkstra.getShortestPathTo_Label(toNode, eStat);
+						shortestPath.setShortest(true);
+						if (!labels.contains(shortestPath)) labels.add(shortestPath);
+					}
+					// loop over all result routes, store them together with their score:
+					sortLabels(labels, cfg.sortRoutes);
 				}
-				// loop over all result routes, store them together with their score:
-				sortLabels(labels, cfg.sortRoutes);
-				
 				int nOK = saveData(labels, fromNode, toNode, eStat);
 				
 				t_3 = timer.getRunTime(true, "++ " + nOK + " routes stored");
@@ -283,22 +318,19 @@ public class JMapMatcher {
 			} else {	// not yet - no or not enough labels found, or switch to the second (final) run (ShuffleReset)
 				// !!! THIS IS A REALLY UGLY WAY OF DOING THIS, SORRY !!!
 				// log message and status parameters:
-				if (labels.isEmpty()) {	// no routes at all were found
-					logger.warn("No labels found at all");
-					stats.status = MatchStats.Status.NOROUTES;
-					stats.srStatus = MatchStats.SourceRouteStatus.NOROUTES;
-				//} else if (!useSecondStrategy || (useSecondStrategy && !secondRun)) { 	// not enough routes were found, so we repeat nevertheless
-				} else if (repeat && nthRun < 2) { 	// not enough routes were found, so we repeat nevertheless
-					logger.warn("Not enough labels found yet ("+labels.size()+"/"+minRoutes+")");
-				} else {
-					logger.warn("Starting second run ("+rfParams.getString(RFParams.Type.LabelTraversal2)+")");
+				if (!labels.isEmpty()) {	// no routes at all were found
+					if (repeat && nthRun < 2) { 	// not enough routes were found, so we repeat nevertheless
+						logger.warn("Not enough labels found yet ("+labels.size()+"/"+minRoutes+")");
+					} else {
+						logger.warn("Starting second run ("+rfParams.getString(RFParams.Type.LabelTraversal2)+")");
+					}
 				}
 				
 				if (!bTimeout) {
 					// resize buffer: check if resizing is allowed: (this happens in the first and the second run)
 					if (bsf > 1.) {	
 						bs *= bsf;
-						repeat = (bs <= rfParams.getDouble(RFParams.Type.NetworkBufferSizeMax));	// we can increase the buffer size
+						repeat = (bs <= bsMax);	// we can increase the buffer size
 					}
 					
 					if (useSecondStrategy && (labels.size() >= minRoutes || !repeat)) {	// either minRoutes have been found, or NetworkBufferSizeMax was reached
@@ -315,17 +347,20 @@ public class JMapMatcher {
 						// save labels for later:
 						labels0.addAll(labels);
 						sortLabels(labels0, JMMConfig.RouteSorting.MATCHSCORE);	// sort them, in order to get the best match
-						labels0.get(0).setChoice(true);	// mark the best match (chosen route)
+						if (!labels0.isEmpty()) labels0.get(0).setChoice(true);	// mark the best match (chosen route)
+						else logger.error("No match found!");
 						// optionally, keep only a number of routes from the first run in the result list:
 						int nKeep = rfParams.getInt(RFParams.Type.RoutesUsedFromFirstRun);
 						if (nKeep > 0 && nKeep < labels0.size()) labels0.subList(nKeep, labels0.size()).clear();
 						// adjust length limit for next call of findRoutes:
+						double df = rfParams.getDouble(RFParams.Type.DistanceFactor2);
+						if (df <= 0.) df = rfParams.getDouble(RFParams.Type.DistanceFactor);
 						if (!labels0.isEmpty()) {
 							double trackLength2 = labels0.get(0).getLength();
-							double df = rfParams.getDouble(RFParams.Type.DistanceFactor2);
-							if (df <= 0.) df = rfParams.getDouble(RFParams.Type.DistanceFactor);
-							df *= trackLength2 / gpsTrackLength;	// dirty trick: df refers now to the shortest route length, not the euclidean GPS track length
-							if (df > 0) rfParams.set(RFParams.Type.DistanceFactor, df);
+							df *= trackLength2 / gpsTrackLength;	// make df refer to the shortest route length, not the euclidean GPS track length
+						}
+						if (df > 0) {
+							rfParams.set(RFParams.Type.DistanceFactor, df);
 							logger.info("New DistanceFactor: " + df);
 						}
 						
@@ -605,6 +640,7 @@ public class JMapMatcher {
 								choice.setAngleToDest((float)(MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - angle_direct))));	// store value in degrees
 								choice.setAngle(lastEdge != null ? (float)MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - lastEdge.getAngle())) : 0);	// angle between edges at node
 								choice.setnPts(eStat.getCount(oee));
+								choice.setnChoices((short)nOE);
 							} else {	// oe==null: empty pseudo-edge
 								choice.setSelected(false);
 								choice.setEdgeID(0);
@@ -615,6 +651,7 @@ public class JMapMatcher {
 								choice.setAngleToDest(0f);
 								choice.setAngle(0);
 								choice.setnPts((short)0);
+								choice.setnChoices((short)0);
 							}
 							session.save(choice.clone());	// save 1 choice/nonchoice for each outEdge!
 						}
@@ -660,6 +697,20 @@ public class JMapMatcher {
 	public static void main(String... args) throws IOException {
 		//Logger logger = Logger.getRootLogger();
 		//BasicConfigurator.configure();	// set up logging
+		
+		/*if (args.length == 0) {	// command line arguments have the highest priority; consider cfg.sourcerouteIDs only if there are none
+			if (cfg.sourcerouteIDs.contains("-")) {	
+				String[] fromTo = cfg.sourcerouteIDs.trim().split("-");
+				query += " WHERE id>="+fromTo[0]+" AND id<="+fromTo[1];
+			} else {
+				if (args.length == 0 && !cfg.sourcerouteIDs.trim().isEmpty()) query += " WHERE id IN ("+cfg.sourcerouteIDs+")";
+			}
+		}
+		else if (args.length == 1) query += " WHERE id="+args[0];
+		else if (args.length == 2) query += " WHERE id>="+args[0]+" AND id<="+args[1];
+
+		cfg = new JMMConfig(cfgName);*/
+		
 		logger.setLevel(cfg.logLevel);
 		Logger.getRootLogger().setLevel(cfg.logLevel);
 		//logger.setLevel(Level.INFO);

@@ -57,6 +57,7 @@ public class RFParams {
 		MaxRuntimeTotal,		///< maximum computation time for multiple runs in seconds
 		RejectedLabelsLimit,	///< limit for the number of unsuccessful labels (no routes, only rejected labels)
 		NoLabelsResizeNetwork,	///< factor to resize the network if no routes have been found
+		NoConnectionResizeNetwork,	///< factor to resize the network if the graph contains no connection from O to D
 		NetworkBufferSizeMax,	///< maximum network buffer size
 		SwapOD,					///< swap origin and destination
 		BothDirections,			///< use both directions to create greater variability
@@ -121,7 +122,8 @@ public class RFParams {
 		setDouble(Type.NetworkBufferSize, 100.);	///< buffer size in meters (!)
 		setDouble(Type.ODDirectionLimit, 0.);		///< limit for last edge to fit the OD direction (only for Shuffle(Reset) strategy)
 		setInt(Type.RejectedLabelsLimit, 0);		///< limit for unsuccessful labels
-		setInt(Type.NoLabelsResizeNetwork, 0);	///< factor to resize network buffer if no routes were found
+		setDouble(Type.NoLabelsResizeNetwork, 0.);	///< factor to resize network buffer if no routes were found
+		setDouble(Type.NoConnectionResizeNetwork, 0.);	///< factor to resize network buffer if no routes were found
 		set(Type.LabelTraversal, LabelTraversal.BestFirst.toString());		///< way of label traversal
 		set(Type.LabelTraversal2, LabelTraversal.ShuffleReset.toString());		///< way of label traversal
 		setInt(Type.ShowProgressDetail, 2);		///< how often each edge may be used
@@ -262,6 +264,7 @@ public class RFParams {
 			if (map2Double(iniMap, "NetworkBufferSize2", Type.NetworkBufferSize2)) r++;
 			if (map2Int(iniMap, "RejectedLabelsLimit", Type.RejectedLabelsLimit)) r++;
 			if (map2Double(iniMap, "NoLabelsResizeNetwork", Type.NoLabelsResizeNetwork)) r++;
+			if (map2Double(iniMap, "NoConnectionResizeNetwork", Type.NoConnectionResizeNetwork)) r++;
 			if (map2Int(iniMap, "MaxLabels", Type.MaxLabels)) r++;
 			if (map2Double(iniMap, "MaxRuntime", Type.MaxRuntime)) r++;
 			if (map2Double(iniMap, "MaxRuntime2", Type.MaxRuntime2)) r++;

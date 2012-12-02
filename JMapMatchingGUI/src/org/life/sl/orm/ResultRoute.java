@@ -49,7 +49,7 @@ public class ResultRoute {
 	
 	private int id;
 	private LineString geometry;
-	private boolean selected;
+	private boolean selected, shortest;
 	private float length;
 	private float trackLength;
 	private float lengthR;
@@ -125,6 +125,7 @@ public class ResultRoute {
 		length = (float)label.getLength();
 		lengthR = length / trackLength;
 		pathSizeAttr = (float)label.getPathSizeAttr();
+		shortest = label.isShortest();
 		
 		// initialize values:
 		int scoreCount = 0;
@@ -261,6 +262,14 @@ public class ResultRoute {
 
 	public void setSelected(boolean selected) {
 		this.selected = selected;
+	}
+
+	public boolean isShortest() {
+		return shortest;
+	}
+
+	public void setShortest(boolean shortest) {
+		this.shortest = shortest;
 	}
 
 	public float getLength() {
