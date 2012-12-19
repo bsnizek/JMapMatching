@@ -469,16 +469,18 @@ public class JMapMatcher {
 			} else if (bAddShortest) {
 				bAddShortest = false;
 				for (j = 0; j < nLabels; j++) if (labels.get(j).isShortest()) break;
-				if (j >= nLabels) i--;	// if no shortest route was found, it has been selected before or was not marked
+				if (true || j >= nLabels) i--;	// if no shortest route was found, it has been selected before or was not marked
+				// -> continue with element i-1 (i=1) in the list
 				//logger.info("Adding shortest path to output selection: " + j);
 			} else if (i < cfg.iWriteNBest || i >= nRoutes - cfg.iWriteNWorst || nRoutes == nLabels) {	// write those without randomization
 				j = i;
+				while (j < nLabels && selRoutes.contains(labels.get(j))) j++;
 			} else {	// select random route
 				do {
 					j = Math.min((int)(Math.random() * nLabels + .5), nLabels - 1);
 				} while (selRoutes.contains(labels.get(j)));
 			}
-			selRoutes.add(labels.get(j));
+			if (j < nLabels) selRoutes.add(labels.get(j));
 		}
 		
 		// 2. prepare labels before output: compute Path Size Attribute

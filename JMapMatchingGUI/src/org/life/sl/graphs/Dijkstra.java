@@ -58,7 +58,7 @@ public class Dijkstra {
 
 			// Visit each edge exiting u
 			@SuppressWarnings("unchecked")
-			List<DirectedEdge> edges = (List<DirectedEdge>) u.getOutEdges().getEdges();
+			List<DirectedEdge> edges = (List<DirectedEdge>) u.node.getOutEdges().getEdges();
 			for (DirectedEdge e : edges) {
 				Vertex v = findVertex(e.getToNode());
 				double weight = ((LineMergeEdge)e.getEdge()).getLine().getLength();
@@ -85,7 +85,8 @@ public class Dijkstra {
 
     public static Vertex findVertex(Node n) {
     	for (Vertex v : vertices) {
-    		if (v.equals(n)) return v;
+ //   		if (v.equals(n)) return v;
+    		if (v.node == n) return v;
     	}
 		return null;
     }
@@ -150,11 +151,12 @@ public class Dijkstra {
 	 */
 	public static Label getShortestPathTo_Label(Node target, EdgeStatistics edgeStatistics) {
 		List<Vertex> path = getShortestPathTo(target);
-		Label label = new Label(path.get(0));
+		Label label = new Label(path.get(0).node);
 		for (Vertex v : path) {
-			label = new Label(label, (Node)v, v.backEdge, label.getLength() + v.edgeLength, v.edgeLength);
+			label = new Label(label, v.node, v.backEdge, label.getLength() + v.edgeLength, v.edgeLength);
 			if (edgeStatistics != null) label.calcScore(edgeStatistics);
 		}
+		label.setShortest(true);
 		return label;
 	}
 }

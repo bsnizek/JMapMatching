@@ -187,12 +187,16 @@ public class Label implements Comparable<Label> {
 		return node.toString();
 	}
 	
-	public boolean equals(Label l) {
+	@Override public boolean equals(Object o) {
 		boolean b = false;
-		if (l.score == this.score) {	// just to avoid having to create and compare the whole node lists
-			List<Node> nodes0 = this.getNodes();
-			List<Node> nodes1 = l.getNodes();
-			b = nodes0.equals(nodes1);
+		Label l = (Label)o;
+		if (l.score == this.score && l.length == this.length) {	// just to avoid having to create and compare the whole node lists
+			// Node comparison does not work efficiently, so we restrict ourselves to the length and match score as indicators
+			// TODO: check if this is feasible!
+			//List<Node> nodes0 = this.getNodes();
+			//List<Node> nodes1 = l.getNodes();
+			//b = nodes0.containsAll(nodes1);
+			b = true;
 		}
 		return b;
 	}
