@@ -304,7 +304,13 @@ public class JMapMatcher {
 						if (!Dijkstra.isInited(graph)) Dijkstra.init(graph, fromNode);
 						Label shortestPath = Dijkstra.getShortestPathTo_Label(toNode, eStat);
 						shortestPath.setShortest(true);
-						if (!labels.contains(shortestPath)) labels.add(shortestPath);
+						if (!labels.contains(shortestPath)) {
+							labels.add(shortestPath);
+						} else {
+							// TODO: activate this, if desired:
+							//int i = labels.indexOf(shortestPath);
+							//labels.get(i).setShortest(true);	// mark the existing label as shortest path
+						}
 					}
 					// loop over all result routes, store them together with their score:
 					sortLabels(labels, cfg.sortRoutes);

@@ -515,9 +515,11 @@ public class ResultRoute {
 	 * @return list of OSMEdge IDs as retrieved from the Label
 	 */
 	public String getEdgeIDs() {
-		edgeIDs = "";
-		int[] edgeIDsArr = label.getEdgeIDs();
-		for (int eID : edgeIDsArr) edgeIDs += eID + kCSVSep;
+		if (label != null) {
+			edgeIDs = "";
+			int[] edgeIDsArr = label.getEdgeIDs();
+			for (int eID : edgeIDsArr) edgeIDs += eID + kCSVSep;
+		}
 		return edgeIDs;
 	}
 	public void setEdgeIDs(String edgeIDs) {
