@@ -77,7 +77,8 @@ public class JMapMatcher {
 	private static String kCfgFileName = "JMM.cfg";
 	private static String kStatFileName = "JMM_stats.dat";
 	private static String kOutputDir = "results/";
-	public static double kCoordEps = 1.e-3;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+	public static double kCoordEps = 1.e-3;			///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+	public static boolean kUseAngleLocal = true;	///< use the change of direction locally at a node, or the angle difference at the start of edges only
 
 	// input data:
 	private static gpsLoader kGPSLoader    = gpsLoader.BULK_PGSQLDATABASE;
@@ -632,6 +633,12 @@ public class JMapMatcher {
 							for (int j = nOE-1; j >= cfg.iFixedNodeChoices; j--) outEdges.remove(j);
 						}
 					}	// now, we have exactly cfg.iFixedChoices edges in the list
+					// last edge angle: for calculation of change of direction
+					double lea = 0;
+					if (lastEdge != null) {
+						if (kUseAngleLocal) lea = lastEdge.getSym().getAngle() - Math.PI;
+						else lea = lastEdge.getAngle();
+					}
 					for (DirectedEdge oe : outEdges) {
 						if (lastEdge==null || (lastEdge != null && oe != lastEdge.getSym())) {	// don't use the backEdge (lastEdge.getSym())!
 							if (oe != null) {
@@ -646,7 +653,7 @@ public class JMapMatcher {
 								double l = ((LineMergeEdge)oee).getLine().getLength();
 								choice.setGroenPct((float)((Double)ed2.get("gm") / l));
 								choice.setAngleToDest((float)(MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - angle_direct))));	// store value in degrees
-								choice.setAngle(lastEdge != null ? (float)MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - lastEdge.getAngle())) : 0);	// angle between edges at node
+								choice.setAngle(lastEdge != null ? (float)MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - lea)) : 0);	// angle between edges at node
 								choice.setnPts(eStat.getCount(oee));
 								choice.setnChoices((short)nOE);
 							} else {	// oe==null: empty pseudo-edge

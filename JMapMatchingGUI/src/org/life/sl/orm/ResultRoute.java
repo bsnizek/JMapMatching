@@ -43,6 +43,7 @@ import com.vividsolutions.jts.planargraph.DirectedEdge;
 public class ResultRoute {
 
 	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///< limits determining when a change in angle is counted as a left/right/front/back turn, in radians
+	public static boolean kUseAngleLocal = true;	///< use the change of direction locally at a node, or the angle difference at the start of edges only
 	public final int kMaxCykAttr = 4;			///< maximum index of the cykAttr (0...kMaxCykAttr)
 	public final int kMaxEnvAttr = 8;			///< maximum index of the envAttr (0...kMaxCykAttr)
 	public final String kCSVSep = ",";			///< separator in fields containing CSV values
@@ -201,7 +202,8 @@ public class ResultRoute {
 			}
 			
 			lastlbl = lbl;
-			lastAngle = angle;
+			if (kUseAngleLocal) lastAngle = MathUtil.mapAngle_radians(backEdge.getSym().getAngle() - Math.PI);	// difference between the two edges at the current node
+			else lastAngle = angle;	// calculate angle as difference between directions at previous and current node 
 			i++;
 		}
 		matchScore = scoreCount / length;

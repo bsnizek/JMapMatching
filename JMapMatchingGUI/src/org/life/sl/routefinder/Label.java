@@ -50,6 +50,7 @@ import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMNode;
 import org.life.sl.routefinder.RouteFinder.LabelTraversal;
+import org.life.sl.tools.RouteDBExporter;
 import org.life.sl.utils.MathUtil;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
@@ -765,7 +766,7 @@ public class Label implements Comparable<Label> {
 	 */
 	public void dumpToShapeFile(String filename) throws SchemaException, IOException {
 
-		final SimpleFeatureType TYPE = DataUtilities.createType("route",
+		/*final SimpleFeatureType TYPE = DataUtilities.createType("route",
 				"location:LineString:srid=4326," + // <- the geometry attribute: Polyline type
 						"name:String," + // <- a String attribute
 						"number:Integer" // a number attribute
@@ -782,49 +783,16 @@ public class Label implements Comparable<Label> {
 			feature.setDefaultGeometry(ls);
 			features.add(feature);
 		}
-		SimpleFeatureCollection collection = new ListFeatureCollection(TYPE, features);//FeatureCollections.newCollection();
+		SimpleFeatureCollection collection = new ListFeatureCollection(TYPE, features);//FeatureCollections.newCollection();*/
 		
-		// 2. write to a shapefile
+		// get the LineString and write it to a shapefile
         System.out.println("Writing to shapefile " + filename);
 		File newFile = new File(filename);
-		// File newFile = getNewShapeFile(file);
-
-        ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
-
-        Map<String, Serializable> params = new HashMap<String, Serializable>();
-        params.put("url", newFile.toURI().toURL());
-        params.put("create spatial index", Boolean.TRUE);
-
-        ShapefileDataStore newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
-        newDataStore.createSchema(TYPE);
-
-        // You can comment out this line if you are using the createFeatureType method (at end of
-        // class file) rather than DataUtilities.createType
-        newDataStore.forceSchemaCRS(DefaultGeographicCRS.WGS84);
-		
-        Transaction transaction = new DefaultTransaction("create");
-
-        String typeName = newDataStore.getTypeNames()[0];
-        SimpleFeatureSource featureSource = newDataStore.getFeatureSource(typeName);
-        
-        if (featureSource instanceof SimpleFeatureStore) {
-            SimpleFeatureStore featureStore = (SimpleFeatureStore) featureSource;
-
-            featureStore.setTransaction(transaction);
-            try {
-                featureStore.addFeatures(collection);
-                transaction.commit();
-            } catch (Exception problem) {
-                problem.printStackTrace();
-                transaction.rollback();
-            } finally {
-                transaction.close();
-            }
-            // System.exit(0); // success!
-        } else {
-            System.out.println(typeName + " does not support read/write access");
-            System.exit(1);	// exit program with status 1 (error)
-        }
+		try {
+			RouteDBExporter.exportLineStringToShapeFile(newFile, getLineString());
+		} catch (Exception e) {
+			System.out.println("Exception during shapefile export: " + e.toString());
+		}
     }
 		
 	/**
