@@ -764,7 +764,7 @@ public class Label implements Comparable<Label> {
 	 * @throws SchemaException
 	 * @throws IOException
 	 */
-	public void dumpToShapeFile(String filename) throws SchemaException, IOException {
+	public void dumpToShapeFile(String filename, int sourceRouteID) throws SchemaException, IOException {
 
 		/*final SimpleFeatureType TYPE = DataUtilities.createType("route",
 				"location:LineString:srid=4326," + // <- the geometry attribute: Polyline type
@@ -789,7 +789,7 @@ public class Label implements Comparable<Label> {
         System.out.println("Writing to shapefile " + filename);
 		File newFile = new File(filename);
 		try {
-			RouteDBExporter.exportLineStringToShapeFile(newFile, getLineString());
+			RouteDBExporter.exportLineStringToShapeFile(newFile, getLineString(), sourceRouteID);
 		} catch (Exception e) {
 			System.out.println("Exception during shapefile export: " + e.toString());
 		}

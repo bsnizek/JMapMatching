@@ -3,6 +3,7 @@ package org.life.sl.tools;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -37,26 +38,28 @@ public class RouteDBExporter {
 
 	private static String kOutputDir = "results/";
 
-	public static void exportRoute(ResultRoute route) throws SchemaException, IOException {
-		logger.info("Exporting route id " + route.getId() + " (sourcerouteID " + route.getSourceRouteID() + ")");
-		
-		LineString ls = route.getGeometry();
-		String filename = kOutputDir + "route" + route.getId() + ".shp";
+	public static void exportRoutes(ArrayList<ResultRoute> routes, int srID) throws SchemaException, IOException {
+		HashMap<Integer, LineString> lsa = new HashMap<Integer, LineString>();
+		for (ResultRoute route : routes) {
+			logger.info("Exporting route id " + route.getId() + " (sourcerouteID " + route.getSourceRouteID() + ")");
+			lsa.put(route.getId(), route.getGeometry());
+		}
+		if (srID <= 0) srID = routes.get(0).getSourceRouteID();
+		String filename = kOutputDir + "route" + srID + ".shp";
 		File newFile = new File(filename);
-		exportLineStringToShapeFile(newFile, ls);
+		exportLineStringsToShapeFile(newFile, lsa, srID);
 	}
 	
-	public static void exportLineStringToShapeFile(File newFile, LineString ls) throws SchemaException, IOException {
+	public static void exportLineStringToShapeFile(File newFile, LineString ls, int sourceRouteID) throws SchemaException, IOException {
+		HashMap<Integer, LineString> lsa = new HashMap<Integer, LineString>();
+		lsa.put(1, ls);
+		exportLineStringsToShapeFile(newFile, lsa, sourceRouteID);
+	}
+	
+	public static void exportLineStringsToShapeFile(File newFile, HashMap<Integer, LineString> lsa, int sourceRouteID) throws SchemaException, IOException {
 		final SimpleFeatureType TYPE = DataUtilities.createType("route",
-				"geom:LineString,srid="+ls.getSRID()
+				"geom:LineString,srid:0,id:0"
 				);
-		
-		ArrayList<SimpleFeature> features = new ArrayList<SimpleFeature>();
-		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(TYPE);
-		SimpleFeature feature = featureBuilder.buildFeature(null);	
-		feature.setDefaultGeometry(ls);
-		features.add(feature);
-		SimpleFeatureCollection collection = new ListFeatureCollection(TYPE, features);//FeatureCollections.newCollection();
 
 		ShapefileDataStoreFactory dataStoreFactory = new ShapefileDataStoreFactory();
 
@@ -66,7 +69,18 @@ public class RouteDBExporter {
 
         ShapefileDataStore newDataStore = (ShapefileDataStore) dataStoreFactory.createNewDataStore(params);
         newDataStore.createSchema(TYPE);
- 
+		
+		ArrayList<SimpleFeature> features = new ArrayList<SimpleFeature>();
+		SimpleFeatureBuilder featureBuilder = new SimpleFeatureBuilder(TYPE);
+		for (Map.Entry<Integer, LineString> e : lsa.entrySet()) {
+//			System.out.println(ls);
+			Object[] values = { 0, sourceRouteID , e.getKey() };	// e = <id, ls> 
+			SimpleFeature feature = featureBuilder.buildFeature(null, values);
+			feature.setDefaultGeometry(e.getValue());
+			features.add(feature);
+		}
+		SimpleFeatureCollection collection = new ListFeatureCollection(TYPE, features);//FeatureCollections.newCollection();
+
         // You can comment out this line if you are using the createFeatureType method (at end of
         // class file) rather than DataUtilities.createType
         newDataStore.forceSchemaCRS(DefaultGeographicCRS.WGS84);
@@ -140,15 +154,21 @@ public class RouteDBExporter {
 		int n = 0;
 		Timer timer = new Timer();
 		timer.init();	// initialize timer
+		int srID = -1;
+		ArrayList<ResultRoute> routes = new ArrayList<ResultRoute>();
 		while (iterator.hasNext()) {
 			n++;
 			ResultRoute route = iterator.next();
-			try {
-				exportRoute(route);
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
+			if ((srID > 0 && route.getSourceRouteID() != srID) || !iterator.hasNext()) {	// new srID, or end of record set
+				try {
+					exportRoutes(routes, srID);
+				} catch (Exception e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
 			}
+			routes.add(route);
+			srID = route.getSourceRouteID();
 			timer.showProgress((double)n/nTot);
 		}
 		session.getTransaction().commit();

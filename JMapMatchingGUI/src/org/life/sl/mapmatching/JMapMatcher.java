@@ -515,7 +515,7 @@ public class JMapMatcher {
 						outFileName = String.format("%s%03d%s", kOutputDir + s + "NonChoice", nNonChoice, ".shp");
 						nNonChoice++;
 					}
-					curLabel.dumpToShapeFile(outFileName);	// write result route to file
+					curLabel.dumpToShapeFile(outFileName, this.sourcerouteID);	// write result route to file
 				} catch (SchemaException e1) {
 					System.err.println("Error writing file " + outFileName + " (SchemaException)");
 				} catch (IOException e2) {
