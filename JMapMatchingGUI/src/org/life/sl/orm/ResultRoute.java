@@ -23,6 +23,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 import java.math.BigInteger;
 import java.sql.Timestamp;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 
 import org.apache.log4j.Logger;
@@ -135,13 +136,13 @@ public class ResultRoute {
 		nEdgesWOPts = 0;
 		groenM = 0.f;
 		// turns, angles:
-		double angle = 0, lastAngle = 0;
-		angle_rel = new float[nNodes];
+		double angleInThis =0, angleInPrev = 0, angleOutPrev = 0;
+		angle_rel = new float[nNodes-2];	// excluding start and end node
 		nLeftTurns = 0;
 		nRightTurns = 0;
 		nFrontTurns = 0;
 		nBackTurns = 0;
-		edgeLengths = new float[nNodes];
+		edgeLengths = new float[nEdges];
 		// initialize attributes arrays:
 		envAttr = new float[kMaxEnvAttr+1];
 		for (i = 0; i < envAttr.length; i++) envAttr[i] = 0;
@@ -149,37 +150,51 @@ public class ResultRoute {
 		for (i = 0; i < cykAttr.length; i++) cykAttr[i] = 0;
 		DirectedEdge backEdge;
 
-		i = 0;
-		Label lastlbl = null;
-		for (Label lbl : labels) {
+		i = -1;
+		int iN;	// node index
+		Label lbl = null;
+		Iterator<Label> lblIt = labels.iterator();
+		while (lblIt.hasNext()) {
+			lbl = lblIt.next();
+			
 			int lastScoreCount = lbl.getLastScoreCount();
 			scoreCount += lastScoreCount;
 			
 			double lel = lbl.getLastEdgeLength();
-			edgeLengths[i] = (float)lel;
-			if (lastScoreCount == 0) {
-				nEdgesWOPts++;
-				noMatchLength += lel;
+			if (i >= 0) {	// i = 0, ..., nEdges-1
+				edgeLengths[i] = (float)lel;	// =0 for i==0
+				if (lastScoreCount == 0) {
+					nEdgesWOPts++;
+					noMatchLength += lel;
+				}
 			}
 			
-			backEdge = lbl.getBackEdge();
-			
-			if (lastlbl != null) {
-				angle = MathUtil.mapAngle_radians(backEdge.getAngle());	// absolute angle of backEdge
-				angle_rel[i] = (float)MathUtil.mapAngle_radians(angle - lastAngle);
-				double aa = Math.abs(angle_rel[i]);
-				angle_tot += aa;
-
-				// is it a turn?
-				if (aa > kTurnLimit0) {
-					if (aa < kTurnLimit1) {	// [kTurnLimit0, kTurnLimit1]: left/right turn
-						if (angle_rel[i] > 0) nLeftTurns++;
-						if (angle_rel[i] < 0) nRightTurns++;
-					} else  {	// [kTurnLimit1, pi]: backward turn (U-turn)
-						nBackTurns++;
-					}
-				} else nFrontTurns++;	// [0, kTurnLimit0]: forward turn (straight on)
-	
+			backEdge = lbl.getBackEdge();	// Note: backEdge is oriented in the direction of motion!
+		
+			if (backEdge != null) {	// from the second label on; therefore, i >= 0
+				// angles of incoming edge:
+				angleOutPrev = MathUtil.mapAngle_radians(backEdge.getAngle());
+				angleInThis = MathUtil.mapAngle_radians(backEdge.getSym().getAngle() - Math.PI);	// absolute angle of backEdge (direction back!)
+//				if (kUseAngleLocal) angle = MathUtil.mapAngle_radians(backEdge.getSym().getAngle() - Math.PI);	// absolute angle of backEdge (direction back!)
+//				else angle = MathUtil.mapAngle_radians(backEdge.getAngle());	// absolute angle of backEdge (in the direction of motion!)
+				iN = i-1;	// node index, for which the angle is computed
+				
+				if (i > 0) {	// the angle computation happens for the previous 2 edges
+					if (kUseAngleLocal) angle_rel[iN] = (float)MathUtil.mapAngle_radians(angleOutPrev - angleInPrev);
+					else angle_rel[iN] = (float)MathUtil.mapAngle_radians(angleInThis - angleInPrev);
+					double aa = Math.abs(angle_rel[iN]);
+					angle_tot += aa;
+					// is it a turn?
+					if (aa > kTurnLimit0) {
+						if (aa < kTurnLimit1) {	// [kTurnLimit0, kTurnLimit1]: left/right turn
+							if (angle_rel[iN] > 0) nLeftTurns++;
+							else nRightTurns++;	//  if (angle_rel[iN] < 0)
+						} else  {	// [kTurnLimit1, pi]: backward turn (U-turn)
+							nBackTurns++;
+						}
+					} else nFrontTurns++;	// [0, kTurnLimit0]: forward turn (straight on)
+				}
+				
 				@SuppressWarnings("unchecked")
 				HashMap<String, Object> userdata = (HashMap<String, Object>) backEdge.getEdge().getData();	// the user data object of the Edge
 				Integer edgeID = (Integer)userdata.get("id");
@@ -197,13 +212,10 @@ public class ResultRoute {
 				}
 				groenM += ((Double)userdata.get("gm")).floatValue();
 			} else {
-				angle_rel[i] = 0.f;
-				edgeLengths[i] = 0.f;
+				//edgeLengths[i] = 0.f;
 			}
 			
-			lastlbl = lbl;
-			if (kUseAngleLocal) lastAngle = MathUtil.mapAngle_radians(backEdge.getSym().getAngle() - Math.PI);	// difference between the two edges at the current node
-			else lastAngle = angle;	// calculate angle as difference between directions at previous and current node 
+			angleInPrev = angleInThis;
 			i++;
 		}
 		matchScore = scoreCount / length;
@@ -248,10 +260,13 @@ public class ResultRoute {
 		
 		int n = nodeIDs.length;
 		String s1 = String.valueOf(nodeIDs[0]);
-		for (int i = 0; i < n; i++) {
-			s1 += "," + nodeIDs[i];
+		if (n > 0) {
+			for (int i = 1; i < n; i++) {
+				s1 += "," + nodeIDs[i];
+			}
 		}
 		String s = "select count(distinct \"nodeid\") from trafficlight where \"nodeid\" in ("+s1+")";	// important: only count distinct trafficlights, there may be >1 at one node!
+		//System.out.println(s);
 		Query res = session.createSQLQuery(s);
 		BigInteger ntl = (BigInteger)res.uniqueResult();
 		this.nTrafficLights = (ntl == null ? 0 : ntl.shortValue());

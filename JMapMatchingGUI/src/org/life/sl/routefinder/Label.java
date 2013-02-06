@@ -128,11 +128,11 @@ public class Label implements Comparable<Label> {
 		}	
 	}
 
-	private final double kCoordEps = 1.e0;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
+	private final double kCoordEps = 2.e0;		///< tolerance for coordinate comparison (if (x1-x2 < kCoordEps) then x1==x2)
 
 	private Label parent;				///< The parent of the Label
 	private Node node;					///< The node associated with this Label
-	private DirectedEdge backEdge;		///< The GeoEdge leading back to the node associated with the parent Label
+	private DirectedEdge backEdge;		///< The GeoEdge leading back to the node associated with the parent Label - BUT: in the direction of motion!
 	private double length = 0.;			///< if the label represents a route, this is the length of the route (sum of all backEdges)
 	private double lastEdgeLength = 0.;	///< length of last backEdge
 	private double score = -1.;			///< the score of the label (evaluated according to edge statistics)
@@ -574,8 +574,10 @@ public class Label implements Comparable<Label> {
 		if (edgeList == null || edgeList.size() == 0) {
 			edgeList = new ArrayList<DirectedEdge>();
 			Label label = this;
+			DirectedEdge be = null;
 			while(label.getParent() != null) {
-				edgeList.add(label.getBackEdge());
+				be = label.getBackEdge();
+				if (be != null) edgeList.add(be);
 				label = label.getParent();
 			}
 			Collections.reverse(edgeList);	// now, the topmost label represents the first edge in the list
@@ -630,34 +632,41 @@ public class Label implements Comparable<Label> {
 		if (nodeIDs == null) {
 			Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 			session.beginTransaction();
-			List<Node> nodes = getNodes();
-			nodeIDs = new int[nodes.size()];
 			List<DirectedEdge> edges = getRouteAsEdges();
-			int n = 0;
+			int nEdges = edges.size();
+			nodeIDs = new int[nEdges + 1];
+			int n = 0, lastValidEdgeID = 0;
 			for (DirectedEdge e : edges) {		// for each node along the route:
 				@SuppressWarnings("unchecked")
 				HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
-				Integer edgeID = (Integer)ed.get("id");
+				int eID = (Integer)ed.get("id");
 	
 				Node node = e.getFromNode();	// node at beginning of edge
 				Coordinate c_n = node.getCoordinate();
 	
 				// get node ID from database:
+				// TODO: make this more efficient (now we have 2 queries per edge!)
 				int nodeID = 0;
-				String s = " from OSMEdge where id=" + edgeID;
-				s = "from OSMNode where (id = (select fromnode"+s+") or id = (select tonode"+s+"))";
-				Query nodeRes = session.createQuery(s);
-				// TODO: make this more efficient using a PostGIS spatial query with indexing?
-				// match coordinates:
-				@SuppressWarnings("unchecked")
-				Iterator<OSMNode> it = nodeRes.iterate();
-				while (it.hasNext()) {
-					OSMNode on = it.next();
-					Coordinate onc = on.getGeometry().getCoordinate();
-					if (Math.abs(c_n.x - onc.x) < kCoordEps && Math.abs(c_n.y - onc.y) < kCoordEps) {
-						nodeID = on.getId();
-						break;
-					}								
+				if (n == nEdges-1 && eID < 0) {	// last edge may be split!
+					eID = lastValidEdgeID;
+				}
+				if (eID > 0) {
+					lastValidEdgeID = eID;
+					String s = " from OSMEdge where id=" + eID;
+					s = "from OSMNode where (id = (select fromnode"+s+") or id = (select tonode"+s+"))";
+					Query nodeRes = session.createQuery(s);
+					// TODO: make this more efficient using a PostGIS spatial query with indexing?
+					// match coordinates:
+					@SuppressWarnings("unchecked")
+					Iterator<OSMNode> it = nodeRes.iterate();
+					while (it.hasNext()) {
+						OSMNode on = it.next();
+						Coordinate onc = on.getGeometry().getCoordinate();
+						if (Math.abs(c_n.x - onc.x) < kCoordEps && Math.abs(c_n.y - onc.y) < kCoordEps) {
+							nodeID = on.getId();
+							break;
+						}								
+					}
 				}	// now, nodeID is either 0 or the database ID of the corresponding node
 				nodeIDs[n++] = nodeID;
 			}
