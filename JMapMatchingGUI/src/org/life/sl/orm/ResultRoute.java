@@ -43,6 +43,7 @@ import com.vividsolutions.jts.planargraph.DirectedEdge;
  */
 public class ResultRoute {
 
+	private final double kTrafficLightTolerance = 5.0;	///< tolerance for geometry comparison of traffic lights
 	private static double kTurnLimit0 = Math.toRadians(45), kTurnLimit1 = Math.toRadians(135);	///< limits determining when a change in angle is counted as a left/right/front/back turn, in radians
 	public static boolean kUseAngleLocal = true;	///< use the change of direction locally at a node, or the angle difference at the start of edges only
 	public final int kMaxCykAttr = 4;			///< maximum index of the cykAttr (0...kMaxCykAttr)
@@ -232,7 +233,7 @@ public class ResultRoute {
 		pPtsOn = (float)( (double)scoreCount / (double)gpsPoints.size() );	// fraction of points on edges 
 		pPtsOff = (1.f - pPtsOn);
 		
-		if (calcTrafficLights) getNumberOfTrafficLights();
+		//if (calcTrafficLights) getNumberOfTrafficLights();
 	}
 	
 	public void transferEnvParams() {
@@ -252,8 +253,25 @@ public class ResultRoute {
 		if (kMaxCykAttr >= 3) setCykAttr03(cykAttr[3]);
 		if (kMaxCykAttr >= 4) setCykAttr04(cykAttr[4]);
 	}
+
+	public short getNumberOfTrafficLights() {
+		if (geometry != null) {
+			Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+			session.beginTransaction();
+			
+			//String s = "select distinct count(*) from trafficlight, resultroute where ST_DWithin(resultroute.geom,trafficlight.geom, 5.0) and resultroute.id="+rid;	// important: only count distinct trafficlights, there might be >1 at one node!
+			String s = "select distinct count(*) from trafficlight where ST_DWithin(ST_GeomFromText('"+geometry+"',0),trafficlight.geom, "+kTrafficLightTolerance+")";	// important: only count distinct trafficlights, there might be >1 at one node!
+			//System.out.println(s);
+			Query res = session.createSQLQuery(s);
+			BigInteger ntl = (BigInteger)res.uniqueResult();
+			this.nTrafficLights = (ntl == null ? 0 : ntl.shortValue());
+		} else {	// fall back to querying nodes
+			this.nTrafficLights = getNumberOfTrafficLights_nodeIDs();
+		}
+		return this.nTrafficLights;
+	}
 	
-	public int getNumberOfTrafficLights() {
+	public short getNumberOfTrafficLights_nodeIDs() {
 		nodeIDs = label.getNodeIDs();
 		Session session = HibernateUtil.getSessionFactory().getCurrentSession();
 		session.beginTransaction();
@@ -339,6 +357,10 @@ public class ResultRoute {
 	
 	public void setGeometry(LineString geometry) {
 		this.geometry = geometry;
+	}
+	public void setGeometry(LineString geometry, boolean calcTrafficLights) {
+		this.geometry = geometry;
+		if (calcTrafficLights) getNumberOfTrafficLights();
 	}
 
 	public long getnAlternatives() {

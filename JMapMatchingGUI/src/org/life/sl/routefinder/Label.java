@@ -22,39 +22,24 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 
 import java.io.File;
 import java.io.IOException;
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-
-import org.geotools.data.DataUtilities;
-import org.geotools.data.DefaultTransaction;
-import org.geotools.data.Transaction;
-import org.geotools.data.collection.ListFeatureCollection;
-import org.geotools.data.shapefile.ShapefileDataStore;
-import org.geotools.data.shapefile.ShapefileDataStoreFactory;
-import org.geotools.data.simple.SimpleFeatureCollection;
-import org.geotools.data.simple.SimpleFeatureSource;
-import org.geotools.data.simple.SimpleFeatureStore;
 //import org.geotools.feature.FeatureCollections;
 import org.geotools.feature.SchemaException;
-import org.geotools.feature.simple.SimpleFeatureBuilder;
-import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.Session;
+import org.hibernate.criterion.Restrictions;
 import org.life.sl.mapmatching.EdgeStatistics;
 import org.life.sl.orm.HibernateUtil;
 import org.life.sl.orm.OSMNode;
 import org.life.sl.routefinder.RouteFinder.LabelTraversal;
 import org.life.sl.tools.RouteDBExporter;
 import org.life.sl.utils.MathUtil;
-import org.opengis.feature.simple.SimpleFeature;
-import org.opengis.feature.simple.SimpleFeatureType;
-
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.operation.linemerge.LineMergeEdge;
@@ -625,7 +610,38 @@ public class Label implements Comparable<Label> {
 	}
 
 	/**
+	 * Retrieve the database IDs of nodes and edges;
+	 * faster than getNodeIDs(), but the nodes are not returned in the correct order along the route
+	 * @see getNodeIDs()
+	 * @return array with node IDs
+	 */
+	public int[] getNodeIDs_unordered() {
+		if (nodeIDs == null) {
+			Session session = HibernateUtil.getSessionFactory().getCurrentSession();
+			session.beginTransaction();
+	
+			LineString ls = getLineString();
+			String s = "select id from osmnode where ST_DWithin(ST_GeomFromText('"+ls+"', 0), geom, "+kCoordEps+")";
+			//System.out.println(s);
+			Query nodeRes = session.createSQLQuery(s);
+			@SuppressWarnings("unchecked")
+			List<Integer> nodes = nodeRes.list();
+			// transform to int[] array:
+			int n = 0;
+			nodeIDs = new int[nodes.size()];
+			Iterator<Integer> it = nodes.iterator();
+			while (it.hasNext()) {
+				nodeIDs[n++] = it.next().intValue();							
+			}
+			//session.getTransaction().commit();
+		}
+		for (int i : nodeIDs) System.out.print(i+"\t"); System.out.println();
+		return nodeIDs;
+	}
+	
+	/**
 	 * Retrieve the database IDs of nodes and edges
+	 * @see getNodeIDs_unordered()
 	 * @return array with node IDs
 	 */
 	public int[] getNodeIDs() {
@@ -635,7 +651,7 @@ public class Label implements Comparable<Label> {
 			List<DirectedEdge> edges = getRouteAsEdges();
 			int nEdges = edges.size();
 			nodeIDs = new int[nEdges + 1];
-			int n = 0, lastValidEdgeID = 0;
+			/*int n = 0, lastValidEdgeID = 0;
 			for (DirectedEdge e : edges) {		// for each node along the route:
 				@SuppressWarnings("unchecked")
 				HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
@@ -670,8 +686,52 @@ public class Label implements Comparable<Label> {
 				}	// now, nodeID is either 0 or the database ID of the corresponding node
 				nodeIDs[n++] = nodeID;
 			}
+			for (int i : nodeIDs) System.out.print(i+"\t");System.out.println();
+			nodeIDs = new int[nEdges + 1];*/
+
+			//first, collect edge IDs:
+			ArrayList<Integer> edgeIDs = new ArrayList<Integer>(nEdges);
+			String se = "";
+			for (DirectedEdge e : edges) {		// for each node along the route:
+				@SuppressWarnings("unchecked")
+				HashMap<String, Object> ed = (HashMap<String, Object>) e.getEdge().getData();
+				int eID = (Integer)ed.get("id");
+				edgeIDs.add(eID);
+				se += ","+eID;
+			}
+			se = se.substring(1);	// remove leading comma
+			String s = " from OSMEdge where id in (" + se + ")";
+			Criteria cr = session.createCriteria(OSMNode.class);
+			cr.add(Restrictions.sqlRestriction("(id in (select fromnode"+s+") or id in (select tonode"+s+"))"));
+			cr.setResultTransformer(Criteria.DISTINCT_ROOT_ENTITY);
+			@SuppressWarnings("unchecked")
+			List<OSMNode> osmNodes = cr.list();
+			//for (OSMNode o : osmNodes) System.out.print(o.getId()+"\t");
+			//System.out.println();
+			
+			List<Node> nodes = getNodes();
+			Coordinate c = null, onc = null;
+			int nodeID;
+			int n = 0;
+			for (Node nd : nodes) {
+				c = nd.getCoordinate();
+				nodeID = 0;
+				for (OSMNode on : osmNodes) {
+					onc = on.getGeometry().getCoordinate();
+					if (Math.abs(c.x - onc.x) < kCoordEps && Math.abs(c.y - onc.y) < kCoordEps) {
+						nodeID = on.getId();
+						osmNodes.remove(onc);	// we won't need this again, assuming each node occurs only once!
+						break;
+					}
+				}
+				nodeIDs[n++] = nodeID;
+			}
+			//for (int i : nodeIDs) System.out.print(i+"\t");System.out.println();
+			
 			//session.getTransaction().commit();
 		}
+
+		//for (int i : nodeIDs) System.out.print(i+"\t"); System.out.println();
 		return nodeIDs;
 	}
 

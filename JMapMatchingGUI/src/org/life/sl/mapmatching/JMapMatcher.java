@@ -307,10 +307,10 @@ public class JMapMatcher {
 						shortestPath.setShortest(true);
 						if (!labels.contains(shortestPath)) {
 							labels.add(shortestPath);
-						} else {
+						} else {	// shortest path has already been found - store twice:
 							// TODO: activate this, if desired:
-							//int i = labels.indexOf(shortestPath);
-							//labels.get(i).setShortest(true);	// mark the existing label as shortest path
+							int i = labels.indexOf(shortestPath);
+							labels.get(i).setShortest(true);	// mark the existing label as shortest path
 						}
 					}
 					// loop over all result routes, store them together with their score:
@@ -476,8 +476,8 @@ public class JMapMatcher {
 			} else if (bAddShortest) {
 				bAddShortest = false;
 				for (j = 0; j < nLabels; j++) if (labels.get(j).isShortest()) break;
-				if (true || j >= nLabels) i--;	// if no shortest route was found, it has been selected before or was not marked
-				// -> continue with element i-1 (i=1) in the list
+				//if (j >= nLabels)	// if no shortest route was found, it has been selected before or was not marked 
+				i--;	// -> continue with element i-1 (i=1) in the list (shortest path is written out independently of the desired number of routes
 				//logger.info("Adding shortest path to output selection: " + j);
 			} else if (i < cfg.iWriteNBest || i >= nRoutes - cfg.iWriteNWorst || nRoutes == nLabels) {	// write those without randomization
 				j = i;
@@ -593,7 +593,7 @@ public class JMapMatcher {
 		ok = (lineString.getLength() > 0);
 		if (ok) try {
 			//LineString lineString = fact.createLineString(coordinates);
-			route.setGeometry(lineString);
+			route.setGeometry(lineString, cfg.bWriteTrafficLights);
 			
 			session.save(route);
 
@@ -601,10 +601,12 @@ public class JMapMatcher {
 			if (cfg.bWriteChoices && isChoice) {	// (this is required only for the chosen route)
 				ResultNodeChoice choice = new ResultNodeChoice(route.getId(), sourcerouteID, respondentID);
 				
+				Coordinate c_d = toNode.getCoordinate();
 				double dist = 0.;
 				int i = 0;	// counter
 				float[] edgeLengths = route.getEdgeLengths();
 				DirectedEdge lastEdge = null;
+				//int[] nodeIDs = label.getNodeIDs_unordered();
 				int[] nodeIDs = label.getNodeIDs();
 				List<DirectedEdge> edges = label.getRouteAsEdges();
 				for (DirectedEdge e : edges) {		// for each node along the route:
@@ -616,7 +618,6 @@ public class JMapMatcher {
 					choice.setDist((float)(dist / label.getLength()));	// distance along the route as fraction of the whole route
 					
 					// angle from node to destination:
-					Coordinate c_d = toNode.getCoordinate();
 					double angle_direct = Math.atan2(c_d.y - c_n.y, c_d.x - c_n.x);
 
 					@SuppressWarnings("unchecked")
