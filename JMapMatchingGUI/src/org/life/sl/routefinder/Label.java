@@ -812,7 +812,7 @@ public class Label implements Comparable<Label> {
 						if (cc[0].distance(coordinates.get(coordinates.size()-1)) < kSnapDistance) {
 							for (int c = 1; c < ccl; c++) coordinates.add(cc[c]);	// first to last
 						} else {
-							for (int c = cc.length-2; c >= 0; c--) coordinates.add(cc[c]);	// reverse direction
+							for (int c = ccl-2; c >= 0; c--) coordinates.add(cc[c]);	// reverse direction
 						}
 					}
 				}

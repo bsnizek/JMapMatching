@@ -42,6 +42,7 @@
 		<property type="float" name="groenPct"></property>
 		<property type="short" name="nPts"></property>
 		<property type="short" name="nChoices"></property>
+		<property type="boolean" name="trafficlight"></property>
 
 	</class>
 

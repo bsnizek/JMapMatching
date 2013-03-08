@@ -39,6 +39,7 @@ public class ResultNodeChoice {
 	private float groenPct;
 	private short nPts;
 	private short nChoices;
+	private boolean trafficlight;
 
 	public ResultNodeChoice() {}
 
@@ -75,6 +76,7 @@ public class ResultNodeChoice {
 		this.groenPct = rnc.groenPct;
 		this.nPts = rnc.nPts;
 		this.nChoices = rnc.nChoices;
+		this.trafficlight = rnc.trafficlight;
 	}
 
 	public ResultNodeChoice clone() {
@@ -200,6 +202,14 @@ public class ResultNodeChoice {
 
 	public void setnChoices(short nChoices) {
 		this.nChoices = nChoices;
+	}
+
+	public boolean isTrafficlight() {
+		return trafficlight;
+	}
+
+	public void setTrafficlight(boolean trafficlight) {
+		this.trafficlight = trafficlight;
 	}
 
 }

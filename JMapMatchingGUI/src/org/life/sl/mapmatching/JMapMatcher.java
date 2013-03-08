@@ -22,6 +22,7 @@ this program; if not, see <http://www.gnu.org/licenses/>.
 
 import java.io.File;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -619,6 +620,14 @@ public class JMapMatcher {
 					
 					// angle from node to destination:
 					double angle_direct = Math.atan2(c_d.y - c_n.y, c_d.x - c_n.x);
+					
+					// is this node a traffic light?
+					String s = "select \"nodeid\" from trafficlight where \"nodeid\"="+nodeIDs[i];	// important: only count distinct trafficlights, there might be >1 at one node!
+					//System.out.println(s);
+					Query res = session.createSQLQuery(s);
+					Integer tlID = (Integer)res.uniqueResult();
+					int nTL = (tlID == null ? 0 : tlID.intValue());
+					choice.setTrafficlight(nTL > 0);
 
 					@SuppressWarnings("unchecked")
 					List<DirectedEdge> outEdges = node.getOutEdges().getEdges();
@@ -650,9 +659,10 @@ public class JMapMatcher {
 								choice.setEdgeID((Integer)ed2.get("id"));
 								choice.setEnvType((Short)ed2.get("et"));
 								choice.setCykType((Short)ed2.get("ct"));
-								choice.setGroenM(((Double)ed2.get("gm")).floatValue());
+								double gm = ((Double)(ed2.get("gm"))).doubleValue();
+								choice.setGroenM((float)gm);
 								double l = ((LineMergeEdge)oee).getLine().getLength();
-								choice.setGroenPct((float)((Double)ed2.get("gm") / l));
+								choice.setGroenPct(Math.max(1f, (float)(gm / l)));	// cut off at 100%
 								choice.setAngleToDest((float)(MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - angle_direct))));	// store value in degrees
 								choice.setAngle(lastEdge != null ? (float)MathUtil.mapAngle_degrees(Math.toDegrees(oe.getAngle() - lea)) : 0);	// angle between edges at node
 								choice.setnPts(eStat.getCount(oee));
